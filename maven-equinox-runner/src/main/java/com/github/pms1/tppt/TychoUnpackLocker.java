@@ -19,8 +19,12 @@ public class TychoUnpackLocker {
 	private final static Location anyLocation = new BasicLocation(null, null, false, null,
 			new EquinoxContainer(null).getConfiguration());
 
+	@SuppressWarnings("deprecation")
 	public Lock lock(Path p) throws IOException {
-		Path lockMarkerFile = p.getParent().resolve(p.getFileName().toString() + LOCKFILE_SUFFIX).toRealPath();
+		// don't know if this actually makes sense, but the replacement for
+		// getCanonicalFile in Path requires the file to exist
+		Path lockMarkerFile = p.getParent().resolve(p.getFileName().toString() + LOCKFILE_SUFFIX).toFile()
+				.getCanonicalFile().toPath();
 
 		if (Files.isDirectory(lockMarkerFile))
 			throw new RuntimeException("Lock marker file " + lockMarkerFile + " already exists and is a directory");
@@ -32,16 +36,22 @@ public class TychoUnpackLocker {
 		lockFileLocation.set(lockMarkerFile.toFile().toURL(), false,
 				lockMarkerFile.toAbsolutePath().toFile().toString());
 
-		if (lockFileLocation.lock())
-			return new Lock() {
-				@Override
-				public void close() {
-					lockFileLocation.release();
-				}
-
-			};
-		else
+		if (!lockFileLocation.lock())
 			return null;
+
+		return new Lock() {
+			@Override
+			public void close() {
+				lockFileLocation.release();
+
+				try {
+					Files.deleteIfExists(lockMarkerFile);
+				} catch (IOException e) {
+					lockMarkerFile.toFile().deleteOnExit();
+				}
+			}
+
+		};
 	}
 
 }

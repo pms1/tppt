@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -20,10 +20,14 @@ import java.util.zip.ZipFile;
 
 import javax.xml.bind.JAXB;
 
+import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -58,7 +62,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private MavenProject project;
 
 	@Component
-	private RepositorySystem rs;
+	private RepositorySystem repositorySystem;
 
 	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
 	private List<ArtifactRepository> remoteArtifactRepositories;
@@ -73,7 +77,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private EquinoxRunnerFactory runnerFactory;
 
 	@Component
-	private Installer installer;
+	private TychoArtifactUnpacker installer;
+
+	@Component
+	private ResolutionErrorHandler resolutionErrorHandler;
+
+	@Parameter(property = "session", readonly = true)
+	private MavenSession session;
 
 	static Plugin scanPlugin(Path p) throws IOException, BundleException, MojoExecutionException {
 		long compressedSize = 0;
@@ -154,13 +164,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				Files.copy(a.getFile().toPath(), repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 
 				// try to find artifacts with "sources" qualifier
-				Artifact sourcesArtifact = rs.createArtifactWithClassifier(a.getGroupId(), a.getArtifactId(),
-						a.getVersion(), "jar", "sources");
+				Artifact sourcesArtifact = repositorySystem.createArtifactWithClassifier(a.getGroupId(),
+						a.getArtifactId(), a.getVersion(), "jar", "sources");
 				ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 				request.setArtifact(sourcesArtifact);
 				request.setRemoteRepositories(remoteArtifactRepositories);
 				request.setLocalRepository(localRepository);
-				ArtifactResolutionResult resolution = rs.resolve(request);
+				ArtifactResolutionResult resolution = repositorySystem.resolve(request);
 
 				switch (resolution.getArtifacts().size()) {
 				case 0:
@@ -307,17 +317,53 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 
-		} catch (IOException | BundleException | InterruptedException e) {
+		} catch (IOException | BundleException | InterruptedException | MavenExecutionException e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
 
 	}
 
+	protected List<ArtifactRepository> getPluginRepositories(MavenSession session) {
+		List<ArtifactRepository> repositories = new ArrayList<>();
+		for (MavenProject project : session.getProjects()) {
+			repositories.addAll(project.getPluginArtifactRepositories());
+		}
+		return repositorySystem.getEffectiveRepositories(repositories);
+	}
+
+	public Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
+
+		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
+		request.setArtifact(artifact);
+		request.setResolveRoot(true).setResolveTransitively(false);
+		request.setLocalRepository(session.getLocalRepository());
+		request.setRemoteRepositories(getPluginRepositories(session));
+		request.setCache(session.getRepositoryCache());
+		request.setOffline(session.isOffline());
+		request.setProxies(session.getSettings().getProxies());
+		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
+
+		ArtifactResolutionResult result = repositorySystem.resolve(request);
+
+		try {
+			resolutionErrorHandler.throwErrors(request, result);
+		} catch (ArtifactResolutionException e) {
+			throw new MavenExecutionException("Could not resolve artifact for Tycho's OSGi runtime", e);
+		}
+
+		return artifact;
+	}
+
 	EquinoxRunner runner;
 
-	EquinoxRunner createRunner() throws IOException {
-		if (runner == null)
-			runner = runnerFactory.newBuilder().withInstallation(Paths.get("c:/temp/eq")).build();
+	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
+		if (runner == null) {
+			Artifact platform = resolveDependency(session,
+					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "0.25.0", "zip"));
+
+			Path p = installer.addRuntimeArtifact(session, platform);
+			runner = runnerFactory.newBuilder().withInstallation(p).build();
+		}
 		return runner;
 	}
 }
