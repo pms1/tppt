@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,7 +34,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.eclipse.osgi.util.ManifestElement;
-import org.eclipse.sisu.equinox.launching.internal.P2ApplicationLauncher;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
@@ -66,8 +66,14 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
 
+	// @Component
+	// private P2ApplicationLauncher p2applicationLauncher;
+
 	@Component
-	private P2ApplicationLauncher p2applicationLauncher;
+	private EquinoxRunnerFactory runnerFactory;
+
+	@Component
+	private Installer installer;
 
 	static Plugin scanPlugin(Path p) throws IOException, BundleException, MojoExecutionException {
 		long compressedSize = 0;
@@ -231,9 +237,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				}
 			}
 
-			p2applicationLauncher.setApplicationName("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher");
-			p2applicationLauncher.addArguments( //
-					"-source", repoDependencies.toString(), //
+			int exitCode = createRunner().run("-application",
+					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source",
+					repoDependencies.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-publishArtifacts" //
@@ -241,9 +247,22 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			// "bar"
 			);
 
-			int exitCode = p2applicationLauncher.execute(60);
-			if (exitCode != 0)
-				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+			// p2applicationLauncher.setApplicationName("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher");
+			// p2applicationLauncher.addArguments( //
+			// "-source", repoDependencies.toString(), //
+			// "-metadataRepository", repoOut.toUri().toURL().toExternalForm(),
+			// //
+			// "-artifactRepository", repoOut.toUri().toURL().toExternalForm(),
+			// //
+			// "-publishArtifacts" //
+			// // "-metadataRepositoryName", "foo1", "-artifactRepositoryName",
+			// // "bar"
+			// );
+			//
+			// int exitCode = p2applicationLauncher.execute(60);
+			// if (exitCode != 0)
+			// throw new MojoExecutionException("fab failed: exitCode=" +
+			// exitCode);
 
 			// TODO: make sure nothing has vanished
 
@@ -277,21 +296,28 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 										// since it's the last entry
 			}
 
-			p2applicationLauncher.setApplicationName("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher");
-			p2applicationLauncher.addArguments("-source", repoFeatures.toString(), //
+			exitCode = createRunner().run("-application",
+					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source", repoFeatures.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-publishArtifacts", //
 					// "-metadataRepositoryName", "foo1",
 					// "-artifactRepositoryName", "bar",
 					"-append");
-			exitCode = p2applicationLauncher.execute(60);
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 
-		} catch (IOException | BundleException e) {
+		} catch (IOException | BundleException | InterruptedException e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
 
+	}
+
+	EquinoxRunner runner;
+
+	EquinoxRunner createRunner() throws IOException {
+		if (runner == null)
+			runner = runnerFactory.newBuilder().withInstallation(Paths.get("c:/temp/eq")).build();
+		return runner;
 	}
 }
