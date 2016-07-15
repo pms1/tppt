@@ -8,8 +8,7 @@
 
 	<modules>
 		<module>bundle1</module>
-		<!-- not working at the moment
-		<module>tycho1</module> -->
+		<module>tycho1</module>
 		<module>repository</module>
 	</modules>
 </project>
