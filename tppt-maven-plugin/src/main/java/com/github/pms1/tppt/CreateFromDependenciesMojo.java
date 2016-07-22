@@ -50,7 +50,7 @@ import com.google.common.io.ByteStreams;
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
  * 
- * @author Mirko Streckenbach
+ * @author pms1
  **/
 @Mojo(name = "create-from-dependencies", requiresDependencyResolution = ResolutionScope.COMPILE)
 public class CreateFromDependenciesMojo extends AbstractMojo {
@@ -58,7 +58,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project.build.directory}", required = true, readonly = true)
 	private File target;
 
-	@Component
+	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
 
 	@Component
@@ -69,9 +69,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
-
-	// @Component
-	// private P2ApplicationLauncher p2applicationLauncher;
 
 	@Component
 	private EquinoxRunnerFactory runnerFactory;

@@ -6,7 +6,7 @@
 		<component>
 			
 			<role>org.apache.maven.lifecycle.mapping.LifecycleMapping</role>
-			<role-hint>p2repository</role-hint>
+			<role-hint>tppt-repository</role-hint>
 			<implementation>
 				org.apache.maven.lifecycle.mapping.DefaultLifecycleMapping
 			</implementation>
@@ -30,7 +30,7 @@
 								org.eclipse.tycho:tycho-p2-repository-plugin:${tycho.version}:archive-repository
 							</package>
 							<install>
-								org.apache.maven.plugins:maven-install-plugin:install
+								org.apache.maven.plugins:maven-install-plugin:install,
 							</install>
 							<deploy>
 								org.apache.maven.plugins:maven-deploy-plugin:deploy
@@ -44,13 +44,13 @@
 
 		<component>
 			<role>org.apache.maven.artifact.handler.ArtifactHandler</role>
-			<role-hint>p2repository</role-hint>
+			<role-hint>tppt-repository</role-hint>
 			<implementation>org.apache.maven.artifact.handler.DefaultArtifactHandler
 			</implementation>
 			<configuration>
 				<extension>zip</extension>
-				<type>p2repository</type>
-				<packaging>p2repository</packaging>
+				<type>tppt-repository</type>
+				<packaging>tppt-repository</packaging>
 				<language>java</language>
 				<addedToClasspath>false</addedToClasspath>
 				<includesDependencies>false</includesDependencies>
