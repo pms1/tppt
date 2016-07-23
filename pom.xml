@@ -7,6 +7,37 @@
 
 	<packaging>pom</packaging>
 
+	<name>Target Platform Provisioning Tools</name>
+	<description>An Apache Maven plugin for creating P2 repositories along with features directly from Maven artifacts that are already OSGi bundles.</description>
+	<url>https://github.com/pms1/tppt/</url>
+
+	<licenses>
+		<license>
+			<name>Eclipse Public License v1.0</name>
+			<url>http://www.eclipse.org/legal/epl-v10.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<issueManagement>
+		<url>https://github.com/pms1/tppt/issues/</url>
+		<system>GitHub Issues</system>
+	</issueManagement>
+
+	<scm>
+		<url>https://github.com/pms1/tppt/</url>
+		<connection>scm:git:git://github.com/pms1/tppt.git</connection>
+		<developerConnection>scm:git:git@github.com:pms1/tppt.git</developerConnection>
+	</scm>
+
+	<developers>
+		<developer>
+			<name>Mirko Streckenbach</name>
+			<url>https://github.com/pms1/</url>
+			<id>pms1</id>
+		</developer>
+	</developers>
+
 	<prerequisites>
 		<maven>3.0.5</maven>
 	</prerequisites>
@@ -59,4 +90,66 @@
 		<module>maven-equinox-runner</module>
 	</modules>
 
+	<profiles>
+		<profile>
+			<id>release</id>
+
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.3</version>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>2.10.4</version>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>1.6</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+
+			<distributionManagement>
+				<snapshotRepository>
+					<id>ossrh</id>
+					<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+				</snapshotRepository>
+				<repository>
+					<id>ossrh</id>
+					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+				</repository>
+			</distributionManagement>
+
+		</profile>
+	</profiles>
 </project>
