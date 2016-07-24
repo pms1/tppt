@@ -1,9 +1,11 @@
 package com.github.pms1.tppt;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.util.List;
 
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -15,16 +17,20 @@ public class InterpolationParserTest {
 
 	@Test
 	public void test() {
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("foo")), CoreMatchers.equalTo("[text:foo]"));
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("foo @{a}")),
-				CoreMatchers.equalTo("[text:foo ][variable:[a]]"));
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("foo @{a} bar")),
+		assertThat(asString(InterpolatedString.parse("foo")), equalTo("[text:foo]"));
+		assertThat(asString(InterpolatedString.parse("foo @{a}")), equalTo("[text:foo ][variable:[a]]"));
+		assertThat(asString(InterpolatedString.parse("foo @{a} bar")),
 				CoreMatchers.equalTo("[text:foo ][variable:[a]][text: bar]"));
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("a\\@b")), CoreMatchers.equalTo("[text:a@b]"));
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("foo @{a:b} bar")),
+		assertThat(asString(InterpolatedString.parse("a\\@b")), equalTo("[text:a@b]"));
+		assertThat(asString(InterpolatedString.parse("foo @{a:b} bar")),
 				CoreMatchers.equalTo("[text:foo ][variable:[a, b]][text: bar]"));
-		MatcherAssert.assertThat(asString(InterpolatedString.parse("foo @{a\\:b} bar")),
+		assertThat(asString(InterpolatedString.parse("foo @{a\\:b} bar")),
 				CoreMatchers.equalTo("[text:foo ][variable:[a:b]][text: bar]"));
+	}
+
+	@Test
+	public void variableOnly() {
+		assertThat(asString(InterpolatedString.parse("@{a}")), equalTo("[variable:[a]]"));
 	}
 
 	@Test

@@ -52,7 +52,8 @@ public class InterpolatedString {
 					break;
 				case '@':
 					s = State.SEEN_AT;
-					result.add(new Text(current.toString()));
+					if (current.length() != 0)
+						result.add(new Text(current.toString()));
 					current = null;
 					break;
 				default:
