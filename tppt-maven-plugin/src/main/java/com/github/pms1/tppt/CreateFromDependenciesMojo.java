@@ -3,6 +3,7 @@ package com.github.pms1.tppt;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -254,38 +255,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			// "bar"
 			);
 
-			// p2applicationLauncher.setApplicationName("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher");
-			// p2applicationLauncher.addArguments( //
-			// "-source", repoDependencies.toString(), //
-			// "-metadataRepository", repoOut.toUri().toURL().toExternalForm(),
-			// //
-			// "-artifactRepository", repoOut.toUri().toURL().toExternalForm(),
-			// //
-			// "-publishArtifacts" //
-			// // "-metadataRepositoryName", "foo1", "-artifactRepositoryName",
-			// // "bar"
-			// );
-			//
-			// int exitCode = p2applicationLauncher.execute(60);
-			// if (exitCode != 0)
-			// throw new MojoExecutionException("fab failed: exitCode=" +
-			// exitCode);
-
-			// TODO: make sure nothing has vanished
-
-			// List<Plugin> plugins = new LinkedList<>();
-			// try (DirectoryStream<Path> ds =
-			// Files.newDirectoryStream(out.resolve("plugins"))) {
-			// for (Path p : ds) {
-			// Artifact a = md5.get(md5(p));
-			// if (a == null)
-			// throw new MojoExecutionException("Unknown artifact: " + a);
-			//
-			// plugins.add(scanPlugin(p));
-			//
-			// }
-			// }
-
+			// ** create and publish feature
 			Feature f = new Feature();
 			f.label = project.getName(); // null is ok
 			f.id = project.getArtifactId();
@@ -314,6 +284,11 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 
+			Files.write(repoOut.resolve("p2.index"),
+					"version = 1\rmetadata.repository.factory.order = content.xml,\\!\rartifact.repository.factory.order = artifacts.xml,\\!\r"
+							.getBytes(StandardCharsets.US_ASCII));
+		} catch (MojoExecutionException e) {
+			throw e;
 		} catch (IOException | BundleException | InterruptedException | MavenExecutionException e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}

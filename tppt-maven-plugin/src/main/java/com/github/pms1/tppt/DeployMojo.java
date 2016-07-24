@@ -2,26 +2,17 @@ package com.github.pms1.tppt;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -40,15 +31,6 @@ import org.apache.maven.scm.command.checkin.CheckInScmResult;
 import org.apache.maven.scm.command.checkout.CheckOutScmResult;
 import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.repository.ScmRepository;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
-
-import com.github.pms1.tppt.InterpolatedString.Visitor;
-
-import de.pdark.decentxml.Attribute;
-import de.pdark.decentxml.Document;
-import de.pdark.decentxml.Element;
-import de.pdark.decentxml.XMLIOSource;
-import de.pdark.decentxml.XMLParser;
 
 /**
  * A maven mojo for "deploying" a p2 repository to the filesystem.
@@ -76,80 +58,10 @@ public class DeployMojo extends AbstractMojo {
 	// @Parameter(property = "invoker.skip", defaultValue = "false")
 	// private boolean skipInvocation;
 
-	Attribute findTimestamp(Document d) {
-
-		Attribute ts = null;
-
-		for (Element e : d.getRootElement().getChild("properties").getChildren("property")) {
-			Attribute attribute = e.getAttribute("name");
-			if (!attribute.getValue().equals("p2.timestamp"))
-				continue;
-
-			if (ts != null)
-				throw new IllegalStateException();
-			ts = e.getAttribute("value");
-			if (ts == null)
-				throw new IllegalArgumentException();
-		}
-
-		if (ts == null)
-			throw new IllegalArgumentException();
-
-		return ts;
-	}
-
-	LocalDateTime extractP2Timestamp(Path p) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(p, null)) {
-			Path path = fs.getPath("artifacts.xml");
-
-			XMLParser parser = new XMLParser();
-
-			de.pdark.decentxml.Document d;
-
-			try (InputStream is = Files.newInputStream(path)) {
-				d = parser.parse(new XMLIOSource(is));
-			}
-
-			String ts = findTimestamp(d).getValue();
-
-			long ts_ms = Long.parseLong(ts);
-
-			return LocalDateTime.ofEpochSecond(ts_ms / 1000, (int) (ts_ms % 1000) * 1000000, ZoneOffset.UTC);
-		}
-	}
-
-	String getLayout(MavenProject p) {
-		Plugin plugin = p.getPlugin("com.github.pms1.tppt:tppt-maven-plugin");
-
-		Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
-		Xpp3Dom layout = configuration.getChild("layout");
-		if (layout == null)
-			return "@{artifactId}-@{version}-@{timestamp}";
-		else
-			return layout.getValue();
-	}
+	private final DeploymentHelper deployHelp = new DeploymentHelper();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (deploymentTarget.getScheme() == null || !deploymentTarget.isAbsolute())
-			throw new MojoExecutionException("The deploymentTarget '" + deploymentTarget + "' is not a valid URI.");
-
-		Path targetPath;
-
-		switch (deploymentTarget.getScheme()) {
-		case "file":
-			targetPath = Paths.get(deploymentTarget);
-			if (Files.exists(targetPath) && !Files.isDirectory(targetPath))
-				throw new MojoExecutionException("The path '" + targetPath + "' already exists and is not a directory");
-			try {
-				Files.createDirectories(targetPath);
-			} catch (IOException e1) {
-				throw new MojoExecutionException("Failed to create the path '" + targetPath + "'", e1);
-			}
-			break;
-		default:
-			throw new MojoExecutionException("The scheme '" + deploymentTarget.getScheme() + "' of deploymentTarget '"
-					+ deploymentTarget + "' is not supported.");
-		}
+		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
 		getLog().info("Deploying to " + targetPath);
 
 		for (MavenProject p : session.getProjects()) {
@@ -161,21 +73,7 @@ public class DeployMojo extends AbstractMojo {
 			if (p.getArtifact().getFile() == null)
 				throw new MojoExecutionException("The project " + p + " did not assign a file to the build artifact");
 
-			String layout = getLayout(p);
-			InterpolatedString layout1 = InterpolatedString.parse(layout);
-			Map<String, Object> context = new HashMap<>();
-			context.put("group", p.getGroupId());
-			context.put("artifactId", p.getArtifactId());
-			context.put("version", p.getVersion());
-			try {
-				context.put("timestamp", extractP2Timestamp(p.getArtifact().getFile().toPath()));
-			} catch (IOException e1) {
-				throw new MojoExecutionException("foo", e1);
-			}
-
-			String layout2 = interpolate(layout1, context);
-
-			Path targetRoot = targetPath.resolve(targetPath.resolve(layout2));
+			Path targetRoot = targetPath.resolve(targetPath.resolve(deployHelp.getPath(p)));
 
 			getLog().info("Deploying " + p.getGroupId() + ":" + p.getArtifactId() + ":" + p.getVersion() + " to "
 					+ targetRoot);
@@ -254,46 +152,6 @@ public class DeployMojo extends AbstractMojo {
 		} catch (IOException e) {
 			throw new MojoExecutionException("foo", e);
 		}
-	}
-
-	private String interpolate(InterpolatedString layout1, Map<String, Object> context) {
-		StringBuilder b = new StringBuilder();
-
-		layout1.accept(new Visitor() {
-
-			@Override
-			public void visitText(String text) {
-				b.append(text);
-			}
-
-			@Override
-			public void visitVariable(List<String> variable) {
-				Object o = context.get(variable.get(0));
-				if (o == null)
-					throw new IllegalArgumentException("No variable: " + variable.get(0));
-				String s;
-				if (o.getClass() == String.class) {
-					if (variable.size() != 1)
-						throw new IllegalArgumentException();
-					s = o.toString();
-				} else if (o.getClass() == LocalDateTime.class) {
-					String format;
-					if (variable.size() == 1)
-						format = "yyyyMMddHHmmssSSS";
-					else if (variable.size() == 2)
-						format = variable.get(1);
-					else
-						throw new IllegalArgumentException();
-					DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
-					s = formatter.format((LocalDateTime) o);
-				} else
-					throw new IllegalArgumentException();
-				b.append(s);
-			}
-
-		});
-
-		return b.toString();
 	}
 
 	private void show(ScmResult result) {
