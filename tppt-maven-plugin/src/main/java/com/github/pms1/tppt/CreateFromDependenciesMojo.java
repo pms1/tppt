@@ -287,6 +287,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			Files.write(repoOut.resolve("p2.index"),
 					"version = 1\rmetadata.repository.factory.order = content.xml,\\!\rartifact.repository.factory.order = artifacts.xml,\\!\r"
 							.getBytes(StandardCharsets.US_ASCII));
+
+			project.setContextValue("key", project.toString());
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (IOException | BundleException | InterruptedException | MavenExecutionException e) {
