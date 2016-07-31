@@ -1,5 +1,9 @@
 grammar Rfc4515;
 
+@parser::members {
+   boolean lenient = false;
+}
+   
 filterEOF: filter EOF;
 
 // https://tools.ietf.org/search/rfc4512, Section 1.4
@@ -23,6 +27,7 @@ LDIGIT: [1-9];
 //      WSP     = 0*SPACE  ; zero or more " "
 //      NULL    = %x00 ; null (0)
 //      SPACE   = %x20 ; space (" ")
+SPACE : ' ';
 //      DQUOTE  = %x22 ; quote (""")
 //      SHARP   = %x23 ; octothorpe (or sharp sign) ("#")
 //      DOLLAR  = %x24 ; dollar sign ("$")
@@ -93,7 +98,8 @@ filtercomp:
 ; 
 
 //      and            = AMPERSAND filterlist
-and: AMPERSAND filterlist;
+and: AMPERSAND filterlist
+| {lenient}?  AMPERSAND SPACE+ filterlist;
 
 //      or             = VERTBAR filterlist
 //      not            = EXCLAMATION filter

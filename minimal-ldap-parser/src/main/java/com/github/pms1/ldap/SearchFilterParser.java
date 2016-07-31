@@ -9,6 +9,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.Token;
 
 import com.github.pms1.ldap.Rfc4515Parser.AndContext;
 import com.github.pms1.ldap.Rfc4515Parser.AttrContext;
@@ -22,31 +23,48 @@ import com.github.pms1.ldap.Rfc4515Parser.ItemContext;
 import com.github.pms1.ldap.Rfc4515Parser.SimpleContext;
 
 public class SearchFilterParser {
+	private final boolean lenient;
+
+	public SearchFilterParser() {
+		this(false);
+	}
+
+	private SearchFilterParser(boolean lenient) {
+		this.lenient = lenient;
+	}
+
+	public SearchFilterParser lenient() {
+		return new SearchFilterParser(true);
+	}
+
+	private BaseErrorListener errorListener = new BaseErrorListener() {
+		@Override
+		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine,
+				String msg, RecognitionException e) {
+
+			throw new RuntimeException("line " + line + ":" + charPositionInLine + ": " + msg, e);
+		}
+	};
+
 	public SearchFilter parse(String searchFilter) {
-		// Lexer lexer = new Rfc4515Lexer( new ANTLRInputStream("(&(a=6))"));
-		//
-		// for(Token t : lexer.getAllTokens()) {
-		// System.err.println(t + " " +
-		// Rfc4515Lexer.VOCABULARY.getDisplayName(t.getType()) + " " +
-		// Rfc4515Lexer.VOCABULARY.getLiteralName(t.getType()) + " " +
-		// Rfc4515Lexer.VOCABULARY.getSymbolicName(t.getType()));
-		// }
-		//
+		if (false) {
+			Lexer lexer = new Rfc4515Lexer(new ANTLRInputStream(searchFilter));
+			lexer.removeErrorListeners();
+			lexer.addErrorListener(errorListener);
 
-		BaseErrorListener errorListener = new BaseErrorListener() {
-			@Override
-			public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line,
-					int charPositionInLine, String msg, RecognitionException e) {
-
-				throw new RuntimeException("line " + line + ":" + charPositionInLine + ": " + msg, e);
+			for (Token t : lexer.getAllTokens()) {
+				System.err.println(t + " " + Rfc4515Lexer.VOCABULARY.getDisplayName(t.getType()) + " "
+						+ Rfc4515Lexer.VOCABULARY.getLiteralName(t.getType()) + " "
+						+ Rfc4515Lexer.VOCABULARY.getSymbolicName(t.getType()));
 			}
-		};
+		}
 
 		Lexer lexer = new Rfc4515Lexer(new ANTLRInputStream(searchFilter));
 		lexer.removeErrorListeners();
 		lexer.addErrorListener(errorListener);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		Rfc4515Parser parser = new Rfc4515Parser(tokens);
+		parser.lenient = lenient;
 		parser.removeErrorListeners();
 		parser.addErrorListener(errorListener);
 
