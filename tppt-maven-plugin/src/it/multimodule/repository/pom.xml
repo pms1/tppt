@@ -18,7 +18,7 @@
 			<plugin>
 				<groupId>com.github.pms1.tppt</groupId>
 				<artifactId>tppt-maven-plugin</artifactId>
-				<version>0.0.1-SNAPSHOT</version>
+				<version>@project.version@</version>
 				<extensions>true</extensions>
 			</plugin>
 		</plugins>
