@@ -56,7 +56,7 @@ public class BaselineMojo extends AbstractMojo {
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
 
-	@Parameter(property = "tppt.deploymentTarget", required = true)
+	@Parameter(property = "tppt.deploymentTarget")
 	private URI deploymentTarget;
 
 	DeploymentHelper dh = new DeploymentHelper();
