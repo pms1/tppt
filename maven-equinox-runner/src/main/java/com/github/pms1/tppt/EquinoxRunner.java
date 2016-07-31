@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -141,7 +142,7 @@ public class EquinoxRunner {
 		}
 
 		List<String> command = new ArrayList<>();
-		command.add("D:/Program Files/Java/jdk1.8.0_31/jre/bin/java.exe");
+		command.add(Paths.get(System.getProperty("java.home")).resolve("bin/java").toString());
 		command.add("-jar");
 		command.add(getPlugin(plugins, "org.eclipse.equinox.launcher").p.toString());
 		command.add("-configuration");
