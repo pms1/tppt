@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<feature id="sub1" label="sub1" version="0.0.1.201608080453">
+    <plugin id="net.sf.jopt-simple.jopt-simple" download-size="65" install-size="156" version="5.0.2" unpack="true"/>
+    <plugin id="net.sf.jopt-simple.jopt-simple.source" download-size="74" install-size="212" version="5.0.2" unpack="true"/>
+</feature>

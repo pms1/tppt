@@ -21,6 +21,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 
+import com.github.pms1.tppt.p2.RepositoryComparator;
+
 /**
  * A maven mojo to replace a p2 repository by it's baseline
  * 
@@ -37,6 +39,9 @@ public class BaselineMojo extends AbstractMojo {
 
 	@Component
 	private RepositorySystem repositorySystem;
+
+	@Component
+	private RepositoryComparator repositoryComparator;
 
 	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
 	private List<ArtifactRepository> remoteArtifactRepositories;
@@ -100,8 +105,13 @@ public class BaselineMojo extends AbstractMojo {
 
 			System.err.println("Comaparing to baseline at " + previous);
 
-			Object ctxv = project.getContextValue("key");
-			System.err.println("Comaparing to baseline at " + ctxv);
+			boolean eq = repositoryComparator.run(dt.getPath().resolve(previous),
+					target.toPath().resolve("repository"));
+
+			System.err.println("Comparison " + eq);
+
+			// Object ctxv = project.getContextValue("key");
+			// System.err.println("Comaparing to baseline at " + ctxv);
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (IOException e) {
