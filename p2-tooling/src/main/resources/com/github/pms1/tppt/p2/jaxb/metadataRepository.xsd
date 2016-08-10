@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" >
+		<xsd:include schemaLocation="shared.xsd" ></xsd:include>
+	<xsd:complexType name="metadataRepository">
+		<xsd:sequence>
+			<xsd:element name="properties" type="properties"></xsd:element>
+			<xsd:element name="units" type="units"></xsd:element>
+		</xsd:sequence>
+
+		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="type" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:element name="repository" type="metadataRepository"></xsd:element>
+
+	<xsd:complexType name="units">
+		<xsd:sequence>
+			<xsd:element name="unit" type="unit" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="unit">
+		<xsd:sequence>
+			<xsd:element name="update" type="update" minOccurs="0"></xsd:element>
+			<xsd:element name="properties" type="properties" minOccurs="0"></xsd:element>
+			<xsd:element name="provides" type="provides"></xsd:element>
+			<xsd:element name="filter" type="filter" minOccurs="0"></xsd:element>
+			<xsd:element name="requires" type="requires" minOccurs="0"></xsd:element>
+			<xsd:element name="artifacts" type="metadataArtifacts" minOccurs="0"></xsd:element>
+			<xsd:element name="touchpoint" type="touchpoint"></xsd:element>
+			<xsd:element name="touchpointData" type="touchpointData" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="id" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+		<xsd:attribute name="singleton" type="xsd:boolean"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="provides">
+		<xsd:sequence>
+			<xsd:element name="provided" type="provided" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="requires">
+		<xsd:sequence>
+			<xsd:element name="required" type="required" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="metadataArtifacts">
+		<xsd:sequence>
+			<xsd:element name="artifact" type="metadataArtifact" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="touchpoint">
+		<xsd:attribute name="id" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="provided">
+		<xsd:attribute name="namespace" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="metadataArtifact">
+		<xsd:attribute name="classifier" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="id" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="required">
+		<xsd:sequence>
+			<xsd:element name="filter" type="filter" maxOccurs="1" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="namespace" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="range" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="optional" type="xsd:boolean"></xsd:attribute>
+		<xsd:attribute name="greedy" type="xsd:boolean"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="touchpointData">
+		<xsd:sequence>
+			<xsd:element name="instructions" type="instructions" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="instructions">
+		<xsd:sequence>
+			<xsd:element name="instruction" type="instruction" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="update">
+		<xsd:attribute name="id" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="range" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="severity" type="xsd:string" use="required"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="instruction">
+		<xsd:simpleContent>
+			<xsd:extension base="xsd:string">
+				<xsd:attribute name="key" type="xsd:string"  use="required"/>
+			</xsd:extension>
+		</xsd:simpleContent>
+
+	</xsd:complexType>
+
+	<xsd:simpleType name="filter">
+		<xsd:restriction base="xsd:string"></xsd:restriction>
+	</xsd:simpleType>
+</xsd:schema>

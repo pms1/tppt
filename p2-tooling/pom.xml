@@ -60,6 +60,66 @@
 					</execution>
 				</executions>
 			</plugin>
+
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+				<version>0.13.1</version>
+				<executions>
+					<execution>
+						<id>generate-artifact</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<schemaIncludes>
+								<include>artifactRepository.xsd</include>
+								<include>shared.xsd</include>
+							</schemaIncludes>
+							<bindingIncludes>
+								<include>artifact.xjb</include>
+								<include>shared.xjb</include>
+							</bindingIncludes>
+							<generateDirectory>${project.build.directory}/generated-sources/xjc-artifact</generateDirectory>
+							<extension>true</extension>
+						</configuration>
+					</execution>
+
+					<execution>
+						<id>generate-metadata</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<schemaIncludes>
+								<include>metadataRepository.xsd</include>
+								<include>shared.xsd</include>
+							</schemaIncludes>
+							<bindingIncludes>
+								<include>metadata.xjb</include>
+								<include>shared.xjb</include>
+							</bindingIncludes>
+							<generateDirectory>${project.build.directory}/generated-sources/xjc-metadata</generateDirectory>
+						</configuration>
+					</execution>
+				</executions>
+				<configuration>
+					<specVersion>2.2</specVersion>
+					<strict>true</strict>
+					<!-- plugin does not search recursive -->
+					<schemaDirectory>src/main/resources/com/github/pms1/tppt/p2/jaxb</schemaDirectory>
+					<args>
+						<arg>-Xinheritance</arg>
+					</args>
+					<plugins>
+						<plugin>
+							<groupId>org.jvnet.jaxb2_commons</groupId>
+							<artifactId>jaxb2-basics</artifactId>
+							<version>0.11.1</version>
+						</plugin>
+					</plugins>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

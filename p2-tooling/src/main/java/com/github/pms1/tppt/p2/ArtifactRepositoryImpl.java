@@ -11,16 +11,17 @@ import com.github.pms1.ldap.AttributeDescription;
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
 public class ArtifactRepositoryImpl implements ArtifactRepository {
-	private final ArtifactRepositoryData data;
+	private final com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository data;
 
 	private Map<ArtifactId, Artifact> asMap;
 
 	private final URI root;
 
-	public ArtifactRepositoryImpl(URI root, ArtifactRepositoryData foo) {
+	public ArtifactRepositoryImpl(URI root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
 		Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;
@@ -36,13 +37,13 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 
 		private final ArtifactId id;
 
-		private final ArtifactRepositoryData.Artifact data;
+		private final com.github.pms1.tppt.p2.jaxb.artifact.Artifact data;
 
-		ArtifactImpl(ArtifactRepositoryData.Artifact data) {
-			Preconditions.checkNotNull(data);
+		ArtifactImpl(com.github.pms1.tppt.p2.jaxb.artifact.Artifact a) {
+			Preconditions.checkNotNull(a);
 
-			this.data = data;
-			this.id = new ArtifactId(data.id, VersionParser.valueOf(data.version));
+			this.data = a;
+			this.id = new ArtifactId(a.getId(), a.getVersion());
 		}
 
 		@Override
@@ -52,7 +53,7 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 
 		@Override
 		public String getClassifier() {
-			return data.classifier;
+			return data.getClassifier();
 		}
 	}
 
@@ -60,7 +61,7 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 	public Map<ArtifactId, Artifact> getArtifacts() {
 		if (asMap == null) {
 			Map<ArtifactId, Artifact> map = new HashMap<>();
-			for (ArtifactRepositoryData.Artifact a : data.artifacts.artifact) {
+			for (com.github.pms1.tppt.p2.jaxb.artifact.Artifact a : data.getArtifacts().getArtifact()) {
 				ArtifactImpl a2 = new ArtifactImpl(a);
 				map.put(a2.getId(), a2);
 			}
@@ -69,7 +70,7 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 		return asMap;
 	}
 
-	static SearchFilterParser parser = new SearchFilterParser().lenient();
+	private static SearchFilterParser parser = new SearchFilterParser().lenient();
 
 	@Override
 	public URI getArtifactUri(ArtifactId id) {
@@ -78,20 +79,20 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 
 		String match = null;
 
-		for (ArtifactRepositoryData.Rule r : data.mappings.rule) {
-			SearchFilter searchFilter = parser.parse(r.filter);
+		for (Rule r : data.getMappings().getRule()) {
+			SearchFilter searchFilter = parser.parse(r.getFilter());
 
 			if (new SearchFilterEvaluator().evaluate(searchFilter, p -> {
 				String k = ((AttributeDescription) p).getKeystring();
 				switch (k) {
 				case "classifier":
-					return artifact.data.classifier;
+					return artifact.data.getClassifier();
 				default:
 					throw new Error("" + k);
 				}
 			})) {
 				if (match == null)
-					match = r.output;
+					match = r.getOutput();
 				else
 					throw new IllegalStateException();
 			}
@@ -113,10 +114,10 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 					replacement = root.toString();
 					break;
 				case "id":
-					replacement = artifact.data.id;
+					replacement = artifact.data.getId();
 					break;
 				case "version":
-					replacement = artifact.data.version;
+					replacement = artifact.data.getVersion().toString();
 					break;
 				default:
 					throw new IllegalStateException("Unhandled substitution '" + m.group(1) + "'");

@@ -1,12 +1,16 @@
 package com.github.pms1.tppt.p2;
 
+import org.codehaus.plexus.component.annotations.Component;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Comment;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
+import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 
+@Component(role = DomRenderer.class)
 public class DomRenderer {
 
 	public String render(Node item) {
@@ -84,10 +88,31 @@ public class DomRenderer {
 			}
 			b.append(">");
 			break;
+		case Node.PROCESSING_INSTRUCTION_NODE:
+			children = false;
+			ProcessingInstruction pi = (ProcessingInstruction) node;
+			b.append("<?" + pi.getTarget() + " " + pi.getData() + "?>");
+			break;
 		case Node.COMMENT_NODE:
 			children = false;
 			Comment c = (Comment) node;
 			b.append("<!--" + c.getTextContent() + "-->");
+			break;
+		case Node.DOCUMENT_NODE:
+			children = true;
+			Document d = (Document) node;
+
+			String standalone = d.getXmlStandalone() ? " standalone=\"yes\"" : "";
+
+			if (d.getXmlVersion() == null)
+				throw new UnsupportedOperationException();
+
+			// we always transcode to UTF-8
+			// if (d.getXmlEncoding() != null &&
+			// !Objects.equals(d.getXmlEncoding().toUpperCase(), "UTF-8"))
+			// throw new UnsupportedOperationException();
+
+			b.append("<?xml version=\"" + d.getXmlVersion() + "\" encoding=\"UTF-8\"" + standalone + "?>");
 			break;
 		default:
 			throw new Error("Unhandled node " + node.getNodeType() + " " + node);

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bindings xmlns="http://java.sun.com/xml/ns/jaxb" xmlns:xsi="http://www.w3.org/2000/10/XMLSchema-instance"
+	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0"
+	xmlns:inheritance="http://jaxb2-commons.dev.java.net/basic/inheritance" extensionBindingPrefixes="xjc inheritance">
+
+	<bindings schemaLocation="shared.xsd">
+		<bindings node="//xs:simpleType[@name='versionType']">
+			<xjc:javaType name="org.osgi.framework.Version" adapter="com.github.pms1.tppt.p2.jaxb.VersionAdapter" />
+		</bindings>
+
+		<bindings node="//xs:complexType[@name='properties']">
+			<inheritance:implements>com.github.pms1.tppt.p2.jaxb.Properties</inheritance:implements>
+		</bindings>
+
+		<bindings node="//xs:complexType[@name='property']">
+			<inheritance:implements>com.github.pms1.tppt.p2.jaxb.Property</inheritance:implements>
+		</bindings>
+
+	</bindings>
+
+</bindings>
