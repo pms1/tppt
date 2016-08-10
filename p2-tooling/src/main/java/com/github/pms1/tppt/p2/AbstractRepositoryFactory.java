@@ -10,8 +10,6 @@ import java.util.Properties;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.ValidationEventHandler;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
@@ -31,7 +29,18 @@ public abstract class AbstractRepositoryFactory<T> {
 		this.schema = Xml.createSchema(VersionAdapter.class, xsd);
 	}
 
-	protected T parse(Path p) throws IOException {
+	protected T readStream(InputStream is) {
+		try {
+			JAXBContext context = JAXBContext.newInstance(clazz);
+			Unmarshaller unmarshaller = context.createUnmarshaller();
+			unmarshaller.setSchema(schema);
+			return unmarshaller.unmarshal(new StreamSource(is), clazz).getValue();
+		} catch (JAXBException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected T readRepository(Path p) throws IOException {
 		Properties p2index = new Properties();
 
 		try (InputStream is = Files.newInputStream(p.resolve("p2.index"))) {
@@ -45,23 +54,7 @@ public abstract class AbstractRepositoryFactory<T> {
 		for (String f : p2index.getProperty(prefix + ".repository.factory.order", "").split(",")) {
 			if (f.equals(content + ".xml")) {
 				try (InputStream is = Files.newInputStream(p.resolve(content + ".xml"))) {
-					try {
-						JAXBContext context = JAXBContext.newInstance(clazz);
-						Unmarshaller unmarshaller = context.createUnmarshaller();
-						unmarshaller.setEventHandler(new ValidationEventHandler() {
-
-							@Override
-							public boolean handleEvent(ValidationEvent event) {
-								System.err.println(event);
-								return false;
-							}
-						});
-						unmarshaller.setSchema(schema);
-						data = unmarshaller.unmarshal(new StreamSource(is), clazz).getValue();
-						break;
-					} catch (JAXBException e) {
-						throw new RuntimeException(e);
-					}
+					return readStream(is);
 				}
 			} else if (f.equals("!")) {
 				throw new Error();

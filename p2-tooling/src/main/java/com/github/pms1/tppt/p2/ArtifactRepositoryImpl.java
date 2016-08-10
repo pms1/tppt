@@ -22,7 +22,7 @@ public class ArtifactRepositoryImpl implements ArtifactRepository {
 	private final URI root;
 
 	public ArtifactRepositoryImpl(URI root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
-		Preconditions.checkNotNull(root);
+		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;
 		this.root = root;

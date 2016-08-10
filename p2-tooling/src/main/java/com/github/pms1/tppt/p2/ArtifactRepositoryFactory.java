@@ -1,6 +1,7 @@
 package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -15,6 +16,10 @@ public class ArtifactRepositoryFactory
 	}
 
 	public ArtifactRepository read(Path p) throws IOException {
-		return new ArtifactRepositoryImpl(p.toUri(), parse(p));
+		return new ArtifactRepositoryImpl(p.toUri(), readRepository(p));
+	}
+
+	public ArtifactRepository read(InputStream is) {
+		return new ArtifactRepositoryImpl(null, readStream(is));
 	}
 }

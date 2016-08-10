@@ -16,6 +16,6 @@ public class MetadataRepositoryFactory
 
 	public MetadataRepository read(Path p) throws IOException {
 
-		return new MetadataRepositoryImpl(p.toUri(), parse(p));
+		return new MetadataRepositoryImpl(p.toUri(), readRepository(p));
 	}
 }
