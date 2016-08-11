@@ -6,7 +6,7 @@
 		<xsd:all>
 			<xsd:element name="properties" type="properties"></xsd:element>
 			<xsd:element name="mappings" type="mappings"></xsd:element>
-			<xsd:element name="artifacts" type="artifacts"></xsd:element>
+			<xsd:element name="artifacts" type="artifacts" minOccurs="0"></xsd:element>
 		</xsd:all>
 		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="type" type="xsd:string" use="required"></xsd:attribute>

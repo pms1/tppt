@@ -23,7 +23,7 @@ public class ArtifactRepositoryReaderSmokeTest {
 	public static Object[] parameters() {
 		return new Object[] { "artifactsNoArtifacts.xml", "artifactsOnlyRepositoryProperties.xml",
 				"artifactsAttributeDescription.xml", "artifactsProcessing.xml", "artifactsProcessingData.xml",
-				"artifactsOtherOrder.xml" };
+				"artifactsOtherOrder.xml", "artifactsMissingArtifacts.xml" };
 	}
 
 	public ArtifactRepositoryReaderSmokeTest(String artifactXml) {
