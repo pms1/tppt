@@ -168,15 +168,18 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="update">
-		<xsd:attribute name="id" type="xsd:string" use="required"></xsd:attribute>
-		<xsd:attribute name="range" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="id" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="range" type="xsd:string"></xsd:attribute>
 		<xsd:attribute name="severity" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="match" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="description" type="xsd:string"></xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="instruction">
 		<xsd:simpleContent>
 			<xsd:extension base="xsd:string">
-				<xsd:attribute name="key" type="xsd:string"  use="required"/>
+				<xsd:attribute name="key" type="xsd:string" use="required"/>
+				<xsd:attribute name="import" type="xsd:string"/>
 			</xsd:extension>
 		</xsd:simpleContent>
 	</xsd:complexType>
