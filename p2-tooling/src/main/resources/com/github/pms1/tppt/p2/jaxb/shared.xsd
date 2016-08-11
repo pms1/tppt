@@ -4,7 +4,7 @@
 		<xsd:sequence>
 			<xsd:element name="property" type="property" minOccurs="0" maxOccurs="unbounded"></xsd:element>
 		</xsd:sequence>
-		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+		<xsd:attribute name="size" type="xsd:int" ></xsd:attribute> <!-- strict: required -->
 	</xsd:complexType>
 
 	<xsd:complexType name="property">
