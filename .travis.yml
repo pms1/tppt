@@ -13,3 +13,6 @@ install:
 deploy:
     provider: script
     script: .travis/deploy.sh
+
+after_success:
+    - mvn clean test jacoco:report coveralls:report
