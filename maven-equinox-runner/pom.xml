@@ -30,11 +30,6 @@
 			<artifactId>maven-core</artifactId>
 			<scope>provided</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>org.sonatype.sisu</groupId>
-			<artifactId>sisu-guava</artifactId>
-		</dependency>
 	</dependencies>
 
 	<build>

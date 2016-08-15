@@ -12,8 +12,8 @@ import java.util.Objects;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
-import org.codehaus.plexus.logging.Logger;
 import org.osgi.framework.Version;
+import org.slf4j.Logger;
 
 import com.google.common.base.Preconditions;
 
