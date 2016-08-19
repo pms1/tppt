@@ -6,6 +6,10 @@
 		<schemaBindings>
 			<package name="com.github.pms1.tppt.p2.jaxb.metadata" />
 		</schemaBindings>
+		
+		<bindings node="//xs:simpleType[@name='versionRangeType']">
+			<xjc:javaType name="org.osgi.framework.VersionRange" adapter="com.github.pms1.tppt.p2.jaxb.VersionRangeAdapter" />
+		</bindings>
 	</bindings>
 
 </bindings>

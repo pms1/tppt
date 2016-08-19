@@ -143,7 +143,7 @@
 		</xsd:sequence>
 		<xsd:attribute name="namespace" type="xsd:string"></xsd:attribute>
 		<xsd:attribute name="name" type="xsd:string"></xsd:attribute>
-		<xsd:attribute name="range" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="range" type="versionRangeType"></xsd:attribute>
 		<xsd:attribute name="optional" type="xsd:boolean"></xsd:attribute>
 		<xsd:attribute name="greedy" type="xsd:boolean"></xsd:attribute>
 		<xsd:attribute name="match" type="xsd:string"></xsd:attribute>
@@ -169,7 +169,7 @@
 
 	<xsd:complexType name="update">
 		<xsd:attribute name="id" type="xsd:string"></xsd:attribute>
-		<xsd:attribute name="range" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="range" type="versionRangeType"></xsd:attribute>
 		<xsd:attribute name="severity" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="match" type="xsd:string"></xsd:attribute>
 		<xsd:attribute name="description" type="xsd:string"></xsd:attribute>
@@ -206,4 +206,8 @@
 		</xsd:simpleContent>
 	</xsd:complexType>
 
+	<xsd:simpleType name="versionRangeType">
+		<xsd:restriction base="xsd:string"></xsd:restriction>
+	</xsd:simpleType>
+	
 </xsd:schema>
