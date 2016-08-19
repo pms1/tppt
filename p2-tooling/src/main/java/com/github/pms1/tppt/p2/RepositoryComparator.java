@@ -12,14 +12,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
 import org.slf4j.Logger;
 
+import com.github.pms1.ldap.SearchFilter;
+import com.github.pms1.ldap.SearchFilterPrinter;
+import com.github.pms1.ocomp.ComparatorMatchers;
 import com.github.pms1.ocomp.DecomposedObject;
 import com.github.pms1.ocomp.Decomposer;
 import com.github.pms1.ocomp.DecomposerMatchers;
@@ -89,33 +93,38 @@ public class RepositoryComparator {
 
 	};
 
-	static class UnitDelta extends Delta {
-		final Unit left;
-		final Unit right;
+	static abstract class AbstractUnitDelta extends Delta {
+		protected final Unit left;
+		protected final Unit right;
+
+		AbstractUnitDelta(Unit left, Unit right) {
+			Preconditions.checkNotNull(left);
+			this.left = left;
+			Preconditions.checkNotNull(right);
+			this.right = right;
+		}
+	}
+
+	static class UnitDelta extends AbstractUnitDelta {
 		final OPath2 path;
 
 		UnitDelta(Unit left, Unit right, OPath2 path) {
-			this.left = left;
-			this.right = right;
+			super(left, right);
 			this.path = path;
 		}
 
 		@Override
 		public String toString() {
-			return "UnitDelta(" + render(left) + "," + render(right) + "," + path + ")";
+			return "UnitDelta(" + render(left) + "," + render(right) + "," + path.getPath() + "," + path.getLeft()
+					+ " -> " + path.getRight() + ")";
 		}
 	}
 
-	static class ProvidedAdded extends Delta {
-		final Unit left;
-		final Unit right;
+	static class ProvidedAdded extends AbstractUnitDelta {
 		final Provided provided;
 
 		ProvidedAdded(Unit left, Unit right, Provided provided) {
-			Preconditions.checkNotNull(left);
-			this.left = left;
-			Preconditions.checkNotNull(right);
-			this.right = right;
+			super(left, right);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
 		}
@@ -126,16 +135,11 @@ public class RepositoryComparator {
 		}
 	}
 
-	static class RequiredAdded extends Delta {
-		final Unit left;
-		final Unit right;
+	static class RequiredAdded extends AbstractUnitDelta {
 		final Required required;
 
 		RequiredAdded(Unit left, Unit right, Required required) {
-			Preconditions.checkNotNull(left);
-			this.left = left;
-			Preconditions.checkNotNull(right);
-			this.right = right;
+			super(left, right);
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
@@ -146,16 +150,11 @@ public class RepositoryComparator {
 		}
 	}
 
-	static class ProvidedRemoved extends Delta {
-		final Unit left;
-		final Unit right;
+	static class ProvidedRemoved extends AbstractUnitDelta {
 		final Provided provided;
 
 		ProvidedRemoved(Unit left, Unit right, Provided provided) {
-			Preconditions.checkNotNull(left);
-			this.left = left;
-			Preconditions.checkNotNull(right);
-			this.right = right;
+			super(left, right);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
 		}
@@ -166,16 +165,11 @@ public class RepositoryComparator {
 		}
 	}
 
-	static class RequiredRemoved extends Delta {
-		final Unit left;
-		final Unit right;
+	static class RequiredRemoved extends AbstractUnitDelta {
 		final Required required;
 
 		RequiredRemoved(Unit left, Unit right, Required required) {
-			Preconditions.checkNotNull(left);
-			this.left = left;
-			Preconditions.checkNotNull(right);
-			this.right = right;
+			super(left, right);
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
@@ -186,8 +180,12 @@ public class RepositoryComparator {
 		}
 	}
 
+	static final SearchFilterPrinter printer = new SearchFilterPrinter();
+
 	ObjectComparator<Delta> oc = ObjectComparatorBuilder.newBuilder()
-			.addDecomposer(DecomposerMatchers.isAssignable(listRequired), xxx)
+			.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
+				return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
+			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), xxx)
 			.addDecomposer(DecomposerMatchers.isAssignable(listProvided), xxx)
 			.addDecomposer("//units/unit", new Decomposer<List<Unit>>() {
 
@@ -225,7 +223,6 @@ public class RepositoryComparator {
 
 				@Override
 				public Delta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
-					System.err.println("X " + p.getPath() + " " + change + " " + m1 + " " + m2);
 					if (p.size() > 3) {
 						OPath2 unitPath = p.subPath(0, 3);
 						if (unitPath.getPath().equals("//units/unit")) {
@@ -257,14 +254,6 @@ public class RepositoryComparator {
 										throw new Error();
 									}
 								}
-								for (int i = 0; i != p.size(); ++i) {
-									OPath2 p1 = p.subPath(i, i + 1);
-									System.err.println("P1 " + p1 + " " + p1.getLeft() + " " + p1.getRight());
-								}
-								for (int i = 0; i != rel.size(); ++i) {
-									OPath2 p1 = rel.subPath(i, i + 1);
-									System.err.println("R " + p1 + " " + p1.getLeft() + " " + p1.getRight());
-								}
 
 								switch (change) {
 								case CHANGED:
@@ -277,8 +266,13 @@ public class RepositoryComparator {
 							}
 						}
 					}
-					return new MetadataDelta(p, change);
 
+					switch (p.getPath()) {
+					case "//properties/property[p2.timestamp]/value":
+						return null;
+					}
+
+					return new MetadataDelta(p, change);
 				}
 
 			}).build();
@@ -292,6 +286,11 @@ public class RepositoryComparator {
 			this.change = change;
 		}
 
+		@Override
+		public String toString() {
+			return "MetadataDelta(" + path.getPath() + "," + change + "," + path.getLeft() + " -> " + path.getRight()
+					+ ")";
+		}
 	}
 
 	public boolean run(Path pr1, Path pr2) throws IOException {
@@ -304,8 +303,6 @@ public class RepositoryComparator {
 		List<Delta> dest = new ArrayList<>();
 
 		List<Change> changes = new LinkedList<>();
-
-		Pattern p = Pattern.compile("//units/unit\\[(?<unit>[^\\]]+)\\](?<detail>.*)");
 
 		dest.addAll(oc.compare(md1, md2));
 
@@ -388,7 +385,7 @@ public class RepositoryComparator {
 				}
 			}
 			if (!ok) {
-				System.err.println("Incompatible change: " + d);
+				System.out.println("Incompatible change: " + d);
 				logger.info("Incompatible change: " + d);
 				equal = false;
 			}
@@ -400,6 +397,9 @@ public class RepositoryComparator {
 	static abstract class Change {
 		abstract boolean accept(Delta delta);
 	}
+
+	private static final Predicate<SearchFilter> featureFilter = p -> p != null
+			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
 
 	static class FeatureVersionChange extends Change {
 		private final String featureId;
@@ -452,9 +452,6 @@ public class RepositoryComparator {
 				}
 
 				return false;
-			} else if (delta instanceof RequiredAdded) {
-				RequiredAdded d = (RequiredAdded) delta;
-				return false;
 			} else if (delta instanceof ProvidedRemoved) {
 				ProvidedRemoved d = (ProvidedRemoved) delta;
 
@@ -472,10 +469,126 @@ public class RepositoryComparator {
 				}
 
 				return false;
+			} else if (delta instanceof RequiredAdded) {
+				RequiredAdded d = (RequiredAdded) delta;
+
+				if (isFeatureGroup(d)) {
+					// if (is(d.right, featureId + ".feature.group", v2)) {
+					if (new RequiredMatcher() //
+							.withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+							.withName(p -> p.equals(featureId + ".feature.jar")) //
+							.withRange(p -> Objects.equals(p,
+									new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED))) //
+							.withFilter(featureFilter) //
+							.test(d.required))
+						return true;
+				}
+
+				return false;
+			} else if (delta instanceof RequiredRemoved) {
+				RequiredRemoved d = (RequiredRemoved) delta;
+
+				if (isFeatureGroup(d)) {
+					// if (is(d.left, featureId + ".feature.group", v1)) {
+					if (new RequiredMatcher() //
+							.withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+							.withName(p -> p.equals(featureId + ".feature.jar")) //
+							.withRange(p -> Objects.equals(p,
+									new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED))) //
+							.withFilter(featureFilter) //
+							.test(d.required))
+						return true;
+				}
+
+				return false;
+			} else if (delta instanceof UnitDelta) {
+				UnitDelta d = (UnitDelta) delta;
+
+				if (isFeatureGroup(d)) {
+
+					switch (d.path.getPath()) {
+					case "/update/range":
+						return d.path.getLeft()
+								.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,
+										VersionRange.RIGHT_OPEN))
+								&& d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED,
+										Version.emptyVersion, v2, VersionRange.RIGHT_OPEN));
+					case "/version":
+						return d.path.getLeft().equals(v1) && d.path.getRight().equals(v2);
+					default:
+						return false;
+					}
+				} else if (isFeatureJar(d)) {
+					switch (d.path.getPath()) {
+					case "/artifacts/artifact[0]/version":
+					case "/version":
+						return d.path.getLeft().equals(v1) && d.path.getRight().equals(v2);
+					default:
+						return false;
+					}
+				}
+
+				return false;
 			} else {
 				return false;
 			}
 		}
+
+		boolean isFeatureJar(AbstractUnitDelta d) {
+			return is(d.left, featureId + ".feature.jar", v1) && is(d.right, featureId + ".feature.jar", v2);
+		}
+
+		boolean isFeatureGroup(AbstractUnitDelta d) {
+			return is(d.left, featureId + ".feature.group", v1) && is(d.right, featureId + ".feature.group", v2);
+		}
+	}
+
+	static class RequiredMatcher implements Predicate<Required> {
+
+		Predicate<SearchFilter> filter = p -> p == null;
+		Predicate<String> match = p -> p == null;
+		Predicate<String> matchParameters = p -> p == null;
+		Predicate<Integer> max = p -> p == null;
+		Predicate<Integer> min = p -> p == null;
+		Predicate<String> name = p -> p == null;
+		Predicate<String> namespace = p -> p == null;
+		Predicate<VersionRange> range = p -> p == null;
+
+		@Override
+		public boolean test(Required t) {
+			return filter.test(t.getFilter()) //
+					&& match.test(t.getMatch()) //
+					&& matchParameters.test(t.getMatchParameters()) //
+					&& max.test(t.getMax()) && min.test(t.getMin()) //
+					&& name.test(t.getName()) //
+					&& namespace.test(t.getNamespace()) //
+					&& range.test(t.getRange());
+		}
+
+		public RequiredMatcher withNamespace(Predicate<String> namespace) {
+			Preconditions.checkNotNull(namespace);
+			this.namespace = namespace;
+			return this;
+		}
+
+		public RequiredMatcher withName(Predicate<String> name) {
+			Preconditions.checkNotNull(name);
+			this.name = name;
+			return this;
+		}
+
+		public RequiredMatcher withRange(Predicate<VersionRange> range) {
+			Preconditions.checkNotNull(range);
+			this.range = range;
+			return this;
+		}
+
+		public RequiredMatcher withFilter(Predicate<SearchFilter> filter) {
+			Preconditions.checkNotNull(range);
+			this.filter = filter;
+			return this;
+		}
+
 	}
 
 	static boolean is(Unit u, String id, Version version) {
@@ -569,9 +682,6 @@ public class RepositoryComparator {
 				return false;
 			} else if (delta instanceof UnitDelta) {
 				UnitDelta d = (UnitDelta) delta;
-				// System.err.println("XX " + render(d.left) + " " +
-				// render(d.right) + " -> " + d.path + " -> "
-				// + render(d.path.getLeft()));
 				return false;
 			} else {
 				return false;

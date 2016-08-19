@@ -2,6 +2,8 @@ package com.github.pms1.ocomp;
 
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import com.github.pms1.ocomp.ObjectComparator.DecomposerFactory;
 import com.github.pms1.ocomp.ObjectComparator.DeltaCreator;
@@ -9,6 +11,8 @@ import com.github.pms1.ocomp.ObjectComparator.DeltaCreator;
 public class ObjectComparatorBuilder<T> {
 
 	private LinkedHashMap<DecomposerMatcher, DecomposerFactory> locationDecomposers = new LinkedHashMap<>();
+	private LinkedHashMap<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> comparators = new LinkedHashMap<>();
+
 	private DeltaCreator<T> deltaCreator = (DeltaCreator<T>) ObjectComparator.defaultDeltaCreator;
 
 	private ObjectComparatorBuilder() {
@@ -20,7 +24,13 @@ public class ObjectComparatorBuilder<T> {
 	}
 
 	public ObjectComparator<T> build() {
-		return new ObjectComparator<T>(deltaCreator, locationDecomposers);
+		return new ObjectComparator<T>(deltaCreator, comparators, locationDecomposers);
+	}
+
+	public <S> ObjectComparatorBuilder<T> addComparator(Function<Type, Boolean> matcher,
+			BiFunction<Object, Object, Boolean> comparator) {
+		comparators.put(matcher, comparator);
+		return this;
 	}
 
 	public <S> ObjectComparatorBuilder<T> addDecomposer(String string, Decomposer<S> listToMapDecomposer) {
@@ -38,8 +48,8 @@ public class ObjectComparatorBuilder<T> {
 		return this;
 	}
 
-	public ObjectComparatorBuilder<T> addDecomposer(DecomposerMatcher matcher, DecomposerFactory factory) {
-		locationDecomposers.put(matcher, factory);
+	public ObjectComparatorBuilder<T> addDecomposer(Function<Type, Boolean> matcher, DecomposerFactory factory) {
+		locationDecomposers.put((path, type) -> matcher.apply(type), factory);
 		return this;
 	}
 
@@ -47,4 +57,5 @@ public class ObjectComparatorBuilder<T> {
 		this.deltaCreator = (DeltaCreator<T>) deltaCreator;
 		return (ObjectComparatorBuilder<S>) this;
 	}
+
 }

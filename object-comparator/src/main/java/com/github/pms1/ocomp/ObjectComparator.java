@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -24,6 +25,8 @@ import com.google.common.collect.Sets;
 
 public class ObjectComparator<T> {
 	private final LinkedHashMap<DecomposerMatcher, DecomposerFactory> locationDecomposers;
+
+	private final LinkedHashMap<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> comparators;
 
 	public static class OPath2 {
 
@@ -251,8 +254,10 @@ public class ObjectComparator<T> {
 	};
 
 	ObjectComparator(DeltaCreator<T> deltaCreator,
+			LinkedHashMap<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> comparators,
 			LinkedHashMap<DecomposerMatcher, DecomposerFactory> locationDecomposers) {
 		this.deltaCreator = deltaCreator;
+		this.comparators = comparators;
 		this.locationDecomposers = locationDecomposers;
 	}
 
@@ -520,6 +525,15 @@ public class ObjectComparator<T> {
 			return;
 		}
 
+		Type t1 = m1.getType() != null ? m1.getType() : m1.getValue().getClass();
+
+		for (Entry<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> e : comparators.entrySet()) {
+			if (e.getKey().apply(t1)) {
+				if (!e.getValue().apply(m1.getValue(), m2.getValue()))
+					add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));
+				return;
+			}
+		}
 		Comparator comparator = findComparator(m1.getValue().getClass());
 		if (comparator != null) {
 			if (!comparator.compare(p, m1.getValue(), m2.getValue()))
@@ -529,8 +543,6 @@ public class ObjectComparator<T> {
 
 		@SuppressWarnings("rawtypes")
 		Decomposer decomposer = null;
-
-		Type t1 = m1.getType() != null ? m1.getType() : m1.getValue().getClass();
 
 		for (Entry<DecomposerMatcher, DecomposerFactory> e : locationDecomposers.entrySet()) {
 			if (e.getKey().apply(p, t1)) {
