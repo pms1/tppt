@@ -36,6 +36,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.pms1.tppt</groupId>
+			<artifactId>object-comparator</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
+		</dependency>
+		
+		<dependency>
 			<groupId>org.eclipse.tycho</groupId>
 			<artifactId>tycho-artifactcomparator</artifactId>
 		</dependency>
