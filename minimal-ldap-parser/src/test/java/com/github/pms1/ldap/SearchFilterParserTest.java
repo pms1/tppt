@@ -52,6 +52,26 @@ public class SearchFilterParserTest {
 	}
 
 	@Test
+	public void dotStrict() {
+		thrown.expect(RuntimeException.class);
+		parser.parse("(a.b=5)");
+	}
+
+	@Test
+	public void dotLenient() {
+		SearchFilter parse = parserLenient.parse("(a.b=5)");
+		assertThat(printer.print(parse)).isEqualTo("(a.b=5)");
+	}
+
+	@Test
+	public void dotLeft() {
+		SearchFilter parse = parser.parse("(a=b.c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b.c)");
+		parse = parserLenient.parse("(a=b.c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b.c)");
+	}
+
+	@Test
 	public void failMissingClosingParen() {
 		thrown.expect(RuntimeException.class);
 		parser.parse("(&(a=5)(b=Foo)");

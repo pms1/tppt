@@ -12,7 +12,9 @@ keystring: leadkeychar keychar*;
 //      leadkeychar = ALPHA
 leadkeychar: ALPHA;
 //      keychar = ALPHA / DIGIT / HYPHEN
-keychar: ALPHA|DIGIT|HYPHEN;
+keychar: ALPHA|DIGIT|HYPHEN
+| {lenient}? DOT;
+
 //      number  = DIGIT / ( LDIGIT 1*DIGIT )
 //
 //      ALPHA   = %x41-5A / %x61-7A   ; "A"-"Z" / "a"-"z"
@@ -41,6 +43,7 @@ RPAREN : ')';
 //      HYPHEN  = %x2D ; hyphen ("-")
 HYPHEN : '-';
 //      DOT     = %x2E ; period (".")
+DOT : '.';
 //      SEMI    = %x3B ; semicolon (";")
 SEMI : ';';
 //      LANGLE  = %x3C ; left angle bracket ("<")
@@ -155,7 +158,7 @@ AMPERSAND : '&';
 //      UTF1SUBSET     = %x01-27 / %x2B-5B / %x5D-7F
 //                          ; UTF1SUBSET excludes 0x00 (NUL), LPAREN,
 //                          ; RPAREN, ASTERISK, and ESC.
-utf1subset: DIGIT | ALPHA | AMPERSAND | UTF1SUBSET;
+utf1subset: DIGIT | ALPHA | DOT | AMPERSAND | UTF1SUBSET;
 UTF1SUBSET: [\u0001-\u0027\u002B-\u005B\u005D-\u007F];
 
 UTFMB: [\u0080-\uFFFE];
