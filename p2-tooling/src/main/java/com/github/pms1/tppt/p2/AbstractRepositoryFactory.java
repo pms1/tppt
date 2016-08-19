@@ -10,6 +10,8 @@ import java.util.Properties;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.bind.ValidationEventHandler;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
@@ -34,6 +36,13 @@ public abstract class AbstractRepositoryFactory<T> {
 			JAXBContext context = JAXBContext.newInstance(clazz);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
 			unmarshaller.setSchema(schema);
+			unmarshaller.setEventHandler(new ValidationEventHandler() {
+
+				@Override
+				public boolean handleEvent(ValidationEvent event) {
+					return false;
+				}
+			});
 			return unmarshaller.unmarshal(new StreamSource(is), clazz).getValue();
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
