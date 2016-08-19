@@ -42,7 +42,7 @@ public class SearchFilterParser {
 		public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine,
 				String msg, RecognitionException e) {
 
-			throw new RuntimeException("line " + line + ":" + charPositionInLine + ": " + msg, e);
+			throw new SearchFilterParseException("line " + line + ":" + charPositionInLine + ": " + msg, e);
 		}
 	};
 
