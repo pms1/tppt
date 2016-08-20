@@ -6,4 +6,8 @@ public interface SearchFilterVisitor<T> {
 
 	T visit(AndSearchFilter andSearchFilter);
 
+	T visit(NotSearchFilter notSearchFilter);
+
+	T visit(OrSearchFilter orSearchFilter);
+
 }

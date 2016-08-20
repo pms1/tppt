@@ -95,8 +95,8 @@ filter: LPAREN filtercomp RPAREN;
 //      filtercomp     = and / or / not / item
 filtercomp: 
   and
-// | or
-// | not
+| or
+| not
 | item
 ; 
 
@@ -105,7 +105,10 @@ and: AMPERSAND filterlist
 | {lenient}?  AMPERSAND SPACE+ filterlist;
 
 //      or             = VERTBAR filterlist
+or: VERTBAR filterlist;
+
 //      not            = EXCLAMATION filter
+not: EXCLAMATION filter;
 //      filterlist     = 1*filter
 filterlist: filter+;
 
@@ -147,18 +150,20 @@ valueencoding: (normal)*;
 normal: utf1subset | UTFMB;
 //      escaped        = ESC HEX HEX
 //      EXCLAMATION    = %x21 ; exclamation mark ("!")
+EXCLAMATION : '!';
 //      AMPERSAND      = %x26 ; ampersand (or AND symbol) ("&")
 AMPERSAND : '&';
 
 //      ASTERISK       = %x2A ; asterisk ("*")
 //      COLON          = %x3A ; colon (":")
 //      VERTBAR        = %x7C ; vertical bar (or pipe) ("|")
+VERTBAR : '|';
 //      TILDE          = %x7E ; tilde ("~")
 
 //      UTF1SUBSET     = %x01-27 / %x2B-5B / %x5D-7F
 //                          ; UTF1SUBSET excludes 0x00 (NUL), LPAREN,
 //                          ; RPAREN, ASTERISK, and ESC.
-utf1subset: DIGIT | ALPHA | DOT | AMPERSAND | UTF1SUBSET;
+utf1subset: DIGIT | ALPHA | EXCLAMATION | AMPERSAND | DOT | UTF1SUBSET | VERTBAR;
 UTF1SUBSET: [\u0001-\u0027\u002B-\u005B\u005D-\u007F];
 
 UTFMB: [\u0080-\uFFFE];

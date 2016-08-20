@@ -10,6 +10,16 @@ public class SearchFilterPrinter {
 		}
 
 		@Override
+		public String visit(OrSearchFilter orSearchFilter) {
+			return print(orSearchFilter);
+		}
+
+		@Override
+		public String visit(NotSearchFilter notSearchFilter) {
+			return print(notSearchFilter);
+		}
+
+		@Override
 		public String visit(SimpleSearchFilter simpleSearchFilter) {
 			return print(simpleSearchFilter);
 		}
@@ -24,6 +34,23 @@ public class SearchFilterPrinter {
 		b.append("(&");
 		for (SearchFilter f : andSearchFilter.getChildren())
 			b.append(print(f));
+		b.append(")");
+		return b.toString();
+	}
+
+	public String print(OrSearchFilter andSearchFilter) {
+		StringBuilder b = new StringBuilder();
+		b.append("(|");
+		for (SearchFilter f : andSearchFilter.getChildren())
+			b.append(print(f));
+		b.append(")");
+		return b.toString();
+	}
+
+	public String print(NotSearchFilter notSearchFilter) {
+		StringBuilder b = new StringBuilder();
+		b.append("(!");
+		b.append(print(notSearchFilter.getChild()));
 		b.append(")");
 		return b.toString();
 	}

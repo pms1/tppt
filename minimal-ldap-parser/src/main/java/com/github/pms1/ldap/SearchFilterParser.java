@@ -20,6 +20,8 @@ import com.github.pms1.ldap.Rfc4515Parser.FiltercompContext;
 import com.github.pms1.ldap.Rfc4515Parser.FilterlistContext;
 import com.github.pms1.ldap.Rfc4515Parser.FiltertypeContext;
 import com.github.pms1.ldap.Rfc4515Parser.ItemContext;
+import com.github.pms1.ldap.Rfc4515Parser.NotContext;
+import com.github.pms1.ldap.Rfc4515Parser.OrContext;
 import com.github.pms1.ldap.Rfc4515Parser.SimpleContext;
 
 public class SearchFilterParser {
@@ -84,6 +86,10 @@ public class SearchFilterParser {
 	private SearchFilter translate(FiltercompContext context) {
 		if (context.and() != null) {
 			return translate(context.and());
+		} else if (context.or() != null) {
+			return translate(context.or());
+		} else if (context.not() != null) {
+			return translate(context.not());
 		} else if (context.item() != null) {
 			return translate(context.item());
 		} else {
@@ -134,6 +140,14 @@ public class SearchFilterParser {
 
 	private SearchFilter translate(AndContext context) {
 		return new AndSearchFilter(translate(context.filterlist()));
+	}
+
+	private SearchFilter translate(OrContext context) {
+		return new OrSearchFilter(translate(context.filterlist()));
+	}
+
+	private SearchFilter translate(NotContext context) {
+		return new NotSearchFilter(translate(context.filter()));
 	}
 
 	private List<SearchFilter> translate(FilterlistContext context) {

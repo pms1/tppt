@@ -72,6 +72,40 @@ public class SearchFilterParserTest {
 	}
 
 	@Test
+	public void not() {
+		SearchFilter parse = parser.parse("(&(a=b)(!(c=d)))");
+		assertThat(printer.print(parse)).isEqualTo("(&(a=b)(!(c=d)))");
+	}
+
+	@Test
+	public void exclamationLeft() {
+		SearchFilter parse = parser.parse("(a=b!c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b!c)");
+		parse = parserLenient.parse("(a=b!c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b!c)");
+	}
+
+	@Test
+	public void orStrict() {
+		SearchFilter parse = parser.parse("(|(a=5))");
+		assertThat(printer.print(parse)).isEqualTo("(|(a=5))");
+	}
+
+	@Test
+	public void twoOr() {
+		SearchFilter parse = parser.parse("(|(a=5)(b=Foo))");
+		assertThat(printer.print(parse)).isEqualTo("(|(a=5)(b=Foo))");
+	}
+
+	@Test
+	public void pipeLeft() {
+		SearchFilter parse = parser.parse("(a=b|c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b|c)");
+		parse = parserLenient.parse("(a=b|c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b|c)");
+	}
+
+	@Test
 	public void failMissingClosingParen() {
 		thrown.expect(RuntimeException.class);
 		parser.parse("(&(a=5)(b=Foo)");
