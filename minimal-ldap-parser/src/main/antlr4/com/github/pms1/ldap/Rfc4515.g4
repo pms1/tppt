@@ -101,8 +101,7 @@ filtercomp:
 ; 
 
 //      and            = AMPERSAND filterlist
-and: AMPERSAND filterlist
-| {lenient}?  AMPERSAND SPACE+ filterlist;
+and: AMPERSAND filterlist;
 
 //      or             = VERTBAR filterlist
 or: VERTBAR filterlist;
@@ -110,7 +109,8 @@ or: VERTBAR filterlist;
 //      not            = EXCLAMATION filter
 not: EXCLAMATION filter;
 //      filterlist     = 1*filter
-filterlist: filter+;
+filterlist: filter+
+| {lenient}? (SPACE* filter)+;
 
 //      item           = simple / present / substring / extensible
 item: simple;

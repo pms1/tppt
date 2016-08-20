@@ -40,6 +40,12 @@ public class SearchFilterParserTest {
 	}
 
 	@Test
+	public void andLenientSpaceTwo() {
+		SearchFilter parse = parserLenient.parse("(& (a=5) (b=6))");
+		assertThat(printer.print(parse)).isEqualTo("(&(a=5)(b=6))");
+	}
+
+	@Test
 	public void twoAnd() {
 		SearchFilter parse = parser.parse("(&(a=5)(b=Foo))");
 		assertThat(printer.print(parse)).isEqualTo("(&(a=5)(b=Foo))");
