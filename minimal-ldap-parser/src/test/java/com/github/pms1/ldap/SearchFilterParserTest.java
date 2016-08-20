@@ -106,6 +106,14 @@ public class SearchFilterParserTest {
 	}
 
 	@Test
+	public void asteriskLeft() {
+		SearchFilter parse = parser.parse("(a=b*c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b*c)");
+		parse = parserLenient.parse("(a=b*c)");
+		assertThat(printer.print(parse)).isEqualTo("(a=b*c)");
+	}
+
+	@Test
 	public void failMissingClosingParen() {
 		thrown.expect(RuntimeException.class);
 		parser.parse("(&(a=5)(b=Foo)");

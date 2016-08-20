@@ -155,6 +155,7 @@ EXCLAMATION : '!';
 AMPERSAND : '&';
 
 //      ASTERISK       = %x2A ; asterisk ("*")
+ASTERISK : '*';
 //      COLON          = %x3A ; colon (":")
 //      VERTBAR        = %x7C ; vertical bar (or pipe) ("|")
 VERTBAR : '|';
@@ -163,7 +164,7 @@ VERTBAR : '|';
 //      UTF1SUBSET     = %x01-27 / %x2B-5B / %x5D-7F
 //                          ; UTF1SUBSET excludes 0x00 (NUL), LPAREN,
 //                          ; RPAREN, ASTERISK, and ESC.
-utf1subset: DIGIT | ALPHA | EXCLAMATION | AMPERSAND | DOT | UTF1SUBSET | VERTBAR;
+utf1subset: DIGIT | ALPHA | EXCLAMATION | AMPERSAND | ASTERISK | DOT | UTF1SUBSET | VERTBAR;
 UTF1SUBSET: [\u0001-\u0027\u002B-\u005B\u005D-\u007F];
 
 UTFMB: [\u0080-\uFFFE];
