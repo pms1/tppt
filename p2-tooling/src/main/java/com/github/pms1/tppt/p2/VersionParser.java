@@ -8,8 +8,11 @@ public class VersionParser {
 		Version result = Version.valueOf(v);
 		if (result == null)
 			throw new IllegalArgumentException("Not a parseable version: " + v);
-		if (!result.toString().equals(v))
+
+		String back = result.toString();
+		if (!back.toString().equals(v) && !back.equals(v + ".0") && !back.equals(v + ".0.0"))
 			throw new IllegalArgumentException("Inconsistent version: " + v + " " + result);
+
 		return result;
 	}
 }
