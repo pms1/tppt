@@ -34,6 +34,7 @@ import com.github.pms1.ocomp.ObjectComparator.DeltaCreator;
 import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
+import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Property;
@@ -218,6 +219,8 @@ public class RepositoryComparator {
 			})
 			// ObjectComparator.<Unit>listToMapDecomposer(p -> p.getId() + "/" +
 			// p.getVersion()))
+			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction",
+					ObjectComparator.<Instruction>listToMapDecomposer(p -> p.getKey()))
 			.addDecomposer("//properties/property", ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()))
 			.setDeltaCreator(new DeltaCreator<Delta>() {
 
@@ -679,13 +682,46 @@ public class RepositoryComparator {
 				return true;
 			} else if (delta instanceof ProvidedAdded) {
 				ProvidedAdded d = (ProvidedAdded) delta;
+
+				if (!isBundle(d))
+					return false;
+
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v2))
+					return true;
+
+				if (isEqual(d.provided, "osgi.bundle", bundleId, v2))
+					return true;
+
 				return false;
 			} else if (delta instanceof UnitDelta) {
 				UnitDelta d = (UnitDelta) delta;
+
+				if (!isBundle(d))
+					return false;
+
+				if (d.path.getPath().equals("/version")) {
+					if (!d.path.getLeft().equals(v1))
+						return false;
+					if (!d.path.getRight().equals(v2))
+						return false;
+					return true;
+				}
+
+				if (d.path.getPath().equals("/update/range"))
+					return d.path.getLeft()
+							.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,
+									VersionRange.RIGHT_OPEN))
+							&& d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion,
+									v2, VersionRange.RIGHT_OPEN));
+
 				return false;
 			} else {
 				return false;
 			}
+		}
+
+		boolean isBundle(AbstractUnitDelta d) {
+			return is(d.left, bundleId, v1) && is(d.right, bundleId, v2);
 		}
 
 	}

@@ -8,7 +8,8 @@ import com.google.common.reflect.TypeToken;
 public class DecomposerMatchers {
 
 	public static DecomposerMatcher path(String s) {
-		return (path, type) -> path.getPath().equals(s);
+		OPathMatcher matcher = OPathMatcher.create(s);
+		return (path, type) -> matcher.matches(path);
 	}
 
 	public static Function<Type, Boolean> isAssignable(TypeToken<?> typeToken) {
