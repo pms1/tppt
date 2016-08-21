@@ -110,7 +110,7 @@ or: VERTBAR filterlist;
 not: EXCLAMATION filter;
 //      filterlist     = 1*filter
 filterlist: filter+
-| {lenient}? (SPACE* filter)+;
+| {lenient}? (SPACE* filter)+ SPACE*;
 
 //      item           = simple / present / substring / extensible
 item: simple;

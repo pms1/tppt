@@ -120,6 +120,18 @@ public class SearchFilterParserTest {
 	}
 
 	@Test
+	public void strictSpaceEnd() {
+		thrown.expect(RuntimeException.class);
+		parser.parse("(&(a=b) )");
+	}
+
+	@Test
+	public void lenientSpaceEnd() {
+		SearchFilter parse = parserLenient.parse("(&(a=b) )");
+		assertThat(printer.print(parse)).isEqualTo("(&(a=b))");
+	}
+
+	@Test
 	public void failMissingClosingParen() {
 		thrown.expect(RuntimeException.class);
 		parser.parse("(&(a=5)(b=Foo)");
