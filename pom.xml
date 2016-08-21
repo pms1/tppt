@@ -188,10 +188,11 @@
 	</build>
 
 	<modules>
-		<module>tppt-maven-plugin</module>
 		<module>maven-equinox-runner</module>
 		<module>minimal-ldap-parser</module>
+		<module>object-comparator</module>
 		<module>p2-tooling</module>
+		<module>tppt-maven-plugin</module>
 	</modules>
 
 	<profiles>
