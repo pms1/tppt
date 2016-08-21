@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -74,7 +75,7 @@ public class RepositoryComparator {
 
 	};
 
-	static DecomposerFactory xxx = new DecomposerFactory() {
+	static DecomposerFactory listToBag = new DecomposerFactory() {
 
 		@Override
 		public <T> Decomposer<T> generate(Type t) {
@@ -193,8 +194,8 @@ public class RepositoryComparator {
 	ObjectComparator<Delta> oc = ObjectComparatorBuilder.newBuilder()
 			.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
 				return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
-			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), xxx)
-			.addDecomposer(DecomposerMatchers.isAssignable(listProvided), xxx)
+			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
+			.addDecomposer(DecomposerMatchers.isAssignable(listProvided), listToBag)
 			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
 					new Decomposer<String>() {
 
@@ -321,8 +322,8 @@ public class RepositoryComparator {
 
 		@Override
 		public String toString() {
-			return "MetadataDelta(" + path.getPath() + "," + change + "," + path.getLeft() + " -> " + path.getRight()
-					+ ")";
+			return "MetadataDelta(" + path.getPath() + "," + change + "," + render(path.getLeft()) + " -> "
+					+ render(path.getRight()) + ")";
 		}
 	}
 
@@ -407,32 +408,25 @@ public class RepositoryComparator {
 			}
 		}
 
-		boolean equal = true;
+		List<String> incompatibleChanges = new ArrayList<>();
+
 		for (Delta d : dest) {
-
-			boolean ok = false;
-			for (Change c : changes) {
-				if (c.accept(d)) {
-					ok = true;
-					break;
-				}
-			}
-			if (!ok) {
-				System.out.println("Incompatible change: " + d);
-				logger.info("Incompatible change: " + d);
-				equal = false;
-			}
+			if (!changes.stream().anyMatch(c -> c.accept(d)))
+				incompatibleChanges.add("Incompatible change: " + d);
 		}
-		for (Change c : changes)
-			c.check();
 
-		return equal;
+		for (Change c : changes)
+			c.check(incompatibleChanges::add);
+
+		incompatibleChanges.forEach(p -> logger.info("Incompatible change: " + p));
+
+		return incompatibleChanges.isEmpty();
 	}
 
 	static abstract class Change {
 		abstract boolean accept(Delta delta);
 
-		abstract void check();
+		abstract void check(Consumer<String> change);
 	}
 
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
@@ -593,9 +587,7 @@ public class RepositoryComparator {
 		}
 
 		@Override
-		void check() {
-			// TODO Auto-generated method stub
-
+		void check(Consumer<String> incompatibleChanges) {
 		}
 	}
 
@@ -702,15 +694,15 @@ public class RepositoryComparator {
 		Set<Unit> removed = new HashSet<>();
 
 		@Override
-		void check() {
+		void check(Consumer<String> incompatibleChanges) {
 			for (Unit u : Sets.union(added, removed)) {
 				boolean a = added.contains(u);
 				boolean r = removed.contains(u);
 
 				if (!a)
-					System.out.println("ONLY REMOVED " + u + " " + bundleId);
+					incompatibleChanges.accept("Only removed: " + u + " " + bundleId);
 				if (!r)
-					System.out.println("ONLY ADDED " + u + " " + bundleId);
+					incompatibleChanges.accept("Only added: " + u + " " + bundleId);
 			}
 		}
 
