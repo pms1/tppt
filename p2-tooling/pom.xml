@@ -13,7 +13,7 @@
 			<groupId>org.eclipse.tycho</groupId>
 			<artifactId>org.eclipse.osgi</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-component-annotations</artifactId>
@@ -23,12 +23,18 @@
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
-		
+
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>minimal-ldap-parser</artifactId>
@@ -40,7 +46,7 @@
 			<artifactId>object-comparator</artifactId>
 			<version>0.0.2-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>org.eclipse.tycho</groupId>
 			<artifactId>tycho-artifactcomparator</artifactId>

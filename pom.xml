@@ -47,6 +47,9 @@
 
 		<tycho.version>0.25.0</tycho.version>
 		<antlr4.version>4.5.3</antlr4.version>
+		<maven.version>3.3.9</maven.version>
+		<maven.guava.version>18.0</maven.guava.version>
+		<maven.slf4j.version>1.7.5</maven.slf4j.version>
 	</properties>
 
 	<dependencyManagement>
@@ -66,7 +69,13 @@
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
-				<version>1.7.5</version>
+				<version>${maven.slf4j.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.slf4j</groupId>
+    			<artifactId>slf4j-simple</artifactId>
+	    		<version>${maven.slf4j.version}</version>
 			</dependency>
 
 			<dependency>
@@ -102,19 +111,19 @@
 			<dependency>
 				<groupId>org.apache.maven</groupId>
 				<artifactId>maven-core</artifactId>
-				<version>3.3.9</version>
+				<version>${maven.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.apache.maven</groupId>
 				<artifactId>maven-plugin-api</artifactId>
-				<version>3.3.9</version>
+				<version>${maven.version}</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.apache.maven</groupId>
 				<artifactId>maven-artifact</artifactId>
-				<version>3.3.9</version>
+				<version>${maven.version}</version>
 			</dependency>
 
 			<dependency>
@@ -126,7 +135,7 @@
 			<dependency>
 				<groupId>com.google.guava</groupId>
 				<artifactId>guava</artifactId>
-				<version>18.0</version>
+				<version>${maven.guava.version}</version>
 			</dependency>
 
 		</dependencies>
