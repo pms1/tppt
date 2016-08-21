@@ -527,19 +527,7 @@ public class ObjectComparator<T> {
 
 		Type t1 = m1.getType() != null ? m1.getType() : m1.getValue().getClass();
 
-		for (Entry<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> e : comparators.entrySet()) {
-			if (e.getKey().apply(t1)) {
-				if (!e.getValue().apply(m1.getValue(), m2.getValue()))
-					add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));
-				return;
-			}
-		}
-		Comparator comparator = findComparator(m1.getValue().getClass());
-		if (comparator != null) {
-			if (!comparator.compare(p, m1.getValue(), m2.getValue()))
-				add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));
-			return;
-		}
+		// decompose
 
 		@SuppressWarnings("rawtypes")
 		Decomposer decomposer = null;
@@ -554,57 +542,74 @@ public class ObjectComparator<T> {
 		if (decomposer == null)
 			decomposer = findDecomposer(t1);
 
-		if (decomposer == null)
-			throw new Error(
-					"Don't know how to compare '" + t1 + "' / '" + m1.getValue().getClass().getSimpleName() + "'");
+		if (decomposer != null) {
 
-		@SuppressWarnings("unchecked")
-		DecomposedObject d1 = decomposer.decompose(m1.getValue());
-		@SuppressWarnings("unchecked")
-		DecomposedObject d2 = decomposer.decompose(m2.getValue());
+			@SuppressWarnings("unchecked")
+			DecomposedObject d1 = decomposer.decompose(m1.getValue());
+			@SuppressWarnings("unchecked")
+			DecomposedObject d2 = decomposer.decompose(m2.getValue());
 
-		for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
+			for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
 
-			// OPath child = key != null ? p.child(key) : p;
+				// OPath child = key != null ? p.child(key) : p;
 
-			Collection<TypedObject> c1 = d1.get(key);
-			LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
+				Collection<TypedObject> c1 = d1.get(key);
+				LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
 
-			if (key != null && c1.size() == 1 && c2.size() == 1) {
-				compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
-						Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
-						Iterables.getOnlyElement(c2), sink);
-				continue;
-			}
-			for (TypedObject v1 : c1) {
+				if (key != null && c1.size() == 1 && c2.size() == 1) {
+					compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
+							Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
+							Iterables.getOnlyElement(c2), sink);
+					continue;
+				}
+				for (TypedObject v1 : c1) {
 
-				boolean found = false;
+					boolean found = false;
 
-				for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
+					for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
 
-					List<T> temp = new ArrayList<>();
+						List<T> temp = new ArrayList<>();
 
-					TypedObject v2 = i2.next();
-					compare(OPath2.root(v1, v2.getValue()), v1, v2, temp::add);
+						TypedObject v2 = i2.next();
+						compare(OPath2.root(v1, v2.getValue()), v1, v2, temp::add);
 
-					if (temp.isEmpty()) {
-						i2.remove();
-						found = true;
-						break;
+						if (temp.isEmpty()) {
+							i2.remove();
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						add(sink, deltaCreator.missing(key != null ? p.child(key.path, v1.getValue(), null) : p,
+								v1.getValue()));
 					}
 				}
 
-				if (!found) {
-					add(sink, deltaCreator.missing(key != null ? p.child(key.path, v1.getValue(), null) : p,
-							v1.getValue()));
+				for (TypedObject v2 : c2) {
+					add(sink, deltaCreator.additional(key != null ? p.child(key.path, null, v2.getValue()) : p,
+							v2.getValue()));
 				}
 			}
 
-			for (TypedObject v2 : c2) {
-				add(sink, deltaCreator.additional(key != null ? p.child(key.path, null, v2.getValue()) : p,
-						v2.getValue()));
+			return;
+		}
+
+		// compare
+		for (Entry<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> e : comparators.entrySet()) {
+			if (e.getKey().apply(t1)) {
+				if (!e.getValue().apply(m1.getValue(), m2.getValue()))
+					add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));
+				return;
 			}
 		}
+		Comparator comparator = findComparator(m1.getValue().getClass());
+		if (comparator != null) {
+			if (!comparator.compare(p, m1.getValue(), m2.getValue()))
+				add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));
+			return;
+		}
+		throw new Error("Don't know how to compare '" + t1 + "' / '" + m1.getValue().getClass().getSimpleName() + "'");
 	}
 
 	public List<T> compare(Object m1, Object m2) {

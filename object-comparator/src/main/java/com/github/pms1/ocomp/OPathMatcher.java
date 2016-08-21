@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions;
 public class OPathMatcher {
 
 	private enum ParseState {
-		START, IN_NAME, IN_INDEX1, IN_INDEX2
+		START, IN_NAME, INDEX_START, ANY_INDEX_EXPECT_CLOSE_BRACKED, IN_MATCH_INDEX
 	}
 
 	private interface SegmentMatcher {
@@ -48,6 +48,14 @@ public class OPathMatcher {
 
 	}
 
+	private static class IndexMatcher extends NameMatcher {
+
+		IndexMatcher(String s) {
+			super("[" + s + "]");
+		}
+
+	}
+
 	public static OPathMatcher create(String string) {
 
 		ParseState state = ParseState.START;
@@ -73,19 +81,33 @@ public class OPathMatcher {
 				} else if (c == '[') {
 					fragments.add(new NameMatcher(current));
 					current = null;
-					state = ParseState.IN_INDEX1;
+					state = ParseState.INDEX_START;
 				} else {
 					current += c;
 				}
 				break;
-			case IN_INDEX1:
+			case INDEX_START:
 				if (c == '*') {
-					state = ParseState.IN_INDEX2;
+					if (current != null)
+						throw new IllegalArgumentException();
+					state = ParseState.ANY_INDEX_EXPECT_CLOSE_BRACKED;
 				} else {
-					throw new IllegalArgumentException();
+					if (current != null)
+						throw new IllegalArgumentException();
+					current = "" + c;
+					state = ParseState.IN_MATCH_INDEX;
 				}
 				break;
-			case IN_INDEX2:
+			case IN_MATCH_INDEX:
+				if (c == ']') {
+					fragments.add(new IndexMatcher(current));
+					current = null;
+					state = ParseState.START;
+				} else {
+					current += c;
+				}
+				break;
+			case ANY_INDEX_EXPECT_CLOSE_BRACKED:
 				if (c == ']') {
 					fragments.add(new AnyIndexMatcher());
 					state = ParseState.START;

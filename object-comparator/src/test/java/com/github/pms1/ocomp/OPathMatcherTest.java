@@ -15,5 +15,10 @@ public class OPathMatcherTest {
 		Assertions.assertThat(m.matches(p1)).isEqualTo(true);
 		OPath2 p2 = p1.child("x", "lx", "rx");
 		Assertions.assertThat(m.matches(p2)).isEqualTo(false);
+
+		m = OPathMatcher.create("//foo[foo]");
+		Assertions.assertThat(m.matches(p1)).isEqualTo(true);
+		m = OPathMatcher.create("//foo[bar]");
+		Assertions.assertThat(m.matches(p1)).isEqualTo(false);
 	}
 }

@@ -1,22 +1,28 @@
 package com.github.pms1.tppt.p2;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.eclipse.osgi.util.ManifestElement;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
 import org.slf4j.Logger;
@@ -27,6 +33,7 @@ import com.github.pms1.ocomp.ComparatorMatchers;
 import com.github.pms1.ocomp.DecomposedObject;
 import com.github.pms1.ocomp.Decomposer;
 import com.github.pms1.ocomp.DecomposerMatchers;
+import com.github.pms1.ocomp.OPathMatcher;
 import com.github.pms1.ocomp.ObjectComparator;
 import com.github.pms1.ocomp.ObjectComparator.ChangeType;
 import com.github.pms1.ocomp.ObjectComparator.DecomposerFactory;
@@ -42,6 +49,7 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 
 @Component(role = RepositoryComparator.class)
@@ -83,7 +91,6 @@ public class RepositoryComparator {
 			return o -> {
 				DecomposedObject r = new DecomposedObject();
 
-				OPath path = OPath.index("*");
 				for (Object r1 : (List) o) {
 					r.put(null, et, r1);
 				}
@@ -188,6 +195,27 @@ public class RepositoryComparator {
 				return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
 			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), xxx)
 			.addDecomposer(DecomposerMatchers.isAssignable(listProvided), xxx)
+			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
+					new Decomposer<String>() {
+
+						@Override
+						public DecomposedObject decompose(String value) {
+
+							try {
+								Map<String, String> ml = ManifestElement.parseBundleManifest(
+										new ByteArrayInputStream(value.trim().getBytes(StandardCharsets.UTF_8)), null);
+
+								DecomposedObject decomposedObject = new DecomposedObject();
+								for (Map.Entry<String, String> e : ml.entrySet()) {
+									decomposedObject.put(OPath.index(e.getKey()), e.getValue());
+								}
+								return decomposedObject;
+							} catch (IOException | BundleException e) {
+								throw new RuntimeException(e);
+							}
+						}
+
+					})
 			.addDecomposer("//units/unit", new Decomposer<List<Unit>>() {
 
 				DecomposedObject dc1(List<Unit> units, Function<Unit, String> f) {
@@ -221,6 +249,8 @@ public class RepositoryComparator {
 			// p.getVersion()))
 			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction",
 					ObjectComparator.<Instruction>listToMapDecomposer(p -> p.getKey()))
+			.addDecomposer("//units/unit[*]/artifacts/artifact",
+					ObjectComparator.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
 			.addDecomposer("//properties/property", ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()))
 			.setDeltaCreator(new DeltaCreator<Delta>() {
 
@@ -393,12 +423,16 @@ public class RepositoryComparator {
 				equal = false;
 			}
 		}
+		for (Change c : changes)
+			c.check();
 
 		return equal;
 	}
 
 	static abstract class Change {
 		abstract boolean accept(Delta delta);
+
+		abstract void check();
 	}
 
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
@@ -522,12 +556,25 @@ public class RepositoryComparator {
 						return false;
 					}
 				} else if (isFeatureJar(d)) {
-					switch (d.path.getPath()) {
-					case "/artifacts/artifact[0]/version":
-					case "/version":
+					if (d.path.getPath().equals("/version"))
 						return d.path.getLeft().equals(v1) && d.path.getRight().equals(v2);
-					default:
-						return false;
+					else if (unitArtifactVersionMatcher.matches(d.path)) {
+						MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();
+						MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();
+
+						if (!l.getClassifier().equals("org.eclipse.update.feature"))
+							return false;
+						if (!l.getId().equals(featureId))
+							return false;
+						if (!l.getVersion().equals(v1))
+							return false;
+						if (!r.getClassifier().equals("org.eclipse.update.feature"))
+							return false;
+						if (!r.getId().equals(featureId))
+							return false;
+						if (!r.getVersion().equals(v2))
+							return false;
+						return true;
 					}
 				}
 
@@ -544,7 +591,19 @@ public class RepositoryComparator {
 		boolean isFeatureGroup(AbstractUnitDelta d) {
 			return is(d.left, featureId + ".feature.group", v1) && is(d.right, featureId + ".feature.group", v2);
 		}
+
+		@Override
+		void check() {
+			// TODO Auto-generated method stub
+
+		}
 	}
+
+	final static private OPathMatcher unitArtifactVersionMatcher = OPathMatcher
+			.create("/artifacts/artifact[*]/version");
+
+	final static private OPathMatcher unitTouchpointInstructionValueMatcher = OPathMatcher
+			.create("/touchpointData/instructions[*]/instruction[manifest]/value[Bundle-Version]");
 
 	static class RequiredMatcher implements Predicate<Required> {
 
@@ -618,7 +677,7 @@ public class RepositoryComparator {
 
 	}
 
-	static class BundleVersionChange extends Change {
+	class BundleVersionChange extends Change {
 		private final String bundleId;
 		private final FileId file1;
 		private final FileId file2;
@@ -637,6 +696,22 @@ public class RepositoryComparator {
 			this.file2 = file2;
 			Preconditions.checkNotNull(v2);
 			this.v2 = v2;
+		}
+
+		Set<Unit> added = new HashSet<>();
+		Set<Unit> removed = new HashSet<>();
+
+		@Override
+		void check() {
+			for (Unit u : Sets.union(added, removed)) {
+				boolean a = added.contains(u);
+				boolean r = removed.contains(u);
+
+				if (!a)
+					System.out.println("ONLY REMOVED " + u + " " + bundleId);
+				if (!r)
+					System.out.println("ONLY ADDED " + u + " " + bundleId);
+			}
 		}
 
 		@Override
@@ -693,6 +768,45 @@ public class RepositoryComparator {
 					return true;
 
 				return false;
+			} else if (delta instanceof ProvidedRemoved) {
+				ProvidedRemoved d = (ProvidedRemoved) delta;
+
+				if (!isBundle(d))
+					return false;
+
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v1))
+					return true;
+
+				if (isEqual(d.provided, "osgi.bundle", bundleId, v1))
+					return true;
+
+				return false;
+			} else if (delta instanceof RequiredAdded) {
+				RequiredAdded d = (RequiredAdded) delta;
+
+				if (new RequiredMatcher().withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+						.withName(p -> p.equals(bundleId))
+						.withRange(p -> p
+								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)))
+						.test(d.required)) {
+					added.add(d.right);
+					return true;
+				}
+
+				return false;
+			} else if (delta instanceof RequiredRemoved) {
+				RequiredRemoved d = (RequiredRemoved) delta;
+
+				if (new RequiredMatcher().withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+						.withName(p -> p.equals(bundleId))
+						.withRange(p -> p
+								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)))
+						.test(d.required)) {
+					removed.add(d.right);
+					return true;
+				}
+
+				return false;
 			} else if (delta instanceof UnitDelta) {
 				UnitDelta d = (UnitDelta) delta;
 
@@ -707,17 +821,47 @@ public class RepositoryComparator {
 					return true;
 				}
 
-				if (d.path.getPath().equals("/update/range"))
+				if (d.path.getPath().equals("/update/range")) {
 					return d.path.getLeft()
 							.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,
 									VersionRange.RIGHT_OPEN))
 							&& d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion,
 									v2, VersionRange.RIGHT_OPEN));
+				} else if (unitArtifactVersionMatcher.matches(d.path)) {
+					MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();
+					MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();
 
-				return false;
-			} else {
-				return false;
+					if (!l.getClassifier().equals("osgi.bundle"))
+						return false;
+					if (!l.getId().equals(bundleId))
+						return false;
+					if (!l.getVersion().equals(v1))
+						return false;
+					if (!r.getClassifier().equals("osgi.bundle"))
+						return false;
+					if (!r.getId().equals(bundleId))
+						return false;
+					if (!r.getVersion().equals(v2))
+						return false;
+					return true;
+				} else if (unitTouchpointInstructionValueMatcher.matches(d.path)) {
+					// Instruction l = (Instruction)
+					// d.path.getParent().getParent().getLeft();
+					// Instruction r = (Instruction)
+					// d.path.getParent().getParent().getRight();
+
+					Version vl = VersionParser.valueOf((String) d.path.getLeft());
+					Version vr = VersionParser.valueOf((String) d.path.getRight());
+
+					if (!v1.equals(vl))
+						return false;
+					if (!v2.equals(vr))
+						return false;
+
+					return true;
+				}
 			}
+			return false;
 		}
 
 		boolean isBundle(AbstractUnitDelta d) {

@@ -36,17 +36,24 @@ public class BundleManifestComparator implements FileComparator {
 
 	@Override
 	public void compare(FileId file1, Path p1, FileId file2, Path p2, Consumer<FileDelta> dest) throws IOException {
+		try (InputStream is1 = Files.newInputStream(p1); InputStream is2 = Files.newInputStream(p2)) {
+			compare(file1, is1, file2, is2, dest);
+		}
+	}
+
+	public void compare(FileId file1, InputStream is1, FileId file2, InputStream is2, Consumer<FileDelta> dest)
+			throws IOException {
 
 		Map<String, String> m1;
-		try (InputStream is = Files.newInputStream(p1)) {
-			m1 = ManifestElement.parseBundleManifest(is, null);
+		try {
+			m1 = ManifestElement.parseBundleManifest(is1, null);
 		} catch (BundleException e) {
 			throw new UnparseableManifestException(file1, "Failed to parse manifest", e);
 		}
 
 		Map<String, String> m2;
-		try (InputStream is = Files.newInputStream(p2)) {
-			m2 = ManifestElement.parseBundleManifest(is, null);
+		try {
+			m2 = ManifestElement.parseBundleManifest(is2, null);
 		} catch (BundleException e) {
 			throw new UnparseableManifestException(file2, "Failed to parse manifest", e);
 		}
@@ -72,8 +79,8 @@ public class BundleManifestComparator implements FileComparator {
 				if (comparator.compare(file1, file2, key, v1, v2, dest))
 					continue;
 
-			dest.accept(new ManifestHeaderDelta(file1, file2, "Manifest header '" + key + "' changed '" + v1 + "' -> '" + v2 + "'", key, v1,
-					v2));
+			dest.accept(new ManifestHeaderDelta(file1, file2,
+					"Manifest header '" + key + "' changed '" + v1 + "' -> '" + v2 + "'", key, v1, v2));
 		}
 	}
 
