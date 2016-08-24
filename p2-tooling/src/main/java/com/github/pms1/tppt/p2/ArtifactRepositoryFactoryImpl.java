@@ -14,14 +14,14 @@ import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
-public class ArtifactRepositoryImpl implements ArtifactRepository {
+public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 	private final com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository data;
 
 	private Map<ArtifactId, Artifact> asMap;
 
 	private final URI root;
 
-	public ArtifactRepositoryImpl(URI root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
+	public ArtifactRepositoryFactoryImpl(URI root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
 		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;

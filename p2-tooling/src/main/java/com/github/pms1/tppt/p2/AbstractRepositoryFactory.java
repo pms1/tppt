@@ -31,7 +31,7 @@ public abstract class AbstractRepositoryFactory<T> {
 		this.schema = Xml.createSchema(VersionAdapter.class, xsd);
 	}
 
-	protected T readStream(InputStream is) {
+	protected T read(InputStream is) {
 		try {
 			JAXBContext context = JAXBContext.newInstance(clazz);
 			Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -63,7 +63,7 @@ public abstract class AbstractRepositoryFactory<T> {
 		for (String f : p2index.getProperty(prefix + ".repository.factory.order", "").split(",")) {
 			if (f.equals(content + ".xml")) {
 				try (InputStream is = Files.newInputStream(p.resolve(content + ".xml"))) {
-					return readStream(is);
+					return read(is);
 				}
 			} else if (f.equals("!")) {
 				throw new Error();

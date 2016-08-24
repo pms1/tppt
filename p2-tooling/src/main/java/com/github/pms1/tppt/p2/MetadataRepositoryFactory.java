@@ -14,8 +14,7 @@ public class MetadataRepositoryFactory
 				"metadataRepository.xsd");
 	}
 
-	public MetadataRepository read(Path p) throws IOException {
-
+	public MetadataRepositoryFacade createFacade(Path p) throws IOException {
 		return new MetadataRepositoryImpl(p.toUri(), readRepository(p));
 	}
 }

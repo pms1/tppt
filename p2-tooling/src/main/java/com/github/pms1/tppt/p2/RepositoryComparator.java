@@ -327,12 +327,13 @@ public class RepositoryComparator {
 		}
 	}
 
-	public boolean run(Path pr1, Path pr2) throws IOException {
-		MetadataRepository md1 = metadataRepositoryFactory.readRepository(pr1);
-		MetadataRepository md2 = metadataRepositoryFactory.readRepository(pr2);
+	public boolean run(P2Repository pr1, P2Repository pr2) throws IOException {
 
-		ArtifactRepository r1 = artifactRepositoryFactory.read(pr1);
-		ArtifactRepository r2 = artifactRepositoryFactory.read(pr2);
+		MetadataRepository md1 = pr1.getMetadataRepository();
+		MetadataRepository md2 = pr2.getMetadataRepository();
+
+		ArtifactRepositoryFacade r1 = pr1.getArtifactRepositoryFacade();
+		ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
 
 		List<Delta> dest = new ArrayList<>();
 
@@ -356,7 +357,7 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e1 : m1.entrySet()) {
 			Artifact a2 = m2.get(e1.getKey());
 			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(FileId.newRoot(pr1), FileId.newRoot(pr2),
+				dest.add(new ArtifactRemovedDelta(FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()),
 						"Artifact removed: '" + e1.getValue().getId() + "'", e1.getValue().getId()));
 				continue;
 			}
@@ -369,7 +370,7 @@ public class RepositoryComparator {
 			if (!classifier1.equals(classifier2)) {
 				dest.add(
 						new ArtifactClassifierDelta(
-								FileId.newRoot(pr1), FileId.newRoot(pr2), "Artifact '" + e1.getKey()
+								FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()), "Artifact '" + e1.getKey()
 										+ "' classifier changed: '" + classifier1 + "' -> '" + classifier2 + "'",
 								e1.getKey()));
 				continue;
@@ -403,7 +404,7 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e2 : m2.entrySet()) {
 			Artifact a1 = m1.get(e2.getKey());
 			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(FileId.newRoot(pr1), FileId.newRoot(pr2),
+				dest.add(new ArtifactAddedDelta(FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()),
 						"Artifact added: '" + e2.getValue().getId() + "'", e2.getValue().getId()));
 			}
 		}

@@ -38,7 +38,7 @@ public class MetadataRepositoryReaderSmokeTest {
 		MetadataRepositoryFactory lookup = plexusContainer.lookup(MetadataRepositoryFactory.class);
 		try (InputStream in = getClass().getResourceAsStream(contentXml)) {
 			assert in != null;
-			lookup.readStream(in);
+			lookup.read(in);
 		}
 	}
 }

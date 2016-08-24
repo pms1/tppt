@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 
-public class MetadataRepositoryImpl implements MetadataRepository {
+public class MetadataRepositoryImpl implements MetadataRepositoryFacade {
 	private final com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository data;
 
 	private Map<MetadataId, Metadata> asMap;
