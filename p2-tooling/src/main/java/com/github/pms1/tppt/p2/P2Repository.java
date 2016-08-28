@@ -2,6 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Set;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 
@@ -13,4 +14,7 @@ public interface P2Repository {
 
 	Path getPath();
 
+	Set<DataCompression> getMetadataDataCompressions();
+
+	Set<DataCompression> getArtifactDataCompressions();
 }

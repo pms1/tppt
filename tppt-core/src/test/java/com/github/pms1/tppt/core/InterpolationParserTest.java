@@ -1,4 +1,4 @@
-package com.github.pms1.tppt;
+package com.github.pms1.tppt.core;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -9,6 +9,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import com.github.pms1.tppt.core.InterpolatedString;
 
 public class InterpolationParserTest {
 

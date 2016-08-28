@@ -1,4 +1,4 @@
-package com.github.pms1.tppt;
+package com.github.pms1.tppt.core;
 
 public interface RepositoryPathMatcher {
 

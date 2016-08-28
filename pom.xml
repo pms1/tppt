@@ -50,6 +50,7 @@
 		<maven.version>3.3.9</maven.version>
 		<maven.guava.version>18.0</maven.guava.version>
 		<maven.slf4j.version>1.7.5</maven.slf4j.version>
+		<plexus-component-version>1.7</plexus-component-version>
 	</properties>
 
 	<dependencyManagement>
@@ -81,7 +82,7 @@
 			<dependency>
 				<groupId>org.codehaus.plexus</groupId>
 				<artifactId>plexus-component-annotations</artifactId>
-				<version>1.7</version>
+				<version>${plexus-component-version}</version>
 			</dependency>
 
 			<dependency>
@@ -152,7 +153,15 @@
 				<plugin>
 					<groupId>org.codehaus.plexus</groupId>
 					<artifactId>plexus-component-metadata</artifactId>
-					<version>1.7</version>
+					<version>${plexus-component-version}</version>
+					<executions>
+						<execution>
+							<goals>
+								<goal>generate-metadata</goal>
+								<goal>generate-test-metadata</goal>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<groupId>org.eluder.coveralls</groupId>
@@ -192,6 +201,7 @@
 		<module>minimal-ldap-parser</module>
 		<module>object-comparator</module>
 		<module>p2-tooling</module>
+		<module>tppt-core</module>
 		<module>tppt-maven-plugin</module>
 	</modules>
 

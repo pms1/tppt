@@ -27,10 +27,11 @@ abstract public class AbstractZipComparator implements FileComparator {
 	@Override
 	public final void compare(FileId file1, Path p1, FileId file2, Path p2, Consumer<FileDelta> dest)
 			throws IOException {
-		try (FileSystem fs1 = FileSystems.newFileSystem(p1, null)) {
+
+		try (FileSystem fs1 = FileSystems.newFileSystem(p1, getClass().getClassLoader())) {
 			Map<String, Path> s1 = asMap(file1, fs1);
 
-			try (FileSystem fs2 = FileSystems.newFileSystem(p2, null)) {
+			try (FileSystem fs2 = FileSystems.newFileSystem(p2, getClass().getClassLoader())) {
 				Map<String, Path> s2 = asMap(file2, fs2);
 
 				for (String p : Sets.union(s1.keySet(), s2.keySet())) {

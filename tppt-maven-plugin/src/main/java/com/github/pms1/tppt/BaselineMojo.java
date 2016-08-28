@@ -21,6 +21,11 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 
+import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.core.RepositoryPathMatcher;
+import com.github.pms1.tppt.core.RepositoryPathPattern;
+import com.github.pms1.tppt.p2.P2Repository;
+import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.RepositoryComparator;
 
 /**
@@ -43,6 +48,9 @@ public class BaselineMojo extends AbstractMojo {
 	@Component
 	private RepositoryComparator repositoryComparator;
 
+	@Component
+	private P2RepositoryFactory repositoryFactory;
+
 	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
 	private List<ArtifactRepository> remoteArtifactRepositories;
 
@@ -64,7 +72,8 @@ public class BaselineMojo extends AbstractMojo {
 	@Parameter(property = "tppt.deploymentTarget")
 	private URI deploymentTarget;
 
-	DeploymentHelper dh = new DeploymentHelper();
+	@Component
+	private DeploymentHelper dh;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (deploymentTarget == null) {
@@ -103,15 +112,23 @@ public class BaselineMojo extends AbstractMojo {
 				}
 			}
 
-			System.err.println("Comaparing to baseline at " + previous);
+			if (previous == null) {
+				getLog().info("No baseline repository found");
+			} else {
+				getLog().info("Comparing repository to baseline at " + previous);
 
-			boolean eq = repositoryComparator.run(dt.getPath().resolve(previous),
-					target.toPath().resolve("repository"));
+				P2Repository r1 = repositoryFactory.create(dt.getPath().resolve(previous));
+				P2Repository r2 = repositoryFactory.create(target.toPath().resolve("repository"));
+				boolean eq = repositoryComparator.run(r1, r2);
 
-			System.err.println("Comparison " + eq);
+				if (eq) {
+					getLog().info("Repository is equal to baseline, replacing it");
 
-			// Object ctxv = project.getContextValue("key");
-			// System.err.println("Comaparing to baseline at " + ctxv);
+					dh.replace(r1, r2);
+				} else {
+					getLog().info("Repository is not equal to baseline");
+				}
+			}
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (IOException e) {

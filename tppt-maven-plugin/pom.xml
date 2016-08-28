@@ -32,6 +32,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.pms1.tppt</groupId>
+			<artifactId>tppt-core</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.codehaus.plexus</groupId>
 			<artifactId>plexus-archiver</artifactId>
 		</dependency>
@@ -83,11 +89,6 @@
 			<version>1.9.5</version>
 		</dependency>
  
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>

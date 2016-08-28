@@ -6,7 +6,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -362,8 +361,8 @@ public class RepositoryComparator {
 				continue;
 			}
 
-			Path p1 = Paths.get(r1.getArtifactUri(e1.getValue().getId()));
-			Path p2 = Paths.get(r2.getArtifactUri(a2.getId()));
+			Path p1 = r1.getArtifactUri(e1.getValue().getId());
+			Path p2 = r2.getArtifactUri(a2.getId());
 
 			String classifier1 = e1.getValue().getClassifier();
 			String classifier2 = a2.getClassifier();

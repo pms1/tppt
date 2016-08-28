@@ -78,32 +78,38 @@ public class P2RepositoryFactory {
 		throw new Error();
 	}
 
+	public static String P2INDEX = "p2.index";
+	public static String ARTIFACT_PREFIX = "artifacts";
+	public static String METADATA_PREFIX = "content";
+
 	public P2Repository create(Path p) throws IOException {
 		Properties p2index = new Properties();
 
-		try (InputStream is = Files.newInputStream(p.resolve("p2.index"))) {
+		try (InputStream is = Files.newInputStream(p.resolve(P2INDEX))) {
 			p2index.load(is);
+		} catch (java.nio.file.NoSuchFileException e) {
+			return null;
 		}
 
 		if (!Objects.equals(p2index.getProperty("version", null), "1"))
 			throw new Error();
 
-		Set<DataCompression> availableMetadata = findData(p, "content");
-		Set<DataCompression> availableArtifacts = findData(p, "artifacts");
+		Set<DataCompression> availableMetadata = findData(p, METADATA_PREFIX);
+		Set<DataCompression> availableArtifacts = findData(p, ARTIFACT_PREFIX);
 
-		DataCompression preferedMetadata = prefered(p2index.getProperty("metadata.repository.factory.order"), "content",
-				compressions.values(), availableMetadata);
+		DataCompression preferedMetadata = prefered(p2index.getProperty("metadata.repository.factory.order"),
+				METADATA_PREFIX, compressions.values(), availableMetadata);
 		DataCompression preferedArtifacts = prefered(p2index.getProperty("artifact.repository.factory.order"),
-				"artifacts", compressions.values(), availableArtifacts);
+				ARTIFACT_PREFIX, compressions.values(), availableArtifacts);
 
 		return new P2RepositoryImpl(p, new CachingSupplier<ArtifactRepository>(() -> {
-			try (InputStream is = preferedMetadata.openStream(p, "artifacts")) {
+			try (InputStream is = preferedMetadata.openStream(p, ARTIFACT_PREFIX)) {
 				return artifactRepositoryFactory.read(is);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}), availableArtifacts, preferedArtifacts, new CachingSupplier<MetadataRepository>(() -> {
-			try (InputStream is = preferedMetadata.openStream(p, "content")) {
+			try (InputStream is = preferedMetadata.openStream(p, METADATA_PREFIX)) {
 				return metadataRepositoryFactory.read(is);
 			} catch (IOException e) {
 				throw new RuntimeException(e);

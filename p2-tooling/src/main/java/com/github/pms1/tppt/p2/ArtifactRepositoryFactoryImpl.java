@@ -1,6 +1,6 @@
 package com.github.pms1.tppt.p2;
 
-import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,9 +19,9 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 
 	private Map<ArtifactId, Artifact> asMap;
 
-	private final URI root;
+	private final Path root;
 
-	public ArtifactRepositoryFactoryImpl(URI root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
+	public ArtifactRepositoryFactoryImpl(Path root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
 		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;
@@ -73,7 +73,7 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 	private static SearchFilterParser parser = new SearchFilterParser().lenient();
 
 	@Override
-	public URI getArtifactUri(ArtifactId id) {
+	public Path getArtifactUri(ArtifactId id) {
 		ArtifactImpl artifact = (ArtifactImpl) getArtifacts().get(id);
 		Preconditions.checkArgument(artifact != null, "No artifact '" + id + "'");
 
@@ -102,6 +102,10 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 		if (match == null)
 			throw new IllegalStateException();
 
+		if (!match.startsWith("${repoUrl}/"))
+			throw new IllegalStateException();
+		match = match.substring(11);
+
 		Matcher m = Pattern.compile("[$][{]([^}]*)[}]").matcher(match);
 
 		boolean result = m.find();
@@ -110,9 +114,9 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 			do {
 				String replacement;
 				switch (m.group(1)) {
-				case "repoUrl":
-					replacement = root.toString();
-					break;
+				// case "repoUrl":
+				// replacement = root.toUri().toString();
+				// break;
 				case "id":
 					replacement = artifact.data.getId();
 					break;
@@ -126,8 +130,9 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 				result = m.find();
 			} while (result);
 			m.appendTail(sb);
-			return URI.create(sb.toString());
+			match = sb.toString();
 		}
-		return URI.create(match);
+
+		return root.resolve(match);
 	}
 }

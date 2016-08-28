@@ -2,6 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -24,10 +25,10 @@ class P2RepositoryImpl implements P2Repository {
 			DataCompression preferedMetadata) {
 		this.path = path;
 		this.artifactRepositorySupplier = artifactRepositorySupplier;
-		this.availableArtifacts = availableArtifacts;
+		this.availableArtifacts = Collections.unmodifiableSet(availableArtifacts);
 		this.preferedArtifacts = preferedArtifacts;
 		this.metadataRepositorySupplier = metadataRepositoryProducer;
-		this.availableMetadata = availableMetadata;
+		this.availableMetadata = Collections.unmodifiableSet(availableMetadata);
 		this.preferedMetadata = preferedMetadata;
 	}
 
@@ -38,11 +39,21 @@ class P2RepositoryImpl implements P2Repository {
 
 	@Override
 	public ArtifactRepositoryFacade getArtifactRepositoryFacade() throws IOException {
-		return new ArtifactRepositoryFactoryImpl(path.toUri(), artifactRepositorySupplier.get());
+		return new ArtifactRepositoryFactoryImpl(path, artifactRepositorySupplier.get());
 	}
 
 	@Override
 	public Path getPath() {
 		return path;
+	}
+
+	@Override
+	public Set<DataCompression> getMetadataDataCompressions() {
+		return availableMetadata;
+	}
+
+	@Override
+	public Set<DataCompression> getArtifactDataCompressions() {
+		return availableArtifacts;
 	}
 }

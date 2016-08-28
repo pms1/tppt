@@ -5,12 +5,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -31,6 +27,11 @@ import org.apache.maven.scm.command.checkin.CheckInScmResult;
 import org.apache.maven.scm.command.checkout.CheckOutScmResult;
 import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.repository.ScmRepository;
+
+import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.p2.P2Repository;
+import com.github.pms1.tppt.p2.P2RepositoryFactory;
+import com.github.pms1.tppt.p2.RepositoryComparator;
 
 /**
  * A maven mojo for "deploying" a p2 repository to the filesystem.
@@ -58,11 +59,39 @@ public class DeployMojo extends AbstractMojo {
 	// @Parameter(property = "invoker.skip", defaultValue = "false")
 	// private boolean skipInvocation;
 
-	private final DeploymentHelper deployHelp = new DeploymentHelper();
+	@Component
+	private DeploymentHelper deployHelp;
+
+	@Component
+	private RepositoryComparator repositoryComparator;
+
+	@Component
+	private P2RepositoryFactory repositoryFactory;
+
+	@Component
+	private DeploymentHelper deploymentHelper;
+
+	private void doInstall(Path zip, Path targetRoot) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(zip, null)) {
+			P2Repository r1 = repositoryFactory.create(fs.getPath("/"));
+			P2Repository r2 = repositoryFactory.create(targetRoot);
+
+			if (r2 == null) {
+				deploymentHelper.install(r1, targetRoot);
+			} else {
+				boolean equal = repositoryComparator.run(r1, r2);
+				if (!equal) {
+					getLog().info("Replacing existing repository");
+					deploymentHelper.replace(r1, r2);
+				} else {
+					getLog().info("Equal to existing repository, skipping deployment");
+				}
+			}
+		}
+	}
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
-		getLog().info("Deploying to " + targetPath);
 
 		for (MavenProject p : session.getProjects()) {
 			if (!p.getPackaging().equals("tppt-repository"))
@@ -74,52 +103,23 @@ public class DeployMojo extends AbstractMojo {
 				throw new MojoExecutionException("The project " + p + " did not assign a file to the build artifact");
 
 			Path targetRoot = targetPath.resolve(targetPath.resolve(deployHelp.getPath(p)));
-
-			getLog().info("Deploying " + p.getGroupId() + ":" + p.getArtifactId() + ":" + p.getVersion() + " to "
-					+ targetRoot);
+			getLog().info("Deploying to " + targetRoot);
 
 			try {
-				Files.createDirectories(targetRoot.getParent());
-				Files.createDirectory(targetRoot);
-
-				try (FileSystem fs = FileSystems.newFileSystem(p.getArtifact().getFile().toPath(), null)) {
-					final Path root = fs.getPath("/");
-
-					Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-						@Override
-						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-							// need toString as the paths are from different
-							// providers
-							Path resolve = targetRoot.resolve(root.relativize(file).toString());
-
-							Files.copy(file, resolve, StandardCopyOption.COPY_ATTRIBUTES);
-							return FileVisitResult.CONTINUE;
-						}
-
-						@Override
-						public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-								throws IOException {
-							// need toString as the paths are from different
-							// providers
-							Path resolve = targetRoot.resolve(root.relativize(dir).toString());
-
-							if (!Files.exists(resolve))
-								Files.createDirectory(resolve);
-
-							return FileVisitResult.CONTINUE;
-						}
-					});
-				}
+				doInstall(p.getArtifact().getFile().toPath(), targetRoot);
 			} catch (IOException e) {
 				throw new MojoExecutionException(
-						"Unpacking '" + p.getArtifact().getFile().toPath() + "' to '" + targetPath + "' failed.", e);
+						"Deployment of '" + p.getArtifact().getFile().toPath() + "' to '" + targetPath + "' failed.",
+						e);
 			}
 		}
 
 		if (true)
 			return;
 
-		try {
+		try
+
+		{
 			ScmRepository repo = scm.makeScmRepository("scm:jgit:file:///c:/temp/foo");
 			System.err.println("repo " + repo);
 
