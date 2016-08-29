@@ -326,15 +326,36 @@ public class RepositoryComparator {
 		}
 	}
 
+	private void compare(FileId root1, Set<DataCompression> s1, FileId root2, Set<DataCompression> s2, String prefix,
+			List<Delta> dest) {
+		for (DataCompression s : Sets.union(s1, s2)) {
+			boolean has1 = s1.contains(s);
+			boolean has2 = s2.contains(s);
+
+			if (has1 && !has2) {
+				dest.add(new FileDelta(root1, root2, "File removed: '" + prefix + "." + s.getFileSuffix() + "'"));
+			} else if (!has1 && has2) {
+				dest.add(new FileDelta(root1, root2, "File added: '" + prefix + "." + s.getFileSuffix() + "'"));
+			}
+		}
+	}
+
 	public boolean run(P2Repository pr1, P2Repository pr2) throws IOException {
+		List<Delta> dest = new ArrayList<>();
+
+		FileId root1 = FileId.newRoot(pr1.getPath());
+		FileId root2 = FileId.newRoot(pr2.getPath());
+
+		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(),
+				P2RepositoryFactory.ARTIFACT_PREFIX, dest);
+		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(),
+				P2RepositoryFactory.METADATA_PREFIX, dest);
 
 		MetadataRepository md1 = pr1.getMetadataRepository();
 		MetadataRepository md2 = pr2.getMetadataRepository();
 
 		ArtifactRepositoryFacade r1 = pr1.getArtifactRepositoryFacade();
 		ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
-
-		List<Delta> dest = new ArrayList<>();
 
 		List<Change> changes = new LinkedList<>();
 
@@ -356,8 +377,8 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e1 : m1.entrySet()) {
 			Artifact a2 = m2.get(e1.getKey());
 			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()),
-						"Artifact removed: '" + e1.getValue().getId() + "'", e1.getValue().getId()));
+				dest.add(new ArtifactRemovedDelta(root1, root2, "Artifact removed: '" + e1.getValue().getId() + "'",
+						e1.getValue().getId()));
 				continue;
 			}
 
@@ -367,11 +388,8 @@ public class RepositoryComparator {
 			String classifier1 = e1.getValue().getClassifier();
 			String classifier2 = a2.getClassifier();
 			if (!classifier1.equals(classifier2)) {
-				dest.add(
-						new ArtifactClassifierDelta(
-								FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()), "Artifact '" + e1.getKey()
-										+ "' classifier changed: '" + classifier1 + "' -> '" + classifier2 + "'",
-								e1.getKey()));
+				dest.add(new ArtifactClassifierDelta(root1, FileId.newRoot(pr2.getPath()), "Artifact '" + e1.getKey()
+						+ "' classifier changed: '" + classifier1 + "' -> '" + classifier2 + "'", e1.getKey()));
 				continue;
 			}
 
@@ -403,7 +421,7 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e2 : m2.entrySet()) {
 			Artifact a1 = m1.get(e2.getKey());
 			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(FileId.newRoot(pr1.getPath()), FileId.newRoot(pr2.getPath()),
+				dest.add(new ArtifactAddedDelta(root1, FileId.newRoot(pr2.getPath()),
 						"Artifact added: '" + e2.getValue().getId() + "'", e2.getValue().getId()));
 			}
 		}
