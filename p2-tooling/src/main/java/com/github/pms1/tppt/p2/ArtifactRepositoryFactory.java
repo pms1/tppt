@@ -15,7 +15,7 @@ public class ArtifactRepositoryFactory
 	}
 
 	public ArtifactRepositoryFacade createFacade(Path p) throws IOException {
-		return new ArtifactRepositoryFactoryImpl(p, readRepository(p));
+		return new ArtifactRepositoryFacadeImpl(p, readRepository(p));
 	}
 
 }

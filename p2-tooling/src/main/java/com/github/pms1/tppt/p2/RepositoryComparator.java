@@ -41,6 +41,7 @@ import com.github.pms1.ocomp.ObjectComparator.DeltaCreator;
 import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
+import com.github.pms1.ocomp.ObjectDelta;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
@@ -101,11 +102,12 @@ public class RepositoryComparator {
 
 	};
 
-	static abstract class AbstractUnitDelta extends Delta {
+	static abstract class AbstractUnitDelta extends FileDelta {
 		protected final Unit left;
 		protected final Unit right;
 
-		AbstractUnitDelta(Unit left, Unit right) {
+		AbstractUnitDelta(FileId id1, Unit left, FileId id2, Unit right) {
+			super(id1, id2, "FIXME");
 			Preconditions.checkNotNull(left);
 			this.left = left;
 			Preconditions.checkNotNull(right);
@@ -116,8 +118,8 @@ public class RepositoryComparator {
 	static class UnitDelta extends AbstractUnitDelta {
 		final OPath2 path;
 
-		UnitDelta(Unit left, Unit right, OPath2 path) {
-			super(left, right);
+		UnitDelta(FileId id1, Unit left, FileId id2, Unit right, OPath2 path) {
+			super(id1, left, id2, right);
 			this.path = path;
 		}
 
@@ -131,8 +133,8 @@ public class RepositoryComparator {
 	static class ProvidedAdded extends AbstractUnitDelta {
 		final Provided provided;
 
-		ProvidedAdded(Unit left, Unit right, Provided provided) {
-			super(left, right);
+		ProvidedAdded(FileId id1, Unit left, FileId id2, Unit right, Provided provided) {
+			super(id1, left, id2, right);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
 		}
@@ -146,8 +148,8 @@ public class RepositoryComparator {
 	static class RequiredAdded extends AbstractUnitDelta {
 		final Required required;
 
-		RequiredAdded(Unit left, Unit right, Required required) {
-			super(left, right);
+		RequiredAdded(FileId id1, Unit left, FileId id2, Unit right, Required required) {
+			super(id1, left, id2, right);
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
@@ -161,8 +163,8 @@ public class RepositoryComparator {
 	static class ProvidedRemoved extends AbstractUnitDelta {
 		final Provided provided;
 
-		ProvidedRemoved(Unit left, Unit right, Provided provided) {
-			super(left, right);
+		ProvidedRemoved(FileId id1, Unit left, FileId id2, Unit right, Provided provided) {
+			super(id1, left, id2, right);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
 		}
@@ -176,8 +178,9 @@ public class RepositoryComparator {
 	static class RequiredRemoved extends AbstractUnitDelta {
 		final Required required;
 
-		RequiredRemoved(Unit left, Unit right, Required required) {
-			super(left, right);
+		RequiredRemoved(FileId id1, Unit left, FileId id2, Unit right, Required required) {
+			super(id1, left, id2, right);
+
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
@@ -190,7 +193,7 @@ public class RepositoryComparator {
 
 	static final SearchFilterPrinter printer = new SearchFilterPrinter();
 
-	ObjectComparator<Delta> oc = ObjectComparatorBuilder.newBuilder()
+	static ObjectComparatorBuilder<ObjectDelta> oc1 = ObjectComparatorBuilder.newBuilder()
 			.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
 				return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
 			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
@@ -251,70 +254,14 @@ public class RepositoryComparator {
 					ObjectComparator.<Instruction>listToMapDecomposer(p -> p.getKey()))
 			.addDecomposer("//units/unit[*]/artifacts/artifact",
 					ObjectComparator.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
-			.addDecomposer("//properties/property", ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()))
-			.setDeltaCreator(new DeltaCreator<Delta>() {
+			.addDecomposer("//properties/property", ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()));
 
-				@Override
-				public Delta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
-					if (p.size() > 3) {
-						OPath2 unitPath = p.subPath(0, 3);
-						if (unitPath.getPath().equals("//units/unit")) {
-
-							OPath2 rel = p.subPath(4);
-							if (rel == null) {
-								return new MetadataDelta(p, change);
-							} else {
-								Unit uleft = (Unit) p.subPath(3, 4).getLeft();
-								Unit uright = (Unit) p.subPath(3, 4).getRight();
-
-								switch (rel.getPath()) {
-								case "/provides/provided":
-									switch (change) {
-									case ADDED:
-										return new ProvidedAdded(uleft, uright, (Provided) m2);
-									case REMOVED:
-										return new ProvidedRemoved(uleft, uright, (Provided) m1);
-									default:
-										throw new Error();
-									}
-								case "/requires/required":
-									switch (change) {
-									case ADDED:
-										return new RequiredAdded(uleft, uright, (Required) m2);
-									case REMOVED:
-										return new RequiredRemoved(uleft, uright, (Required) m1);
-									default:
-										throw new Error();
-									}
-								}
-
-								switch (change) {
-								case CHANGED:
-									return new UnitDelta((Unit) p.subPath(3, 4).getLeft(),
-											(Unit) p.subPath(3, 4).getRight(), rel);
-								default:
-									throw new Error();
-								}
-
-							}
-						}
-					}
-
-					switch (p.getPath()) {
-					case "//properties/property[p2.timestamp]/value":
-						return null;
-					}
-
-					return new MetadataDelta(p, change);
-				}
-
-			}).build();
-
-	static class MetadataDelta extends Delta {
+	static class MetadataDelta extends FileDelta {
 		private final OPath2 path;
 		private final ChangeType change;
 
-		public MetadataDelta(OPath2 p, ChangeType change) {
+		public MetadataDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
+			super(id1, id2, "FIXME");
 			this.path = p;
 			this.change = change;
 		}
@@ -327,37 +274,103 @@ public class RepositoryComparator {
 	}
 
 	private void compare(FileId root1, Set<DataCompression> s1, FileId root2, Set<DataCompression> s2, String prefix,
-			List<Delta> dest) {
+			Consumer<FileDelta> dest) {
 		for (DataCompression s : Sets.union(s1, s2)) {
 			boolean has1 = s1.contains(s);
 			boolean has2 = s2.contains(s);
 
 			if (has1 && !has2) {
-				dest.add(new FileDelta(root1, root2, "File removed: '" + prefix + "." + s.getFileSuffix() + "'"));
+				dest.accept(new FileDelta(root1, root2, "File removed: '" + prefix + "." + s.getFileSuffix() + "'"));
 			} else if (!has1 && has2) {
-				dest.add(new FileDelta(root1, root2, "File added: '" + prefix + "." + s.getFileSuffix() + "'"));
+				dest.accept(new FileDelta(root1, root2, "File added: '" + prefix + "." + s.getFileSuffix() + "'"));
 			}
 		}
 	}
 
 	public boolean run(P2Repository pr1, P2Repository pr2) throws IOException {
-		List<Delta> dest = new ArrayList<>();
+		List<FileDelta> dest = new ArrayList<>();
 
 		FileId root1 = FileId.newRoot(pr1.getPath());
 		FileId root2 = FileId.newRoot(pr2.getPath());
 
 		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(),
-				P2RepositoryFactory.ARTIFACT_PREFIX, dest);
+				P2RepositoryFactory.ARTIFACT_PREFIX, dest::add);
 		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(),
-				P2RepositoryFactory.METADATA_PREFIX, dest);
+				P2RepositoryFactory.METADATA_PREFIX, dest::add);
 
-		MetadataRepository md1 = pr1.getMetadataRepository();
-		MetadataRepository md2 = pr2.getMetadataRepository();
+		MetadataRepositoryFacade mdf1 = pr1.getMetadataRepositoryFacade();
+		FileId mdf1id = FileId.newRoot(mdf1.getPath());
+		MetadataRepositoryFacade mdf2 = pr2.getMetadataRepositoryFacade();
+		FileId mdf2id = FileId.newRoot(mdf2.getPath());
+
+		MetadataRepository md1 = mdf1.getMetadata();
+		MetadataRepository md2 = mdf2.getMetadata();
 
 		ArtifactRepositoryFacade r1 = pr1.getArtifactRepositoryFacade();
+		FileId r1id = FileId.newRoot(r1.getPath());
 		ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
+		FileId r2id = FileId.newRoot(r2.getPath());
 
 		List<Change> changes = new LinkedList<>();
+
+		ObjectComparator<FileDelta> oc = oc1.setDeltaCreator(new DeltaCreator<FileDelta>() {
+
+			@Override
+			public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
+				if (p.size() > 3) {
+					OPath2 unitPath = p.subPath(0, 3);
+					if (unitPath.getPath().equals("//units/unit")) {
+
+						OPath2 rel = p.subPath(4);
+						if (rel == null) {
+							return new MetadataDelta(mdf1id, mdf2id, p, change);
+						} else {
+							Unit uleft = (Unit) p.subPath(3, 4).getLeft();
+							Unit uright = (Unit) p.subPath(3, 4).getRight();
+
+							switch (rel.getPath()) {
+							case "/provides/provided":
+								switch (change) {
+								case ADDED:
+									return new ProvidedAdded(mdf1id, uleft, mdf2id, uright, (Provided) m2);
+								case REMOVED:
+									return new ProvidedRemoved(mdf1id, uleft, mdf2id, uright, (Provided) m1);
+								default:
+									throw new Error();
+								}
+							case "/requires/required":
+								switch (change) {
+								case ADDED:
+									return new RequiredAdded(mdf1id, uleft, mdf2id, uright, (Required) m2);
+								case REMOVED:
+									return new RequiredRemoved(mdf1id, uleft, mdf2id, uright, (Required) m1);
+								default:
+									throw new Error();
+								}
+							}
+
+							switch (change) {
+							case CHANGED:
+								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
+										(Unit) p.subPath(3, 4).getRight(), rel);
+							default:
+								throw new Error();
+							}
+
+						}
+					}
+				}
+
+				// FIXME: here?
+				switch (p.getPath()) {
+				case "//properties/property[p2.timestamp]/value":
+					return null;
+				}
+
+				return new MetadataDelta(mdf1id, mdf2id, p, change);
+			}
+
+		}).build();
 
 		dest.addAll(oc.compare(md1, md2));
 
@@ -377,7 +390,7 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e1 : m1.entrySet()) {
 			Artifact a2 = m2.get(e1.getKey());
 			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(root1, root2, "Artifact removed: '" + e1.getValue().getId() + "'",
+				dest.add(new ArtifactRemovedDelta(r1id, r2id, "Artifact removed: '" + e1.getValue().getId() + "'",
 						e1.getValue().getId()));
 				continue;
 			}
@@ -388,8 +401,8 @@ public class RepositoryComparator {
 			String classifier1 = e1.getValue().getClassifier();
 			String classifier2 = a2.getClassifier();
 			if (!classifier1.equals(classifier2)) {
-				dest.add(new ArtifactClassifierDelta(root1, FileId.newRoot(pr2.getPath()), "Artifact '" + e1.getKey()
-						+ "' classifier changed: '" + classifier1 + "' -> '" + classifier2 + "'", e1.getKey()));
+				dest.add(new ArtifactClassifierDelta(r1id, r2id, "Artifact '" + e1.getKey() + "' classifier changed: '"
+						+ classifier1 + "' -> '" + classifier2 + "'", e1.getKey()));
 				continue;
 			}
 
@@ -421,8 +434,8 @@ public class RepositoryComparator {
 		for (Map.Entry<String, Artifact> e2 : m2.entrySet()) {
 			Artifact a1 = m1.get(e2.getKey());
 			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(root1, FileId.newRoot(pr2.getPath()),
-						"Artifact added: '" + e2.getValue().getId() + "'", e2.getValue().getId()));
+				dest.add(new ArtifactAddedDelta(r1id, r2id, "Artifact added: '" + e2.getValue().getId() + "'",
+						e2.getValue().getId()));
 			}
 		}
 

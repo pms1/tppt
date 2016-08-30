@@ -6,40 +6,37 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-
 class P2RepositoryImpl implements P2Repository {
 
 	private final Path path;
-	private final Supplier<ArtifactRepository> artifactRepositorySupplier;
+	private final Supplier<ArtifactRepositoryFacade> artifactRepositoryFacadeSupplier;
 	private final Set<DataCompression> availableArtifacts;
 	private final DataCompression preferedArtifacts;
-	private final Supplier<MetadataRepository> metadataRepositorySupplier;
+	private final Supplier<MetadataRepositoryFacade> metadataRepositoryFacadeSupplier;
 	private final Set<DataCompression> availableMetadata;
 	private final DataCompression preferedMetadata;
 
-	public P2RepositoryImpl(Path path, Supplier<ArtifactRepository> artifactRepositorySupplier,
+	public P2RepositoryImpl(Path path, Supplier<ArtifactRepositoryFacade> artifactRepositorySupplier,
 			Set<DataCompression> availableArtifacts, DataCompression preferedArtifacts,
-			Supplier<MetadataRepository> metadataRepositoryProducer, Set<DataCompression> availableMetadata,
+			Supplier<MetadataRepositoryFacade> metadataRepositoryProducer, Set<DataCompression> availableMetadata,
 			DataCompression preferedMetadata) {
 		this.path = path;
-		this.artifactRepositorySupplier = artifactRepositorySupplier;
+		this.artifactRepositoryFacadeSupplier = artifactRepositorySupplier;
 		this.availableArtifacts = Collections.unmodifiableSet(availableArtifacts);
 		this.preferedArtifacts = preferedArtifacts;
-		this.metadataRepositorySupplier = metadataRepositoryProducer;
+		this.metadataRepositoryFacadeSupplier = metadataRepositoryProducer;
 		this.availableMetadata = Collections.unmodifiableSet(availableMetadata);
 		this.preferedMetadata = preferedMetadata;
 	}
 
 	@Override
-	public MetadataRepository getMetadataRepository() {
-		return metadataRepositorySupplier.get();
+	public ArtifactRepositoryFacade getArtifactRepositoryFacade() throws IOException {
+		return artifactRepositoryFacadeSupplier.get();
 	}
 
 	@Override
-	public ArtifactRepositoryFacade getArtifactRepositoryFacade() throws IOException {
-		return new ArtifactRepositoryFactoryImpl(path, artifactRepositorySupplier.get());
+	public MetadataRepositoryFacade getMetadataRepositoryFacade() throws IOException {
+		return metadataRepositoryFacadeSupplier.get();
 	}
 
 	@Override

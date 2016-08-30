@@ -17,9 +17,6 @@ import java.util.function.Supplier;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 
-import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-
 @Component(role = P2RepositoryFactory.class)
 public class P2RepositoryFactory {
 
@@ -102,15 +99,19 @@ public class P2RepositoryFactory {
 		DataCompression preferedArtifacts = prefered(p2index.getProperty("artifact.repository.factory.order"),
 				ARTIFACT_PREFIX, compressions.values(), availableArtifacts);
 
-		return new P2RepositoryImpl(p, new CachingSupplier<ArtifactRepository>(() -> {
-			try (InputStream is = preferedMetadata.openStream(p, ARTIFACT_PREFIX)) {
-				return artifactRepositoryFactory.read(is);
+		return new P2RepositoryImpl(p, new CachingSupplier<ArtifactRepositoryFacade>(() -> {
+			try (InputStream is = preferedArtifacts.openStream(p, ARTIFACT_PREFIX)) {
+				return new ArtifactRepositoryFacadeImpl(
+						p.resolve(ARTIFACT_PREFIX + "." + preferedArtifacts.getFileSuffix()),
+						artifactRepositoryFactory.read(is));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-		}), availableArtifacts, preferedArtifacts, new CachingSupplier<MetadataRepository>(() -> {
+		}), availableArtifacts, preferedArtifacts, new CachingSupplier<MetadataRepositoryFacade>(() -> {
 			try (InputStream is = preferedMetadata.openStream(p, METADATA_PREFIX)) {
-				return metadataRepositoryFactory.read(is);
+				return new MetadataRepositoryFacadeImpl(
+						p.resolve(METADATA_PREFIX + "." + preferedMetadata.getFileSuffix()),
+						metadataRepositoryFactory.read(is));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}

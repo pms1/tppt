@@ -1,5 +1,8 @@
 package com.github.pms1.tppt.p2;
 
-public interface MetadataRepositoryFacade {
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 
+public interface MetadataRepositoryFacade extends RepositoryFacade {
+
+	MetadataRepository getMetadata();
 }

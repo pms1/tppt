@@ -11,21 +11,22 @@ import com.github.pms1.ldap.AttributeDescription;
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
-public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
-	private final com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository data;
+class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
+	private final ArtifactRepository data;
 
 	private Map<ArtifactId, Artifact> asMap;
 
-	private final Path root;
+	private final Path path;
 
-	public ArtifactRepositoryFactoryImpl(Path root, com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository foo) {
+	public ArtifactRepositoryFacadeImpl(Path path, ArtifactRepository foo) {
 		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;
-		this.root = root;
+		this.path = path;
 	}
 
 	@Override
@@ -133,6 +134,11 @@ public class ArtifactRepositoryFactoryImpl implements ArtifactRepositoryFacade {
 			match = sb.toString();
 		}
 
-		return root.resolve(match);
+		return path.resolveSibling(match);
+	}
+
+	@Override
+	public Path getPath() {
+		return path;
 	}
 }
