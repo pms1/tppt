@@ -1,5 +1,16 @@
 package com.github.pms1.tppt.p2;
 
+import java.util.Arrays;
+import java.util.List;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.namespace.QName;
+import javax.xml.transform.dom.DOMResult;
+
 import org.codehaus.plexus.component.annotations.Component;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Comment;
@@ -10,12 +21,19 @@ import org.w3c.dom.Node;
 import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+
 @Component(role = DomRenderer.class)
 public class DomRenderer {
 
-	public String render(Node item) {
+	static public enum Options {
+		TOP_LEVEL;
+	}
+
+	public String render(Node item, Options... options) {
 		StringBuilder b = new StringBuilder();
-		render(item, b);
+		render(item, b, Arrays.asList(options));
 		return b.toString();
 	}
 
@@ -69,7 +87,7 @@ public class DomRenderer {
 		return '\"' + quote(nodeValue, true) + '\"';
 	}
 
-	private void render(Node node, StringBuilder b) {
+	private void render(Node node, StringBuilder b, List<Options> options) {
 		boolean children;
 		switch (node.getNodeType()) {
 		case Node.TEXT_NODE:
@@ -86,7 +104,12 @@ public class DomRenderer {
 				Attr a = (Attr) attributes.item(i);
 				b.append(" ").append(a.getNodeName()).append("=").append(quoteAttribute(a.getNodeValue()));
 			}
-			b.append(">");
+			if (e.getChildNodes().getLength() == 0) {
+				b.append("/>");
+				return;
+			} else {
+				b.append(">");
+			}
 			break;
 		case Node.PROCESSING_INSTRUCTION_NODE:
 			children = false;
@@ -117,15 +140,47 @@ public class DomRenderer {
 		default:
 			throw new Error("Unhandled node " + node.getNodeType() + " " + node);
 		}
-		if (children)
+
+		if (options.contains(Options.TOP_LEVEL))
+			return;
+
+		if (children) {
 			for (int i = 0; i != node.getChildNodes().getLength(); ++i)
-				render(node.getChildNodes().item(i), b);
-		else if (node.getChildNodes().getLength() != 0)
+				render(node.getChildNodes().item(i), b, options);
+		} else if (node.getChildNodes().getLength() != 0) {
 			throw new IllegalStateException("No children expected for nodeType=" + node.getNodeType() + " " + node);
+		}
+
 		switch (node.getNodeType()) {
 		case Node.ELEMENT_NODE:
 			b.append("</" + node.getNodeName() + ">");
 		}
+	}
+
+	public String jaxbRender(JAXBContext context, Object o, String name, Options... options) {
+		try {
+			Marshaller jaxbMarshaller = context.createMarshaller();
+
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			JAXBElement<?> root = new JAXBElement(new QName(name), o.getClass(), o);
+
+			DOMResult r = new DOMResult();
+
+			jaxbMarshaller.marshal(root, r);
+
+			return render(((Document) r.getNode()).getDocumentElement(), options);
+		} catch (JAXBException e) {
+			throw Throwables.propagate(e);
+		}
+	}
+
+	public String jaxbRender(JAXBContext context, Object o, Options... options) {
+		Preconditions.checkNotNull(o);
+		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));
+		Preconditions.checkArgument(!annotation.namespace().isEmpty());
+
+		return jaxbRender(context, o, annotation.name(), options);
+
 	}
 
 }

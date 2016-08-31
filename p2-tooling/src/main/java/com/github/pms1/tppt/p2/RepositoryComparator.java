@@ -374,23 +374,23 @@ public class RepositoryComparator {
 
 		dest.addAll(oc.compare(md1, md2));
 
-		Map<String, Artifact> m1 = new HashMap<>();
-		Map<String, Artifact> m2 = new HashMap<>();
-		for (Artifact a : r1.getArtifacts().values()) {
-			Artifact old = m1.put(a.getId().getId(), a);
+		Map<String, ArtifactFacade> m1 = new HashMap<>();
+		Map<String, ArtifactFacade> m2 = new HashMap<>();
+		for (ArtifactFacade a : r1.getArtifacts().values()) {
+			ArtifactFacade old = m1.put(a.getId().getId(), a);
 			if (old != null)
 				throw new Error();
 		}
-		for (Artifact a : r2.getArtifacts().values()) {
-			Artifact old = m2.put(a.getId().getId(), a);
+		for (ArtifactFacade a : r2.getArtifacts().values()) {
+			ArtifactFacade old = m2.put(a.getId().getId(), a);
 			if (old != null)
 				throw new Error();
 		}
 
-		for (Map.Entry<String, Artifact> e1 : m1.entrySet()) {
-			Artifact a2 = m2.get(e1.getKey());
+		for (Map.Entry<String, ArtifactFacade> e1 : m1.entrySet()) {
+			ArtifactFacade a2 = m2.get(e1.getKey());
 			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(r1id, r2id, "Artifact removed: '" + e1.getValue().getId() + "'",
+				dest.add(new ArtifactRemovedDelta(r1id, r2id, "Artifact removed: " + render(e1.getValue()),
 						e1.getValue().getId()));
 				continue;
 			}
@@ -401,8 +401,8 @@ public class RepositoryComparator {
 			String classifier1 = e1.getValue().getClassifier();
 			String classifier2 = a2.getClassifier();
 			if (!classifier1.equals(classifier2)) {
-				dest.add(new ArtifactClassifierDelta(r1id, r2id, "Artifact '" + e1.getKey() + "' classifier changed: '"
-						+ classifier1 + "' -> '" + classifier2 + "'", e1.getKey()));
+				dest.add(new ArtifactClassifierDelta(r1id, r2id,
+						"Artifact classifier changed: '" + render(e1.getValue()) + " -> " + render(a2), e1.getKey()));
 				continue;
 			}
 
@@ -431,10 +431,10 @@ public class RepositoryComparator {
 			comparator.compare(file1, p1, file2, p2, dest::add);
 		}
 
-		for (Map.Entry<String, Artifact> e2 : m2.entrySet()) {
-			Artifact a1 = m1.get(e2.getKey());
+		for (Map.Entry<String, ArtifactFacade> e2 : m2.entrySet()) {
+			ArtifactFacade a1 = m1.get(e2.getKey());
 			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(r1id, r2id, "Artifact added: '" + e2.getValue().getId() + "'",
+				dest.add(new ArtifactAddedDelta(r1id, r2id, "Artifact added: " + render(e2.getValue()),
 						e2.getValue().getId()));
 			}
 		}
@@ -894,11 +894,6 @@ public class RepositoryComparator {
 	}
 
 	static String render(Object o) {
-		if (o instanceof MetadataArtifact) {
-			MetadataArtifact p = (MetadataArtifact) o;
-			return "MetadataArtifact(" + p.getClassifier() + "," + p.getId() + "," + p.getVersion() + ")";
-
-		}
 		if (o instanceof List) {
 			StringBuilder b = new StringBuilder();
 			b.append("[");
@@ -910,15 +905,19 @@ public class RepositoryComparator {
 			return "Provided(" + p.getNamespace() + "," + p.getName() + "," + p.getVersion() + ")";
 		}
 
-		if (o instanceof Required) {
-			Required p = (Required) o;
-			return "Required(" + p.getNamespace() + "," + p.getName() + "," + p.getRange() + "," + p.getFilter() + ","
-					+ p.getMatch() + "," + p.getMatchParameters() + "," + p.getMax() + "," + p.getMin() + ")";
+		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {
+			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,
+					DomRenderer.Options.TOP_LEVEL);
 		}
 
-		if (o instanceof Unit) {
-			Unit p = (Unit) o;
-			return "Unit(" + p.getId() + "," + p.getVersion() + ")";
+		if (o instanceof ArtifactFacade) {
+			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(),
+					((ArtifactFacade) o).getData(), DomRenderer.Options.TOP_LEVEL);
+		}
+
+		if (o instanceof MetadataArtifact) {
+			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o, "artifact",
+					DomRenderer.Options.TOP_LEVEL);
 		}
 
 		return String.valueOf(o);

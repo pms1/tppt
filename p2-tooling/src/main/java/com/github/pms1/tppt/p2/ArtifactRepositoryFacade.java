@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface ArtifactRepositoryFacade extends RepositoryFacade {
 
-	Map<ArtifactId, Artifact> getArtifacts();
+	Map<ArtifactId, ArtifactFacade> getArtifacts();
 
 	Path getArtifactUri(ArtifactId id);
 }

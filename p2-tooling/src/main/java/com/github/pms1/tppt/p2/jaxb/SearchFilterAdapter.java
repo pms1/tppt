@@ -4,10 +4,13 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.ldap.SearchFilterPrinter;
 
 public class SearchFilterAdapter extends XmlAdapter<String, SearchFilter> {
 
 	private static SearchFilterParser parser = new SearchFilterParser().lenient();
+
+	private static SearchFilterPrinter printer = new SearchFilterPrinter();
 
 	@Override
 	public SearchFilter unmarshal(String v) throws Exception {
@@ -16,7 +19,7 @@ public class SearchFilterAdapter extends XmlAdapter<String, SearchFilter> {
 
 	@Override
 	public String marshal(SearchFilter v) throws Exception {
-		throw new Error();
+		return printer.print(v);
 	}
 
 }

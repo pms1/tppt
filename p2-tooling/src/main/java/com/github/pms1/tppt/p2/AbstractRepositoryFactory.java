@@ -16,15 +16,20 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
 import com.github.pms1.tppt.p2.jaxb.VersionAdapter;
+import com.google.common.base.Preconditions;
 
 public abstract class AbstractRepositoryFactory<T> {
 	private final Class<T> clazz;
 	private final String prefix;
 	private final String content;
 	private final Schema schema;
+	private final JAXBContext jaxbContext;
 
-	protected AbstractRepositoryFactory(Class<T> clazz, String prefix, String content, String xsd) {
-		Objects.requireNonNull(clazz);
+	protected AbstractRepositoryFactory(JAXBContext jaxbContext, Class<T> clazz, String prefix, String content,
+			String xsd) {
+		Preconditions.checkNotNull(jaxbContext);
+		Preconditions.checkNotNull(clazz);
+		this.jaxbContext = jaxbContext;
 		this.clazz = clazz;
 		this.prefix = prefix;
 		this.content = content;
@@ -33,8 +38,7 @@ public abstract class AbstractRepositoryFactory<T> {
 
 	protected T read(InputStream is) {
 		try {
-			JAXBContext context = JAXBContext.newInstance(clazz);
-			Unmarshaller unmarshaller = context.createUnmarshaller();
+			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
 			unmarshaller.setSchema(schema);
 			unmarshaller.setEventHandler(new ValidationEventHandler() {
 

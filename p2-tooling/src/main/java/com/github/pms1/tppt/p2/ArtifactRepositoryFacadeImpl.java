@@ -11,6 +11,7 @@ import com.github.pms1.ldap.AttributeDescription;
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
@@ -18,7 +19,7 @@ import com.google.common.base.Preconditions;
 class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 	private final ArtifactRepository data;
 
-	private Map<ArtifactId, Artifact> asMap;
+	private Map<ArtifactId, ArtifactFacade> asMap;
 
 	private final Path path;
 
@@ -34,13 +35,13 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 		return super.toString() + "(" + data + ")";
 	}
 
-	private static class ArtifactImpl implements Artifact {
+	private static class ArtifactFacadeImpl implements ArtifactFacade {
 
 		private final ArtifactId id;
 
-		private final com.github.pms1.tppt.p2.jaxb.artifact.Artifact data;
+		private final Artifact data;
 
-		ArtifactImpl(com.github.pms1.tppt.p2.jaxb.artifact.Artifact a) {
+		ArtifactFacadeImpl(Artifact a) {
 			Preconditions.checkNotNull(a);
 
 			this.data = a;
@@ -56,14 +57,19 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 		public String getClassifier() {
 			return data.getClassifier();
 		}
+
+		@Override
+		public Artifact getData() {
+			return data;
+		}
 	}
 
 	@Override
-	public Map<ArtifactId, Artifact> getArtifacts() {
+	public Map<ArtifactId, ArtifactFacade> getArtifacts() {
 		if (asMap == null) {
-			Map<ArtifactId, Artifact> map = new HashMap<>();
+			Map<ArtifactId, ArtifactFacade> map = new HashMap<>();
 			for (com.github.pms1.tppt.p2.jaxb.artifact.Artifact a : data.getArtifacts().getArtifact()) {
-				ArtifactImpl a2 = new ArtifactImpl(a);
+				ArtifactFacadeImpl a2 = new ArtifactFacadeImpl(a);
 				map.put(a2.getId(), a2);
 			}
 			asMap = Collections.unmodifiableMap(map);
@@ -75,7 +81,7 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 
 	@Override
 	public Path getArtifactUri(ArtifactId id) {
-		ArtifactImpl artifact = (ArtifactImpl) getArtifacts().get(id);
+		ArtifactFacadeImpl artifact = (ArtifactFacadeImpl) getArtifacts().get(id);
 		Preconditions.checkArgument(artifact != null, "No artifact '" + id + "'");
 
 		String match = null;
