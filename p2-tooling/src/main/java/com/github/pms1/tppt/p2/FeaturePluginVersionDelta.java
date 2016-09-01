@@ -10,9 +10,8 @@ public class FeaturePluginVersionDelta extends FileDelta {
 	private final Version baseline;
 	private final Version current;
 
-	public FeaturePluginVersionDelta(FileId f1, FileId f2, String description, String pluginId, Version baseline,
-			Version current) {
-		super(f1, f2, description, pluginId, baseline, current);
+	public FeaturePluginVersionDelta(FileId f1, FileId f2, String pluginId, Version baseline, Version current) {
+		super(f1, f2, "Plugin {0} version changed {2} -> {3}", pluginId, baseline, current);
 		Preconditions.checkNotNull(pluginId);
 		Preconditions.checkArgument(!pluginId.isEmpty());
 		this.pluginId = pluginId;

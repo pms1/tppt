@@ -28,13 +28,10 @@ public class FeatureXmlComparatorTest {
 
 		Assertions.assertThat(deltas).containsExactlyInAnyOrder( //
 				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple.source' version changed '5.0.1' -> '5.0.2'",
 						"net.sf.jopt-simple.jopt-simple.source", Version.parseVersion("5.0.1"),
 						Version.parseVersion("5.0.2")),
-				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple' version changed '5.0.1' -> '5.0.2'",
-						"net.sf.jopt-simple.jopt-simple", Version.parseVersion("5.0.1"),
-						Version.parseVersion("5.0.2")));
+				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2), "net.sf.jopt-simple.jopt-simple",
+						Version.parseVersion("5.0.1"), Version.parseVersion("5.0.2")));
 
 	}
 
@@ -47,17 +44,14 @@ public class FeatureXmlComparatorTest {
 		List<FileDelta> deltas = new ArrayList<>();
 		lookup.compare(FileId.newRoot(p1), p1, FileId.newRoot(p2), p2, deltas::add);
 		Assertions.assertThat(deltas).containsExactlyInAnyOrder(
-				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple.source' attribute 'unpack' changed 'true' -> 'false'"),
-				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple' attribute 'unpack' changed 'true' -> 'false'"),
+				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2), "Plugin {0} attribute {1} changed {2} -> {3}",
+						"unpack", true, false),
+				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2), "Plugin {0} attribute {1} changed {2} -> {3}",
+						"unpack", true, false),
 				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple.source' version changed '5.0.1' -> '5.0.2'",
 						"net.sf.jopt-simple.jopt-simple.source", Version.parseVersion("5.0.1"),
 						Version.parseVersion("5.0.2")),
-				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2),
-						"Plugin 'net.sf.jopt-simple.jopt-simple' version changed '5.0.1' -> '5.0.2'",
-						"net.sf.jopt-simple.jopt-simple", Version.parseVersion("5.0.1"),
-						Version.parseVersion("5.0.2")));
+				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2), "net.sf.jopt-simple.jopt-simple",
+						Version.parseVersion("5.0.1"), Version.parseVersion("5.0.2")));
 	}
 }

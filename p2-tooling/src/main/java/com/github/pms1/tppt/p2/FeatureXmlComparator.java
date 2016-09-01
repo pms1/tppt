@@ -152,8 +152,8 @@ public class FeatureXmlComparator implements FileComparator {
 			dest.accept(new FileDelta(baseline, current, description, parameters));
 		}
 
-		public void pluginVersionDelta(String id, String description, String left, String right) {
-			dest.accept(new FeaturePluginVersionDelta(baseline, current, description, id, VersionParser.valueOf(left),
+		public void pluginVersionDelta(String id, String left, String right) {
+			dest.accept(new FeaturePluginVersionDelta(baseline, current, id, VersionParser.valueOf(left),
 					VersionParser.valueOf(right)));
 		}
 	}
@@ -182,8 +182,7 @@ public class FeatureXmlComparator implements FileComparator {
 							@Override
 							public void changed(String key, String left, String right) {
 								if (key.equals("version")) {
-									deltaReporter.pluginVersionDelta("Plugin {0} version changed {2} -> {3}", id, left,
-											right);
+									deltaReporter.pluginVersionDelta(id, left, right);
 								} else {
 									deltaReporter.fileDelta("Plugin {0} attribute {1} changed {2} -> {3}", id, key,
 											left, right);
