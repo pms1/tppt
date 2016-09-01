@@ -2,7 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import com.google.common.base.Preconditions;
 
-public class FileDelta extends Delta {
+public class FileDelta {
 	private final FileId f1;
 	private final FileId f2;
 	private final String description;

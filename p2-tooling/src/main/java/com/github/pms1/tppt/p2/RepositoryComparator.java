@@ -410,7 +410,7 @@ public class RepositoryComparator {
 
 		List<String> incompatibleChanges = new ArrayList<>();
 
-		for (Delta d : dest) {
+		for (FileDelta d : dest) {
 			if (!changes.stream().anyMatch(c -> c.accept(d))) {
 
 				if (d instanceof FileDelta) {
@@ -439,7 +439,7 @@ public class RepositoryComparator {
 	}
 
 	static abstract class Change {
-		abstract boolean accept(Delta delta);
+		abstract boolean accept(FileDelta delta);
 
 		abstract void check(Consumer<String> change);
 	}
@@ -469,7 +469,7 @@ public class RepositoryComparator {
 		}
 
 		@Override
-		boolean accept(Delta delta) {
+		boolean accept(FileDelta delta) {
 			if (delta instanceof FeatureVersionDelta) {
 				FeatureVersionDelta d = (FeatureVersionDelta) delta;
 				if (!d.getBaselineFile().getParent().equals(file1))
@@ -722,7 +722,7 @@ public class RepositoryComparator {
 		}
 
 		@Override
-		boolean accept(Delta delta) {
+		boolean accept(FileDelta delta) {
 			if (delta instanceof ManifestVersionDelta) {
 				ManifestVersionDelta d = (ManifestVersionDelta) delta;
 				if (!d.getBaselineFile().getParent().equals(file1))
