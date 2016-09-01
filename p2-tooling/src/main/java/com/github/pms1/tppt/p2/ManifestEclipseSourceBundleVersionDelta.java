@@ -10,9 +10,9 @@ public class ManifestEclipseSourceBundleVersionDelta extends FileDelta {
 	private final Version baseline;
 	private final Version current;
 
-	public ManifestEclipseSourceBundleVersionDelta(FileId f1, FileId f2, String description, String bundleId,
-			Version baseline, Version current) {
-		super(f1, f2, description);
+	public ManifestEclipseSourceBundleVersionDelta(FileId f1, FileId f2, String bundleId, Version baseline,
+			Version current) {
+		super(f1, f2, "Manifest eclipse source bundle version changed: ''{0}'' -> ''{1}''", baseline, current);
 		Preconditions.checkNotNull(bundleId);
 		Preconditions.checkArgument(!bundleId.isEmpty());
 		this.bundleId = bundleId;

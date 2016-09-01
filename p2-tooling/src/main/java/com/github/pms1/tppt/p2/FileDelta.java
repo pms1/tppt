@@ -6,8 +6,9 @@ public class FileDelta extends Delta {
 	private final FileId f1;
 	private final FileId f2;
 	private final String description;
+	private final Object[] parameters;
 
-	public FileDelta(FileId f1, FileId f2, String description) {
+	public FileDelta(FileId f1, FileId f2, String description, Object... parameters) {
 		Preconditions.checkNotNull(f1);
 		this.f1 = f1;
 		Preconditions.checkNotNull(f2);
@@ -15,6 +16,7 @@ public class FileDelta extends Delta {
 		Preconditions.checkNotNull(description);
 		Preconditions.checkArgument(!description.isEmpty());
 		this.description = description;
+		this.parameters = Preconditions.checkNotNull(parameters);
 	}
 
 	public FileId getBaselineFile() {
@@ -65,5 +67,13 @@ public class FileDelta extends Delta {
 	@Override
 	public String toString() {
 		return f1 + " -> " + f2 + ": " + description;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public Object[] getParameters() {
+		return parameters;
 	}
 }

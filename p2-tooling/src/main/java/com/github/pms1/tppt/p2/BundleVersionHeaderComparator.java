@@ -35,8 +35,7 @@ public class BundleVersionHeaderComparator extends AbstractManifestHeaderCompara
 
 		if (!Objects.equals(headers1[0].getValue(), headers2[0].getValue()))
 			dest.accept(new ManifestVersionDelta(file1, file2,
-					"Manifest bundle version changed '" + headers1[0].getValue() + "' -> '" + headers2[0].getValue()
-							+ "'",
+
 					VersionParser.valueOf(headers1[0].getValue()), VersionParser.valueOf(headers2[0].getValue())));
 
 		return true;

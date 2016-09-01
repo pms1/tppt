@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -64,23 +65,22 @@ public class FeatureXmlComparator implements FileComparator {
 
 			@Override
 			public void added(String key, String value) {
-				dest.accept(new FileDelta(file1, file2, "Added feature attribute: " + key + " " + value));
+				dest.accept(new FileDelta(file1, file2, "Added feature attribute: {0} {1} ", key, value));
 			}
 
 			@Override
 			public void removed(String key) {
-				dest.accept(new FileDelta(file1, file2, "Removed feature attribute: " + key));
+				dest.accept(new FileDelta(file1, file2, "Removed feature attribute: {0}", key));
 			}
 
 			@Override
 			public void changed(String key, String left, String right) {
 				if (key.equals("version"))
-					dest.accept(
-							new FeatureVersionDelta(file1, file2, "Changed feature version: " + left + " -> " + right,
-									"FIXME", VersionParser.valueOf(left), VersionParser.valueOf(right)));
+					dest.accept(new FeatureVersionDelta(file1, file2, VersionParser.valueOf(left),
+							VersionParser.valueOf(right)));
 				else
-					dest.accept(new FileDelta(file1, file2,
-							"Changed feature attribute: " + key + " " + left + " -> " + right));
+					dest.accept(
+							new FileDelta(file1, file2, "Changed feature attribute: {0} {1} -> {2}", key, left, right));
 			}
 
 		});
@@ -94,12 +94,12 @@ public class FeatureXmlComparator implements FileComparator {
 
 			@Override
 			public void added(String e) {
-				dest.accept(new FileDelta(file1, file2, "Added plugin: " + e));
+				dest.accept(new FileDelta(file1, file2, "Added plugin: {0}", e));
 			}
 
 			@Override
 			public void removed(String e) {
-				dest.accept(new FileDelta(file1, file2, "Removed plugin: " + e));
+				dest.accept(new FileDelta(file1, file2, "Removed plugin: {0}", e));
 			}
 
 		}, new DeltaReporter(file1, file2, dest));
@@ -107,34 +107,34 @@ public class FeatureXmlComparator implements FileComparator {
 
 			@Override
 			public void added(String e) {
-				dest.accept(new FileDelta(file1, file2, "Added includes: " + e));
+				dest.accept(new FileDelta(file1, file2, "Added includes: {0}", e));
 			}
 
 			@Override
 			public void removed(String e) {
-				dest.accept(new FileDelta(file1, file2, "Removed includes: " + e));
+				dest.accept(new FileDelta(file1, file2, "Removed includes: {0}", e));
 			}
 
 		}, new AttributesDeltaReporter() {
 
 			@Override
 			public void added(String key, String value) {
-				dest.accept(new FileDelta(file1, file2, "Added includes attribute: " + key + " " + value));
+				dest.accept(new FileDelta(file1, file2, "Added includes attribute: {0} {1}", key, value));
 			}
 
 			@Override
 			public void removed(String key) {
-				dest.accept(new FileDelta(file1, file2, "Removed includes attribute: " + key));
+				dest.accept(new FileDelta(file1, file2, "Removed includes attribute: {0} ", key));
 			}
 
 			@Override
 			public void changed(String key, String left, String right) {
 				dest.accept(
-						new FileDelta(file1, file2, "Changed includes attribute: " + key + " " + left + " " + right));
+						new FileDelta(file1, file2, "Changed includes attribute: {0} {1} -> {2}", key, left, right));
 			}
 
 		});
-		compareImports(n1.imports, n2.imports, d -> dest.accept(new FileDelta(file1, file2, d)));
+		compareImports(n1.imports, n2.imports, (d, p) -> dest.accept(new FileDelta(file1, file2, d, p)));
 	}
 
 	static class DeltaReporter {
@@ -148,11 +148,11 @@ public class FeatureXmlComparator implements FileComparator {
 			this.dest = dest;
 		}
 
-		public void fileDelta(String string) {
-			dest.accept(new FileDelta(baseline, current, string));
+		public void fileDelta(String description, Object... parameters) {
+			dest.accept(new FileDelta(baseline, current, description, parameters));
 		}
 
-		public void pluginVersionDelta(String id, String left, String right, String description) {
+		public void pluginVersionDelta(String id, String description, String left, String right) {
 			dest.accept(new FeaturePluginVersionDelta(baseline, current, description, id, VersionParser.valueOf(left),
 					VersionParser.valueOf(right)));
 		}
@@ -176,37 +176,36 @@ public class FeatureXmlComparator implements FileComparator {
 
 							@Override
 							public void removed(String key) {
-								deltaReporter.fileDelta("Plugin '" + id + "' attribute '" + key + "' removed");
+								deltaReporter.fileDelta("Plugin {0} attribute {1} removed", id, key);
 							}
 
 							@Override
 							public void changed(String key, String left, String right) {
 								if (key.equals("version")) {
-									deltaReporter.pluginVersionDelta(id, left, right,
-											"Plugin '" + id + "' version changed '" + left + "' -> '" + right + "'");
+									deltaReporter.pluginVersionDelta("Plugin {0} version changed {2} -> {3}", id, left,
+											right);
 								} else {
-									deltaReporter.fileDelta("Plugin '" + id + "' attribute '" + key + "' changed '"
-											+ left + "' -> '" + right + "'");
+									deltaReporter.fileDelta("Plugin {0} attribute {1} changed {2} -> {3}", id, key,
+											left, right);
 								}
 							}
 
 							@Override
 							public void added(String key, String value) {
-								deltaReporter.fileDelta(
-										"Plugin '" + id + "' attribute '" + key + "' / '" + value + "' added");
+								deltaReporter.fileDelta("Plugin {0} attribute {1} / {2} added", id, key, value);
 							}
 						});
 			} else {
 				for (Element e : b.values())
-					deltaReporter.fileDelta("Plugin removed: " + domRenderer.render(e));
+					deltaReporter.fileDelta("Plugin removed: {0}", domRenderer.render(e));
 				for (Element e : c.values())
-					deltaReporter.fileDelta("Plugin added: " + domRenderer.render(e));
+					deltaReporter.fileDelta("Plugin added: {0}", domRenderer.render(e));
 			}
 		}
 
 	}
 
-	private void compareImports(List<Element> imports, List<Element> imports2, Consumer<String> consumer) {
+	private void compareImports(List<Element> imports, List<Element> imports2, BiConsumer<String, Object[]> consumer) {
 
 		List<Element> e2 = new ArrayList<>(imports2);
 
@@ -228,11 +227,11 @@ public class FeatureXmlComparator implements FileComparator {
 			if (found)
 				continue;
 
-			consumer.accept("removed import " + re);
+			consumer.accept("removed import {0}", new Object[] { re });
 		}
 
 		for (Element e : e2) {
-			consumer.accept("Added import " + domRenderer.render(e));
+			consumer.accept("Added import {0}", new Object[] { domRenderer.render(e) });
 		}
 	}
 

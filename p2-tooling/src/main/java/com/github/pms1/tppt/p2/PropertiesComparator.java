@@ -31,16 +31,16 @@ public class PropertiesComparator implements FileComparator {
 		for (Object k : Sets.union(prop1.keySet(), prop2.keySet())) {
 			Object v1 = prop1.get(k);
 			if (v1 == null) {
-				dest.accept(new FileDelta(file1, file2, "Property added"));
+				dest.accept(new FileDelta(file1, file2, "Property added: {0}", k));
 				continue;
 			}
 			Object v2 = prop2.get(k);
 			if (v2 == null) {
-				dest.accept(new FileDelta(file1, file2, "Property removed"));
+				dest.accept(new FileDelta(file1, file2, "Property removed {0}", k));
 				continue;
 			}
 			if (!Objects.equals(v1, v2)) {
-				dest.accept(new FileDelta(file1, file2, "Property changed"));
+				dest.accept(new FileDelta(file1, file2, "Property changed {0}", k));
 			}
 		}
 	}

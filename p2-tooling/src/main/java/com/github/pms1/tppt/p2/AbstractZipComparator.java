@@ -37,12 +37,12 @@ abstract public class AbstractZipComparator implements FileComparator {
 				for (String p : Sets.union(s1.keySet(), s2.keySet())) {
 					Path pc1 = s1.get(p);
 					if (pc1 == null) {
-						dest.accept(new ArchiveContentAddedDelta(file1, file2, "Member added: " + p, p));
+						dest.accept(new ArchiveContentAddedDelta(file1, file2, p));
 						continue;
 					}
 					Path pc2 = s2.get(p);
 					if (pc2 == null) {
-						dest.accept(new ArchiveContentRemovedDelta(file1, file2, "Member removed: " + p, p));
+						dest.accept(new ArchiveContentRemovedDelta(file1, file2, p));
 						continue;
 					}
 

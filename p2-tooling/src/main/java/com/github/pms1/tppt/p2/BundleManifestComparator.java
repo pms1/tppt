@@ -61,13 +61,13 @@ public class BundleManifestComparator implements FileComparator {
 		for (String key : Sets.union(m1.keySet(), m2.keySet())) {
 			String v1 = m1.get(key);
 			if (v1 == null) {
-				dest.accept(new FileDelta(file1, file2, "Manifest header '" + key + "' added"));
+				dest.accept(new FileDelta(file1, file2, "Manifest header added: ''{0}''", key));
 				continue;
 			}
 
 			String v2 = m2.get(key);
 			if (v2 == null) {
-				dest.accept(new FileDelta(file1, file2, "Manifest header '" + key + "' removed"));
+				dest.accept(new FileDelta(file1, file2, "Manifest header removed: ''{0}''", key));
 				continue;
 			}
 
@@ -79,8 +79,7 @@ public class BundleManifestComparator implements FileComparator {
 				if (comparator.compare(file1, file2, key, v1, v2, dest))
 					continue;
 
-			dest.accept(new ManifestHeaderDelta(file1, file2,
-					"Manifest header '" + key + "' changed '" + v1 + "' -> '" + v2 + "'", key, v1, v2));
+			dest.accept(new ManifestHeaderDelta(file1, file2, key, v1, v2));
 		}
 	}
 

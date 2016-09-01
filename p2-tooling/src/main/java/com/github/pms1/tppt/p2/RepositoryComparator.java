@@ -6,6 +6,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -106,8 +107,8 @@ public class RepositoryComparator {
 		protected final Unit left;
 		protected final Unit right;
 
-		AbstractUnitDelta(FileId id1, Unit left, FileId id2, Unit right) {
-			super(id1, id2, "FIXME");
+		AbstractUnitDelta(FileId id1, Unit left, FileId id2, Unit right, String message, Object... parameters) {
+			super(id1, id2, message, parameters);
 			Preconditions.checkNotNull(left);
 			this.left = left;
 			Preconditions.checkNotNull(right);
@@ -119,14 +120,9 @@ public class RepositoryComparator {
 		final OPath2 path;
 
 		UnitDelta(FileId id1, Unit left, FileId id2, Unit right, OPath2 path) {
-			super(id1, left, id2, right);
+			super(id1, left, id2, right, "Unit changed {0} -> {1}: {2}: {3} -> {4}", left, right, path.getPath(),
+					path.getLeft(), path.getRight());
 			this.path = path;
-		}
-
-		@Override
-		public String toString() {
-			return "UnitDelta(" + render(left) + "," + render(right) + "," + path.getPath() + "," + path.getLeft()
-					+ " -> " + path.getRight() + ")";
 		}
 	}
 
@@ -134,44 +130,31 @@ public class RepositoryComparator {
 		final Provided provided;
 
 		ProvidedAdded(FileId id1, Unit left, FileId id2, Unit right, Provided provided) {
-			super(id1, left, id2, right);
+			super(id1, left, id2, right, "Provided added: {0} -> {1}: {2}", left, right, provided);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
 		}
 
-		@Override
-		public String toString() {
-			return "ProvidedAdded(" + render(left) + "," + render(right) + "," + render(provided) + ")";
-		}
 	}
 
 	static class RequiredAdded extends AbstractUnitDelta {
 		final Required required;
 
 		RequiredAdded(FileId id1, Unit left, FileId id2, Unit right, Required required) {
-			super(id1, left, id2, right);
+			super(id1, left, id2, right, "Required added: {0} -> {1}: {2}", left, right, required);
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
 
-		@Override
-		public String toString() {
-			return "RequiredAdded(" + render(left) + "," + render(right) + "," + render(required) + ")";
-		}
 	}
 
 	static class ProvidedRemoved extends AbstractUnitDelta {
 		final Provided provided;
 
 		ProvidedRemoved(FileId id1, Unit left, FileId id2, Unit right, Provided provided) {
-			super(id1, left, id2, right);
+			super(id1, left, id2, right, "Provided removed: {0} -> {1}: {2}", left, right, provided);
 			Preconditions.checkNotNull(provided);
 			this.provided = provided;
-		}
-
-		@Override
-		public String toString() {
-			return "ProvidedRemoved(" + render(left) + "," + render(right) + "," + render(provided) + ")";
 		}
 	}
 
@@ -179,15 +162,10 @@ public class RepositoryComparator {
 		final Required required;
 
 		RequiredRemoved(FileId id1, Unit left, FileId id2, Unit right, Required required) {
-			super(id1, left, id2, right);
+			super(id1, left, id2, right, "Required removed: {0} -> {1}: {2}", left, right, required);
 
 			Preconditions.checkNotNull(required);
 			this.required = required;
-		}
-
-		@Override
-		public String toString() {
-			return "RequiredRemoved(" + render(left) + "," + render(right) + "," + render(required) + ")";
 		}
 	}
 
@@ -261,15 +239,9 @@ public class RepositoryComparator {
 		private final ChangeType change;
 
 		public MetadataDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
-			super(id1, id2, "FIXME");
+			super(id1, id2, "Metadata change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
 			this.path = p;
 			this.change = change;
-		}
-
-		@Override
-		public String toString() {
-			return "MetadataDelta(" + path.getPath() + "," + change + "," + render(path.getLeft()) + " -> "
-					+ render(path.getRight()) + ")";
 		}
 	}
 
@@ -280,9 +252,9 @@ public class RepositoryComparator {
 			boolean has2 = s2.contains(s);
 
 			if (has1 && !has2) {
-				dest.accept(new FileDelta(root1, root2, "File removed: '" + prefix + "." + s.getFileSuffix() + "'"));
+				dest.accept(new FileDelta(root1, root2, "File removed: ''{0}.{1}''", prefix, s.getFileSuffix()));
 			} else if (!has1 && has2) {
-				dest.accept(new FileDelta(root1, root2, "File added: '" + prefix + "." + s.getFileSuffix() + "'"));
+				dest.accept(new FileDelta(root1, root2, "File added: ''{0}.{1}''", prefix, s.getFileSuffix()));
 			}
 		}
 	}
@@ -390,8 +362,7 @@ public class RepositoryComparator {
 		for (Map.Entry<String, ArtifactFacade> e1 : m1.entrySet()) {
 			ArtifactFacade a2 = m2.get(e1.getKey());
 			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(r1id, r2id, "Artifact removed: " + render(e1.getValue()),
-						e1.getValue().getId()));
+				dest.add(new ArtifactRemovedDelta(r1id, r2id, render(e1.getValue()), e1.getValue().getId()));
 				continue;
 			}
 
@@ -401,8 +372,7 @@ public class RepositoryComparator {
 			String classifier1 = e1.getValue().getClassifier();
 			String classifier2 = a2.getClassifier();
 			if (!classifier1.equals(classifier2)) {
-				dest.add(new ArtifactClassifierDelta(r1id, r2id,
-						"Artifact classifier changed: '" + render(e1.getValue()) + " -> " + render(a2), e1.getKey()));
+				dest.add(new ArtifactClassifierDelta(r1id, r2id, e1.getKey(), render(e1.getValue()), render(a2)));
 				continue;
 			}
 
@@ -434,16 +404,30 @@ public class RepositoryComparator {
 		for (Map.Entry<String, ArtifactFacade> e2 : m2.entrySet()) {
 			ArtifactFacade a1 = m1.get(e2.getKey());
 			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(r1id, r2id, "Artifact added: " + render(e2.getValue()),
-						e2.getValue().getId()));
+				dest.add(new ArtifactAddedDelta(r1id, r2id, e2.getValue().getId(), render(e2.getValue())));
 			}
 		}
 
 		List<String> incompatibleChanges = new ArrayList<>();
 
 		for (Delta d : dest) {
-			if (!changes.stream().anyMatch(c -> c.accept(d)))
-				incompatibleChanges.add("Incompatible change: " + d);
+			if (!changes.stream().anyMatch(c -> c.accept(d))) {
+
+				if (d instanceof FileDelta) {
+					FileDelta d1 = (FileDelta) d;
+
+					MessageFormat messageFormat = new MessageFormat(d1.getDescription());
+
+					Object[] o1 = d1.getParameters().clone();
+					for (int i = o1.length; i-- > 0;)
+						o1[i] = render(o1[i]);
+					incompatibleChanges.add("Incompatible change: " + d1.getBaselineFile() + " -> "
+							+ d1.getCurrentFile() + ": " + messageFormat.format(o1));
+
+				} else {
+					incompatibleChanges.add("Incompatible change: " + d);
+				}
+			}
 		}
 
 		for (Change c : changes)
@@ -893,12 +877,12 @@ public class RepositoryComparator {
 
 	}
 
-	static String render(Object o) {
+	private String render(Object o) {
 		if (o instanceof List) {
 			StringBuilder b = new StringBuilder();
 			b.append("[");
 			List<Object> l = (List<Object>) (List<?>) o;
-			return "[" + l.stream().map(RepositoryComparator::render).collect(Collectors.joining(", ")) + "]";
+			return "[" + l.stream().map(this::render).collect(Collectors.joining(", ")) + "]";
 		}
 		if (o instanceof Provided) {
 			Provided p = (Provided) o;

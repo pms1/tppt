@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 
 public class ArtifactAddedDelta extends FileDelta {
 
-	public ArtifactAddedDelta(FileId baseline, FileId current, String description, ArtifactId id) {
-		super(baseline, current, description);
+	public ArtifactAddedDelta(FileId baseline, FileId current, ArtifactId id, String value) {
+		super(baseline, current, "Artifact added: {0}", value);
 		Preconditions.checkNotNull(id);
 	}
 

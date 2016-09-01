@@ -80,7 +80,7 @@ public class BundleEclipseSourceBundleHeaderComparator extends AbstractManifestH
 
 		if (!Objects.equals(baseline, current))
 			dest.accept(new ManifestEclipseSourceBundleVersionDelta(file1, file2,
-					"Manifest eclipse source bundle version changed: '" + baseline + "' -> '" + current + "'",
+
 					headers1[0].getValue(), VersionParser.valueOf(baseline), VersionParser.valueOf(current)));
 
 		return true;

@@ -9,8 +9,8 @@ public class ManifestVersionDelta extends FileDelta {
 	private final Version baseline;
 	private final Version current;
 
-	public ManifestVersionDelta(FileId f1, FileId f2, String description, Version baseline, Version current) {
-		super(f1, f2, description);
+	public ManifestVersionDelta(FileId f1, FileId f2, Version baseline, Version current) {
+		super(f1, f2, "Manifest bundle version changed ''{0}'' -> ''{1}''", baseline, current);
 		Preconditions.checkNotNull(baseline);
 		this.baseline = baseline;
 		Preconditions.checkNotNull(current);
