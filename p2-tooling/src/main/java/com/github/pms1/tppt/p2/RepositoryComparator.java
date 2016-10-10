@@ -308,7 +308,7 @@ public class RepositoryComparator {
 								case REMOVED:
 									return new ProvidedRemoved(mdf1id, uleft, mdf2id, uright, (Provided) m1);
 								default:
-									throw new Error();
+									throw new Error(change + " " + rel.getPath());
 								}
 							case "/requires/required":
 								switch (change) {
@@ -317,16 +317,22 @@ public class RepositoryComparator {
 								case REMOVED:
 									return new RequiredRemoved(mdf1id, uleft, mdf2id, uright, (Required) m1);
 								default:
-									throw new Error();
+									throw new Error(change + " " + rel.getPath());
 								}
 							}
 
 							switch (change) {
+							case ADDED:
+								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
+										(Unit) p.subPath(3, 4).getRight(), rel);
+							case REMOVED:
+								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
+										(Unit) p.subPath(3, 4).getRight(), rel);
 							case CHANGED:
 								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
 										(Unit) p.subPath(3, 4).getRight(), rel);
 							default:
-								throw new Error();
+								throw new Error(change + " " + rel.getPath());
 							}
 
 						}
