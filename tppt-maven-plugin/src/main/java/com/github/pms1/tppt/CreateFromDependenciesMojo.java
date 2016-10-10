@@ -7,15 +7,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -137,6 +142,28 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		return result;
 	}
 
+	private final static List<Name> binaryHeaders = Arrays
+			.asList(Constants.IMPORT_PACKAGE, //
+					Constants.REQUIRE_BUNDLE, //
+					Constants.REQUIRE_CAPABILITY, //
+					Constants.PROVIDE_CAPABILITY, //
+					Constants.EXPORT_PACKAGE, //
+					"Main-Class") //
+			.stream() //
+			.map(p -> new Name(p)) //
+			.collect(Collectors.toList());
+
+	// Implementation-Title: hibernate-core
+	// Implementation-Version: 5.2.3.Final
+	// Specification-Vendor: Hibernate.org
+	// Specification-Title: hibernate-core
+	// Implementation-Vendor-Id: org.hibernate
+	// Implementation-Vendor: Hibernate.org
+	// Bundle-Name: hibernate-core
+	// Bundle-Version: 5.2.3.Final
+	// Specification-Version: 5.2.3.Final
+	// Implementation-Url: http://hibernate.org
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		final String qualifiedVersion = project.getProperties().getProperty("qualifiedVersion");
 		if (Strings.isNullOrEmpty(qualifiedVersion))
@@ -210,12 +237,23 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 						}
 					}
 
+					boolean requireCleanup = false;
+
+					if (mf != null) {
+
+						Manifest fmf = mf;
+						requireCleanup = binaryHeaders.stream()
+								.anyMatch(p -> fmf.getMainAttributes().getValue(p) != null);
+
+					}
 					Path out1 = repoDependenciesPlugins.resolve(sourceArtifact.getFile().toPath().getFileName());
-					if (sourceHasHeaders) {
+					if (sourceHasHeaders && !requireCleanup) {
 						Files.copy(sourceArtifact.getFile().toPath(), out1);
 					} else {
 						if (mf == null)
 							mf = new Manifest();
+						for (Name h : binaryHeaders)
+							mf.getMainAttributes().remove(h);
 						mf.getMainAttributes().putValue(Constants.BUNDLE_MANIFESTVERSION, "2");
 						mf.getMainAttributes().putValue(Constants.BUNDLE_SYMBOLICNAME, plugin.id + ".source");
 						mf.getMainAttributes().putValue(Constants.BUNDLE_VERSION, plugin.version);
@@ -226,14 +264,22 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 								OutputStream os = Files.newOutputStream(out1);
 								JarOutputStream jar = new JarOutputStream(os, mf)) {
 
+							Set<String> names = new HashSet<>();
+
 							for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
 								ZipEntry e1 = e.nextElement();
 								if (e1.getName().equals("META-INF/MANIFEST.MF"))
 									continue;
 
-								jar.putNextEntry(new JarEntry(e1));
+								if (names.add(e1.getName())) {
+									jar.putNextEntry(new JarEntry(e1));
 
-								ByteStreams.copy(zf.getInputStream(e1), jar);
+									ByteStreams.copy(zf.getInputStream(e1), jar);
+								} else {
+									getLog().warn(sourceArtifact.getFile() + " contains multiple entries for '"
+											+ e1.getName()
+											+ "'. Keeping the first and ignoring subsequent entries with the same name.");
+								}
 							}
 						}
 					}
