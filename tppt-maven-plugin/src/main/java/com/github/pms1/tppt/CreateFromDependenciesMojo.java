@@ -114,10 +114,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		}
 
 		if (manifest == null)
-			throw new IllegalStateException();
+			return null;
 
 		ManifestElement[] elements = ManifestElement.parseHeader(Constants.BUNDLE_SYMBOLICNAME,
 				manifest.get(Constants.BUNDLE_SYMBOLICNAME));
+		if (elements == null)
+			return null;
+
 		if (elements.length != 1)
 			throw new MojoExecutionException("FIXME");
 		Plugin result = new Plugin();
@@ -155,7 +158,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			for (Artifact a : project.getArtifacts()) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				if (plugin == null) {
-					throw new Error();
+					getLog().warn("Dependency is not an OSGi bundle: " + a);
+					continue;
 				}
 				plugins.add(plugin);
 
