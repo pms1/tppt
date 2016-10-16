@@ -1,9 +1,5 @@
 package com.github.pms1.tppt.p2;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,30 +14,6 @@ import com.google.common.collect.Sets;
 public class BundleEclipseSourceBundleHeaderComparator extends AbstractManifestHeaderComparator {
 	public final static String HINT = "Eclipse-SourceBundle";
 
-	Map<String, List<String>> directives(ManifestElement e) {
-		Enumeration<String> keys = e.getDirectiveKeys();
-		if (keys == null)
-			return Collections.emptyMap();
-		Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
-		for (; keys.hasMoreElements();) {
-			String key = keys.nextElement();
-			result.put(key, Arrays.asList(e.getDirectives(key)));
-		}
-		return result;
-	}
-
-	Map<String, List<String>> attributes(ManifestElement e) {
-		Enumeration<String> keys = e.getKeys();
-		if (keys == null)
-			return Collections.emptyMap();
-		Map<String, List<String>> result = new LinkedHashMap<String, List<String>>();
-		for (; keys.hasMoreElements();) {
-			String key = keys.nextElement();
-			result.put(key, Arrays.asList(e.getAttributes(key)));
-		}
-		return result;
-	}
-
 	@Override
 	public boolean compare(FileId file1, FileId file2, ManifestElement[] headers1, ManifestElement[] headers2,
 			Consumer<FileDelta> dest) {
@@ -54,11 +26,11 @@ public class BundleEclipseSourceBundleHeaderComparator extends AbstractManifestH
 		if (!Objects.equals(headers1[0].getValue(), headers2[0].getValue()))
 			return false;
 
-		if (!Objects.equals(directives(headers1[0]), directives(headers2[0])))
+		if (!Objects.equals(directives(file1, headers1[0]), directives(file2, headers2[0])))
 			return false;
 
-		Map<String, List<String>> a1 = attributes(headers1[0]);
-		Map<String, List<String>> a2 = attributes(headers2[0]);
+		Map<String, List<String>> a1 = attributes(file1, headers1[0]);
+		Map<String, List<String>> a2 = attributes(file2, headers2[0]);
 
 		List<String> v1 = null;
 		List<String> v2 = null;
@@ -79,9 +51,8 @@ public class BundleEclipseSourceBundleHeaderComparator extends AbstractManifestH
 		String current = v2.get(0);
 
 		if (!Objects.equals(baseline, current))
-			dest.accept(new ManifestEclipseSourceBundleVersionDelta(file1, file2,
-
-					headers1[0].getValue(), VersionParser.valueOf(baseline), VersionParser.valueOf(current)));
+			dest.accept(new ManifestEclipseSourceBundleVersionDelta(file1, file2, headers1[0].getValue(),
+					VersionParser.valueOf(baseline), VersionParser.valueOf(current)));
 
 		return true;
 	}

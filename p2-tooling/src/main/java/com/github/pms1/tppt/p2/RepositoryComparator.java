@@ -422,16 +422,9 @@ public class RepositoryComparator {
 				if (d instanceof FileDelta) {
 					FileDelta d1 = (FileDelta) d;
 
-					MessageFormat messageFormat = new MessageFormat(d1.getDescription());
-
-					Object[] o1 = d1.getParameters().clone();
-					for (int i = o1.length; i-- > 0;)
-						o1[i] = render(o1[i]);
-					incompatibleChanges.add("Incompatible change: " + d1.getBaselineFile() + " -> "
-							+ d1.getCurrentFile() + ": " + messageFormat.format(o1));
-
+					incompatibleChanges.add(render(d1));
 				} else {
-					incompatibleChanges.add("Incompatible change: " + d);
+					incompatibleChanges.add(render(d));
 				}
 			}
 		}
@@ -444,6 +437,15 @@ public class RepositoryComparator {
 		return incompatibleChanges.isEmpty();
 	}
 
+	private String render(FileDelta d1) {
+		MessageFormat messageFormat = new MessageFormat(d1.getDescription());
+
+		Object[] o1 = d1.getParameters().clone();
+		for (int i = o1.length; i-- > 0;)
+			o1[i] = render(o1[i]);
+		return d1.getBaselineFile() + " -> " + d1.getCurrentFile() + ": " + messageFormat.format(o1);
+	}
+
 	static abstract class Change {
 		abstract boolean accept(FileDelta delta);
 
@@ -453,7 +455,7 @@ public class RepositoryComparator {
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
 			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
 
-	static class FeatureVersionChange extends Change {
+	class FeatureVersionChange extends Change {
 		private final String featureId;
 		private final FileId file1;
 		private final FileId file2;
@@ -618,6 +620,37 @@ public class RepositoryComparator {
 	final static private OPathMatcher unitTouchpointInstructionValueMatcher = OPathMatcher
 			.create("/touchpointData/instructions[*]/instruction[manifest]/value[Bundle-Version]");
 
+	static class ProvidedMatcher implements Predicate<Provided> {
+		Predicate<String> name = p -> p == null;
+		Predicate<String> namespace = p -> p == null;
+		Predicate<Version> version = p -> p == null;
+
+		@Override
+		public boolean test(Provided t) {
+			return name.test(t.getName()) //
+					&& namespace.test(t.getNamespace()) //
+					&& version.test(t.getVersion());
+		}
+
+		public ProvidedMatcher withNamespace(Predicate<String> namespace) {
+			Preconditions.checkNotNull(namespace);
+			this.namespace = namespace;
+			return this;
+		}
+
+		public ProvidedMatcher withName(Predicate<String> name) {
+			Preconditions.checkNotNull(name);
+			this.name = name;
+			return this;
+		}
+
+		public ProvidedMatcher withVersion(Predicate<Version> version) {
+			Preconditions.checkNotNull(version);
+			this.version = version;
+			return this;
+		}
+	}
+
 	static class RequiredMatcher implements Predicate<Required> {
 
 		Predicate<SearchFilter> filter = p -> p == null;
@@ -711,19 +744,32 @@ public class RepositoryComparator {
 			this.v2 = v2;
 		}
 
-		Set<Unit> added = new HashSet<>();
-		Set<Unit> removed = new HashSet<>();
+		Set<Unit> addedUnit = new HashSet<>();
+		Set<Unit> removedUnit = new HashSet<>();
+
+		Set<String> addedProvidedPackage = new HashSet<>();
+		Set<String> removedProvidedPackage = new HashSet<>();
 
 		@Override
 		void check(Consumer<String> incompatibleChanges) {
-			for (Unit u : Sets.union(added, removed)) {
-				boolean a = added.contains(u);
-				boolean r = removed.contains(u);
+			for (Unit u : Sets.union(addedUnit, removedUnit)) {
+				boolean a = addedUnit.contains(u);
+				boolean r = removedUnit.contains(u);
 
 				if (!a)
 					incompatibleChanges.accept("Only removed: " + u + " " + bundleId);
 				if (!r)
 					incompatibleChanges.accept("Only added: " + u + " " + bundleId);
+			}
+
+			for (String u : Sets.union(addedProvidedPackage, removedProvidedPackage)) {
+				boolean a = addedProvidedPackage.contains(u);
+				boolean r = removedProvidedPackage.contains(u);
+
+				if (!a)
+					incompatibleChanges.accept("Only removed package: " + u + " " + bundleId);
+				if (!r)
+					incompatibleChanges.accept("Only added package: " + u + " " + bundleId);
 			}
 		}
 
@@ -740,6 +786,15 @@ public class RepositoryComparator {
 				if (!Objects.equals(v2, d.getCurrentVersion()))
 					return false;
 				return true;
+			} else if (delta instanceof ManifestExportPackageVersionDelta) {
+				ManifestExportPackageVersionDelta d = (ManifestExportPackageVersionDelta) delta;
+
+				if (!Objects.equals(v1, d.getBaselineVersion()))
+					return false;
+				if (!Objects.equals(v2, d.getCurrentVersion()))
+					return false;
+				return true;
+
 			} else if (delta instanceof ManifestEclipseSourceBundleVersionDelta) {
 				ManifestEclipseSourceBundleVersionDelta d = (ManifestEclipseSourceBundleVersionDelta) delta;
 				if (!bundleId.equals(d.getBundleId()))
@@ -780,6 +835,14 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "osgi.bundle", bundleId, v2))
 					return true;
 
+				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
+						.withName(p -> true) //
+						.withVersion(v2::equals) //
+						.test(d.provided)) {
+					addedProvidedPackage.add(d.provided.getName());
+					return true;
+				}
+
 				return false;
 			} else if (delta instanceof ProvidedRemoved) {
 				ProvidedRemoved d = (ProvidedRemoved) delta;
@@ -793,6 +856,14 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "osgi.bundle", bundleId, v1))
 					return true;
 
+				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
+						.withName(p -> true) //
+						.withVersion(v1::equals) //
+						.test(d.provided)) {
+					removedProvidedPackage.add(d.provided.getName());
+					return true;
+				}
+
 				return false;
 			} else if (delta instanceof RequiredAdded) {
 				RequiredAdded d = (RequiredAdded) delta;
@@ -802,7 +873,7 @@ public class RepositoryComparator {
 						.withRange(p -> p
 								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)))
 						.test(d.required)) {
-					added.add(d.right);
+					addedUnit.add(d.right);
 					return true;
 				}
 
@@ -815,7 +886,7 @@ public class RepositoryComparator {
 						.withRange(p -> p
 								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)))
 						.test(d.required)) {
-					removed.add(d.right);
+					removedUnit.add(d.right);
 					return true;
 				}
 
