@@ -41,8 +41,10 @@ public class BundleExportPackageBundleHeaderComparator extends AbstractManifestH
 			ManifestElement e2 = package2.get(p);
 			if (e1 == null) {
 				dest.accept(new ManifestExportPackageAddedDelta(file1, file2, p));
+				continue;
 			} else if (e2 == null) {
 				dest.accept(new ManifestExportPackageRemovedDelta(file1, file2, p));
+				continue;
 			}
 
 			if (!Objects.equals(directives(file1, e1), directives(file2, e2)))
