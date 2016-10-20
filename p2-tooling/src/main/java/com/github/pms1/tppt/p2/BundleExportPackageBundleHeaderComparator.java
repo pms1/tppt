@@ -23,7 +23,6 @@ public class BundleExportPackageBundleHeaderComparator extends AbstractManifestH
 
 		Map<String, ManifestElement> package1 = new HashMap<>();
 		for (ManifestElement e : headers1) {
-			System.err.println("P1 " + e.getValue());
 			ManifestElement old = package1.put(e.getValue(), e);
 			if (old != null)
 				throw new UnparseableManifestException(file1, "Duplicate Export-Package " + e.getValue());
