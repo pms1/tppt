@@ -88,7 +88,12 @@
 			<artifactId>maven-scm-provider-jgit</artifactId>
 			<version>1.9.5</version>
 		</dependency>
- 
+
+		<dependency>
+			<groupId>biz.aQute.bnd</groupId>
+			<artifactId>biz.aQute.bndlib</artifactId>
+			<version>3.3.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -53,6 +53,11 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
 
+import aQute.bnd.osgi.Builder;
+import aQute.bnd.osgi.Jar;
+import aQute.bnd.version.MavenVersion;
+import aQute.bnd.version.Version;
+
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
  * 
@@ -185,12 +190,17 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			for (Artifact a : project.getArtifacts()) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				if (plugin == null) {
-					getLog().warn("Dependency is not an OSGi bundle: " + a);
-					continue;
+					getLog().info("Dependency is not an OSGi bundle: " + a);
+					plugin = createPlugin(a, repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
+				} else {
+					Files.copy(a.getFile().toPath(),
+							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 				}
-				plugins.add(plugin);
 
-				Files.copy(a.getFile().toPath(), repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
+				if (plugin == null)
+					throw new Error();
+
+				plugins.add(plugin);
 
 				// try to find artifacts with "sources" qualifier
 				Artifact sourcesArtifact = repositorySystem.createArtifactWithClassifier(a.getGroupId(),
@@ -341,10 +351,40 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			project.setContextValue("key", project.toString());
 		} catch (MojoExecutionException e) {
 			throw e;
-		} catch (IOException | BundleException | InterruptedException | MavenExecutionException e) {
+		} catch (Exception e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
 
+	}
+
+	private Plugin createPlugin(Artifact a, Path resolve) throws Exception {
+		Builder builder = new Builder();
+		builder.setTrace(true);
+
+		Jar classesDirJar = new Jar(a.getFile());
+		// classesDirJar.setManifest(new Manifest());
+
+		builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
+		// builder.setProperty(Constants.BUNDLE_NAME, project.getName());
+
+		Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
+		builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
+		builder.setProperty(Constants.EXPORT_PACKAGE, "*");
+
+		// builder.setProperty("ver", "1.1.1");
+		// builder.setProperty("Export-Package", "*;version=${ver}");
+		builder.setJar(classesDirJar);
+
+		Jar j = builder.build();
+
+		System.err.println("J=" + j);
+
+		for (Object o : j.getManifest().getMainAttributes().entrySet())
+			System.err.println(o);
+
+		j.write(resolve.toFile());
+
+		return scanPlugin(resolve);
 	}
 
 	protected List<ArtifactRepository> getPluginRepositories(MavenSession session) {
