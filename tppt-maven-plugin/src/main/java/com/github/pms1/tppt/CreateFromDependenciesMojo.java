@@ -153,7 +153,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					Constants.REQUIRE_CAPABILITY, //
 					Constants.PROVIDE_CAPABILITY, //
 					Constants.EXPORT_PACKAGE, //
-					"Main-Class") //
+					"Main-Class") // FIXME: use Name.xxx constant
 			.stream() //
 			.map(p -> new Name(p)) //
 			.collect(Collectors.toList());
@@ -218,81 +218,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				case 1:
 					Artifact sourceArtifact = Iterables.getOnlyElement(resolution.getArtifacts());
 
-					Manifest mf = null;
-
-					try (ZipFile zf = new ZipFile(sourceArtifact.getFile())) {
-						ZipEntry e = zf.getEntry("META-INF/MANIFEST.MF");
-						if (e != null)
-							mf = new Manifest(zf.getInputStream(e));
-					}
-
-					boolean sourceHasHeaders = false;
-
-					if (mf != null) {
-						String sourceBundle = mf.getMainAttributes().getValue("Eclipse-SourceBundle");
-
-						if (sourceBundle != null) {
-							ManifestElement[] elements = ManifestElement.parseHeader("Eclipse-SourceBundle",
-									sourceBundle);
-							if (elements.length != 1)
-								throw new MojoExecutionException("FIXME");
-							String sbundle = elements[0].getValue();
-							String sversion = elements[0].getAttribute("version");
-							if (!Objects.equals(plugin.id, sbundle))
-								throw new MojoExecutionException("FIXME " + plugin.id + " " + sbundle);
-							if (!Objects.equals(plugin.version, sversion))
-								throw new MojoExecutionException("FIXME " + plugin.version + " " + sversion);
-
-							sourceHasHeaders = true;
-						}
-					}
-
-					boolean requireCleanup = false;
-
-					if (mf != null) {
-
-						Manifest fmf = mf;
-						requireCleanup = binaryHeaders.stream()
-								.anyMatch(p -> fmf.getMainAttributes().getValue(p) != null);
-
-					}
 					Path out1 = repoDependenciesPlugins.resolve(sourceArtifact.getFile().toPath().getFileName());
-					if (sourceHasHeaders && !requireCleanup) {
-						Files.copy(sourceArtifact.getFile().toPath(), out1);
-					} else {
-						if (mf == null)
-							mf = new Manifest();
-						for (Name h : binaryHeaders)
-							mf.getMainAttributes().remove(h);
-						mf.getMainAttributes().putValue(Constants.BUNDLE_MANIFESTVERSION, "2");
-						mf.getMainAttributes().putValue(Constants.BUNDLE_SYMBOLICNAME, plugin.id + ".source");
-						mf.getMainAttributes().putValue(Constants.BUNDLE_VERSION, plugin.version);
-						mf.getMainAttributes().putValue("Eclipse-SourceBundle",
-								plugin.id + ";version=\"" + plugin.version + "\"");
 
-						try (JarFile zf = new JarFile(sourceArtifact.getFile());
-								OutputStream os = Files.newOutputStream(out1);
-								JarOutputStream jar = new JarOutputStream(os, mf)) {
-
-							Set<String> names = new HashSet<>();
-
-							for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
-								ZipEntry e1 = e.nextElement();
-								if (e1.getName().equals("META-INF/MANIFEST.MF"))
-									continue;
-
-								if (names.add(e1.getName())) {
-									jar.putNextEntry(new JarEntry(e1));
-
-									ByteStreams.copy(zf.getInputStream(e1), jar);
-								} else {
-									getLog().warn(sourceArtifact.getFile() + " contains multiple entries for '"
-											+ e1.getName()
-											+ "'. Keeping the first and ignoring subsequent entries with the same name.");
-								}
-							}
-						}
-					}
+					createSourceBundle(plugin, sourceArtifact.getFile().toPath(), out1);
 
 					plugins.add(scanPlugin(out1));
 
@@ -357,34 +285,118 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 	}
 
+	private void createSourceBundle(Plugin plugin, Path bundle, Path out1) throws Exception {
+
+		Manifest mf = null;
+
+		try (ZipFile zf = new ZipFile(bundle.toFile())) {
+			ZipEntry e = zf.getEntry("META-INF/MANIFEST.MF");
+			if (e != null)
+				mf = new Manifest(zf.getInputStream(e));
+		}
+
+		boolean sourceHasHeaders = false;
+
+		if (mf != null) {
+			String sourceBundle = mf.getMainAttributes().getValue("Eclipse-SourceBundle");
+
+			if (sourceBundle != null) {
+				ManifestElement[] elements = ManifestElement.parseHeader("Eclipse-SourceBundle", sourceBundle);
+				if (elements.length != 1)
+					throw new MojoExecutionException("FIXME");
+				String sbundle = elements[0].getValue();
+				String sversion = elements[0].getAttribute("version");
+				if (!Objects.equals(plugin.id, sbundle))
+					throw new MojoExecutionException("FIXME " + plugin.id + " " + sbundle);
+				if (!Objects.equals(plugin.version, sversion))
+					throw new MojoExecutionException("FIXME " + plugin.version + " " + sversion);
+
+				sourceHasHeaders = true;
+			}
+		}
+
+		boolean requireCleanup = false;
+
+		if (mf != null) {
+
+			Manifest fmf = mf;
+			requireCleanup = binaryHeaders.stream().anyMatch(p -> fmf.getMainAttributes().getValue(p) != null);
+
+		}
+		if (sourceHasHeaders && !requireCleanup) {
+			Files.copy(bundle, out1);
+		} else {
+			if (mf == null) {
+				mf = new Manifest();
+				// This is a required header
+				mf.getMainAttributes().put(Name.MANIFEST_VERSION, "1.0");
+			}
+			for (Name h : binaryHeaders)
+				mf.getMainAttributes().remove(h);
+			mf.getMainAttributes().putValue(Constants.BUNDLE_MANIFESTVERSION, "2");
+			mf.getMainAttributes().putValue(Constants.BUNDLE_SYMBOLICNAME, plugin.id + ".source");
+			mf.getMainAttributes().putValue(Constants.BUNDLE_VERSION, plugin.version);
+			mf.getMainAttributes().putValue("Eclipse-SourceBundle", plugin.id + ";version=\"" + plugin.version + "\"");
+
+			try (JarFile zf = new JarFile(bundle.toFile());
+					OutputStream os = Files.newOutputStream(out1);
+					JarOutputStream jar = new JarOutputStream(os, mf)) {
+
+				Set<String> names = new HashSet<>();
+
+				for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
+					ZipEntry e1 = e.nextElement();
+					if (e1.getName().equals("META-INF/MANIFEST.MF"))
+						continue;
+
+					if (names.add(e1.getName())) {
+						jar.putNextEntry(new JarEntry(e1.getName()));
+
+						long copied = ByteStreams.copy(zf.getInputStream(e1), jar);
+
+						if (e1.getSize() != -1 && copied != e1.getSize())
+							throw new MojoExecutionException("Error while copying entry '" + e1 + "': size should be "
+									+ e1.getSize() + ", but copied " + copied);
+					} else {
+						getLog().warn(bundle + " contains multiple entries for '" + e1.getName()
+								+ "'. Keeping the first and ignoring subsequent entries with the same name.");
+					}
+				}
+			} catch (IOException e) {
+				throw new MojoExecutionException("Failed creating source bundle '" + out1 + "' from '" + bundle + "'",
+						e);
+			}
+		}
+	}
+
 	private Plugin createPlugin(Artifact a, Path resolve) throws Exception {
-		Builder builder = new Builder();
-		builder.setTrace(true);
+		try (Builder builder = new Builder()) {
+			builder.setTrace(true);
 
-		Jar classesDirJar = new Jar(a.getFile());
-		// classesDirJar.setManifest(new Manifest());
+			Jar classesDirJar = new Jar(a.getFile());
+			// classesDirJar.setManifest(new Manifest());
 
-		builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
-		// builder.setProperty(Constants.BUNDLE_NAME, project.getName());
+			builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
+			// builder.setProperty(Constants.BUNDLE_NAME, project.getName());
 
-		Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
-		builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
-		builder.setProperty(Constants.EXPORT_PACKAGE, "*");
+			Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
+			builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
+			builder.setProperty(Constants.EXPORT_PACKAGE, "*");
 
-		// builder.setProperty("ver", "1.1.1");
-		// builder.setProperty("Export-Package", "*;version=${ver}");
-		builder.setJar(classesDirJar);
+			// builder.setProperty("ver", "1.1.1");
+			// builder.setProperty("Export-Package", "*;version=${ver}");
+			builder.setJar(classesDirJar);
 
-		Jar j = builder.build();
+			Jar j = builder.build();
 
-		System.err.println("J=" + j);
+			if (false)
+				for (Object o : j.getManifest().getMainAttributes().entrySet())
+					System.err.println(o);
 
-		for (Object o : j.getManifest().getMainAttributes().entrySet())
-			System.err.println(o);
+			j.write(resolve.toFile());
 
-		j.write(resolve.toFile());
-
-		return scanPlugin(resolve);
+			return scanPlugin(resolve);
+		}
 	}
 
 	protected List<ArtifactRepository> getPluginRepositories(MavenSession session) {
