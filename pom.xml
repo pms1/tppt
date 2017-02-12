@@ -45,12 +45,13 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<tycho.version>0.25.0</tycho.version>
-		<antlr4.version>4.5.3</antlr4.version>
+		<tycho.version>0.26.0</tycho.version>
+		<tycho.osgi.version>3.11.2.v20161107-1947</tycho.osgi.version>
+		<antlr4.version>4.6</antlr4.version>
 		<maven.version>3.3.9</maven.version>
 		<maven.guava.version>18.0</maven.guava.version>
 		<maven.slf4j.version>1.7.5</maven.slf4j.version>
-		<plexus-component-version>1.7</plexus-component-version>
+		<plexus-component-version>1.7.1</plexus-component-version>
 	</properties>
 
 	<dependencyManagement>
@@ -58,7 +59,7 @@
 			<dependency>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>org.eclipse.osgi</artifactId>
-				<version>3.10.101.v20150820-1432</version>
+				<version>${tycho.osgi.version}</version>
 			</dependency>
 
 			<dependency>
@@ -100,7 +101,7 @@
 			<dependency>
 				<groupId>org.assertj</groupId>
 				<artifactId>assertj-core</artifactId>
-				<version>3.5.2</version>
+				<version>3.6.2</version>
 			</dependency>
 
 			<dependency>

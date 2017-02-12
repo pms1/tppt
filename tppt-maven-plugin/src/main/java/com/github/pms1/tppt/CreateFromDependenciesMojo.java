@@ -44,7 +44,9 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 import org.apache.maven.shared.dependency.graph.DependencyNode;
@@ -82,7 +84,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private RepositorySystem repositorySystem;
 
 	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
-	private List<ArtifactRepository> remoteArtifactRepositories;
+	private List<ArtifactRepository> remoteRepositories;
 
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
@@ -210,7 +212,15 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			List<Plugin> plugins = new LinkedList<>();
 
-			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(project, null);
+			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
+			pbRequest.setLocalRepository(localRepository);
+			pbRequest.setProject(project);
+			pbRequest.setRemoteRepositories(remoteRepositories);
+			pbRequest.setRepositorySession(session.getRepositorySession());
+			pbRequest.setResolveDependencies(true);
+			pbRequest.setResolveVersionRanges(true);
+
+			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);
 
 			Set<Artifact> artifacts = new HashSet<>();
 
@@ -262,7 +272,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 						a.getArtifactId(), a.getVersion(), "jar", "sources");
 				ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 				request.setArtifact(sourcesArtifact);
-				request.setRemoteRepositories(remoteArtifactRepositories);
+				request.setRemoteRepositories(remoteRepositories);
 				request.setLocalRepository(localRepository);
 				ArtifactResolutionResult resolution = repositorySystem.resolve(request);
 
@@ -343,7 +353,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private Artifact resolve(Artifact artifact) {
 		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 		request.setArtifact(artifact);
-		request.setRemoteRepositories(remoteArtifactRepositories);
+		request.setRemoteRepositories(remoteRepositories);
 		request.setLocalRepository(localRepository);
 		ArtifactResolutionResult resolution = repositorySystem.resolve(request);
 
@@ -511,7 +521,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
 			Artifact platform = resolveDependency(session,
-					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "0.25.0", "zip"));
+					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "0.26.0", "zip"));
 
 			Path p = installer.addRuntimeArtifact(session, platform);
 			runner = runnerFactory.newBuilder().withInstallation(p).build();

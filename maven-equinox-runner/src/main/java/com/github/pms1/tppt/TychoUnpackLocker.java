@@ -3,7 +3,10 @@ package com.github.pms1.tppt;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.osgi.internal.framework.EquinoxConfiguration.ConfigValues;
 import org.eclipse.osgi.internal.framework.EquinoxContainer;
 import org.eclipse.osgi.internal.location.BasicLocation;
 import org.eclipse.osgi.service.datalocation.Location;
@@ -17,7 +20,7 @@ public class TychoUnpackLocker {
 	}
 
 	private final static Location anyLocation = new BasicLocation(null, null, false, null,
-			new EquinoxContainer(null).getConfiguration());
+			new ConfigValues(new HashMap<String, String>()), new EquinoxContainer(null), new AtomicBoolean(false));
 
 	@SuppressWarnings("deprecation")
 	public Lock lock(Path p) throws IOException {
