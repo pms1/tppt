@@ -228,19 +228,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				@Override
 				public boolean visit(DependencyNode node) {
 					if (node.getArtifact() != project.getArtifact() && exclusions.include(node.getArtifact())) {
-						// the node artifact is not resolved, so we search the
-						// resolved version.
-						// we cannot resolve them later as some artifacts are
-						// not resolveable
-						// standalone (e.g. if they are not in maven central but
-						// a repository
-						// in their parent).
-						Set<Artifact> collect = project.getArtifacts().stream()
-								.filter(p -> p.toString().equals(node.getArtifact().toString()))
-								.collect(Collectors.toSet());
-						if (collect.size() != 1)
-							throw new Error();
-						artifacts.addAll(collect);
+						artifacts.add(node.getArtifact());
 					}
 
 					return exclusionTransitives.include(node.getArtifact());
