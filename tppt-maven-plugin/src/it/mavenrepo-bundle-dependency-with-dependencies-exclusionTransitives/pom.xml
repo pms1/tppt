@@ -23,7 +23,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<exclusionTransitives>
-						<exclusionTransitive>org.glassfish.jersey.core:jersey-client</exclusionTransitive>
+						<exclusionTransitive>org.glassfish.jersey.core:jersey-common</exclusionTransitive>
 					</exclusionTransitives>
 				</configuration>
 			</plugin>
