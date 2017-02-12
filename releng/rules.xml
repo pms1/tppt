@@ -1,0 +1,21 @@
+<ruleset comparisonMethod="maven"
+         xmlns="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://mojo.codehaus.org/versions-maven-plugin/rule/2.0.0 http://www.mojohaus.org/versions-maven-plugin/xsd/rule-2.0.0.xsd">
+  <rules>
+  	<rule groupId="com.google.guava" artifactId="guava">
+  		<ignoreVersions>
+  			<ignoreVersion type="regex">.*</ignoreVersion>
+  		</ignoreVersions>
+  	</rule>
+  	<rule groupId="org.slf4j" artifactId="slf4j-api">
+  		<ignoreVersions>
+  			<ignoreVersion type="regex">.*</ignoreVersion>
+  		</ignoreVersions>
+  	</rule>
+  	<rule groupId="org.slf4j" artifactId="slf4j-simple" >
+  		<ignoreVersions>
+  			<ignoreVersion type="regex">.*</ignoreVersion>
+  		</ignoreVersions>
+  	</rule>
+  </rules>
+</ruleset>

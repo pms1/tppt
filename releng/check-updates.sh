@@ -1,4 +1,4 @@
 #! /bin/bash
 
-mvn versions:display-dependency-updates
-mvn versions:display-plugin-updates
+rulesURI=file:$(cygpath -m -a releng/rules.xml)
+mvn versions:display-dependency-updates versions:display-plugin-updates -Dmaven.version.rules=$rulesURI
