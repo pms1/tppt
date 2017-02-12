@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -33,6 +34,8 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
+import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
+import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -43,6 +46,9 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
+import org.apache.maven.shared.dependency.graph.DependencyNode;
+import org.apache.maven.shared.dependency.graph.traversal.DependencyNodeVisitor;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -90,8 +96,25 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;
 
+	@Component(hint = "default")
+	private DependencyGraphBuilder dependencyGraphBuilder;
+
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
+
+	@Parameter
+	private ArtifactFilter exclusionTransitives = new ExclusionSetFilter(Collections.emptySet());
+
+	public void setExclusionTransitives(String[] exclusionTransitives) {
+		this.exclusionTransitives = new ExclusionSetFilter(exclusionTransitives);
+	}
+
+	@Parameter
+	private ArtifactFilter exclusions = new ExclusionSetFilter(Collections.emptySet());
+
+	public void setExclusions(String[] exclusions) {
+		this.exclusions = new ExclusionSetFilter(exclusions);
+	}
 
 	static Plugin scanPlugin(Path p) throws IOException, BundleException, MojoExecutionException {
 		long compressedSize = 0;
@@ -187,7 +210,39 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			List<Plugin> plugins = new LinkedList<>();
 
-			for (Artifact a : project.getArtifacts()) {
+			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(project, null);
+
+			Set<Artifact> artifacts = new HashSet<>();
+
+			n.accept(new DependencyNodeVisitor() {
+				@Override
+				public boolean visit(DependencyNode node) {
+					if (node.getArtifact() != project.getArtifact() && exclusions.include(node.getArtifact())) {
+						// the node artifact is not resolved, so we search the
+						// resolved version.
+						// we cannot resolve them later as some artifacts are
+						// not resolveable
+						// standalone (e.g. if they are not in maven central but
+						// a repository
+						// in their parent).
+						Set<Artifact> collect = project.getArtifacts().stream()
+								.filter(p -> p.toString().equals(node.getArtifact().toString()))
+								.collect(Collectors.toSet());
+						if (collect.size() != 1)
+							throw new Error();
+						artifacts.addAll(collect);
+					}
+
+					return exclusionTransitives.include(node.getArtifact());
+				}
+
+				@Override
+				public boolean endVisit(DependencyNode node) {
+					return true;
+				}
+			});
+
+			for (Artifact a : artifacts) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				if (plugin == null) {
 					getLog().info("Dependency is not an OSGi bundle: " + a);
@@ -226,8 +281,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 					break;
 				default:
-					for (Artifact a1 : resolution.getArtifacts()) {
-						System.err.println("SOURCE " + a1 + " " + a1.isResolved() + " " + a1.getFile());
+					for (Artifact a2 : resolution.getArtifacts()) {
+						System.err.println("SOURCE " + a2 + " " + a2.isResolved() + " " + a2.getFile());
 					}
 					throw new Error("FIXME");
 				}
@@ -283,6 +338,27 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
 
+	}
+
+	private Artifact resolve(Artifact artifact) {
+		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
+		request.setArtifact(artifact);
+		request.setRemoteRepositories(remoteArtifactRepositories);
+		request.setLocalRepository(localRepository);
+		ArtifactResolutionResult resolution = repositorySystem.resolve(request);
+
+		for (ArtifactResolutionException e : resolution.getErrorArtifactExceptions()) {
+			System.err.println("ERR " + e);
+		}
+
+		switch (resolution.getArtifacts().size()) {
+		case 0:
+			return null;
+		case 1:
+			return Iterables.getOnlyElement(resolution.getArtifacts());
+		default:
+			throw new Error();
+		}
 	}
 
 	private void createSourceBundle(Plugin plugin, Path bundle, Path out1) throws Exception {
