@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -252,14 +253,21 @@ public class RepositoryComparator {
 			boolean has2 = s2.contains(s);
 
 			if (has1 && !has2) {
-				dest.accept(new FileDelta(root1, root2, "File removed: ''{0}.{1}''", prefix, s.getFileSuffix()));
+				dest.accept(new RepositoryDataCompressionRemoved(root1, root2, s));
 			} else if (!has1 && has2) {
-				dest.accept(new FileDelta(root1, root2, "File added: ''{0}.{1}''", prefix, s.getFileSuffix()));
+				dest.accept(new RepositoryDataCompressionAdded(root1, root2, s));
 			}
 		}
 	}
 
-	public boolean run(P2Repository pr1, P2Repository pr2) throws IOException {
+	@SuppressWarnings("unchecked")
+	public final boolean run(P2Repository pr1, P2Repository pr2) throws IOException {
+		return run(pr1, pr2, new Supplier[0]);
+	}
+
+	@SafeVarargs
+	public final boolean run(P2Repository pr1, P2Repository pr2, Supplier<Change>... acceptedChanges)
+			throws IOException {
 		List<FileDelta> dest = new ArrayList<>();
 
 		FileId root1 = FileId.newRoot(pr1.getPath());
@@ -284,6 +292,8 @@ public class RepositoryComparator {
 		FileId r2id = FileId.newRoot(r2.getPath());
 
 		List<Change> changes = new LinkedList<>();
+		for (Supplier<Change> a : acceptedChanges)
+			changes.add(a.get());
 
 		ObjectComparator<FileDelta> oc = oc1.setDeltaCreator(new DeltaCreator<FileDelta>() {
 
@@ -446,7 +456,7 @@ public class RepositoryComparator {
 		return d1.getBaselineFile() + " -> " + d1.getCurrentFile() + ": " + messageFormat.format(o1);
 	}
 
-	static abstract class Change {
+	public static abstract class Change {
 		abstract boolean accept(FileDelta delta);
 
 		abstract void check(Consumer<String> change);

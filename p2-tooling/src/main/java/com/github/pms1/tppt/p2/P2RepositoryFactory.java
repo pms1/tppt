@@ -100,7 +100,7 @@ public class P2RepositoryFactory {
 				ARTIFACT_PREFIX, compressions.values(), availableArtifacts);
 
 		return new P2RepositoryImpl(p, new CachingSupplier<ArtifactRepositoryFacade>(() -> {
-			try (InputStream is = preferedArtifacts.openStream(p, ARTIFACT_PREFIX)) {
+			try (InputStream is = preferedArtifacts.openInputStream(p, ARTIFACT_PREFIX)) {
 				return new ArtifactRepositoryFacadeImpl(
 						p.resolve(ARTIFACT_PREFIX + "." + preferedArtifacts.getFileSuffix()),
 						artifactRepositoryFactory.read(is));
@@ -108,7 +108,7 @@ public class P2RepositoryFactory {
 				throw new RuntimeException(e);
 			}
 		}), availableArtifacts, preferedArtifacts, new CachingSupplier<MetadataRepositoryFacade>(() -> {
-			try (InputStream is = preferedMetadata.openStream(p, METADATA_PREFIX)) {
+			try (InputStream is = preferedMetadata.openInputStream(p, METADATA_PREFIX)) {
 				return new MetadataRepositoryFacadeImpl(
 						p.resolve(METADATA_PREFIX + "." + preferedMetadata.getFileSuffix()),
 						metadataRepositoryFactory.read(is));

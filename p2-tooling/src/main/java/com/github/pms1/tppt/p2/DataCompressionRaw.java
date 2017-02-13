@@ -2,6 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -21,8 +22,13 @@ public class DataCompressionRaw implements DataCompression {
 	}
 
 	@Override
-	public InputStream openStream(Path path, String prefix) throws IOException {
-		return Files.newInputStream(path.resolve(prefix + ".xml"));
+	public InputStream openInputStream(Path repository, String prefix) throws IOException {
+		return Files.newInputStream(repository.resolve(prefix + ".xml"));
+	}
+
+	@Override
+	public OutputStream openOutputStream(Path repository, String prefix) throws IOException {
+		return Files.newOutputStream(repository.resolve(prefix + ".xml"));
 	}
 
 }

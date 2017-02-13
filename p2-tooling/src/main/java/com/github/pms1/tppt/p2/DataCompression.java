@@ -2,6 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 
 public interface DataCompression {
@@ -10,5 +11,7 @@ public interface DataCompression {
 
 	String getP2IndexSuffix();
 
-	InputStream openStream(Path path, String prefix) throws IOException;
+	InputStream openInputStream(Path repository, String prefix) throws IOException;
+
+	OutputStream openOutputStream(Path repository, String prefix) throws IOException;
 }
