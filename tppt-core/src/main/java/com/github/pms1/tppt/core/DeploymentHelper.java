@@ -1,5 +1,6 @@
 package com.github.pms1.tppt.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -99,7 +100,7 @@ public class DeploymentHelper {
 		Plugin plugin = p.getPlugin("com.github.pms1.tppt:tppt-maven-plugin");
 
 		Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
-		Xpp3Dom layout = configuration.getChild("layout");
+		Xpp3Dom layout = configuration != null ? configuration.getChild("layout") : null;
 		if (layout == null)
 			return "@{artifactId}-@{version}-@{timestamp}";
 		else
@@ -266,7 +267,7 @@ public class DeploymentHelper {
 		ArtifactRepositoryFacade facade = r.getArtifactRepositoryFacade();
 
 		for (ArtifactId e : facade.getArtifacts().keySet()) {
-			files.add(r.getPath().relativize(facade.getArtifactUri(e)).toString());
+			files.add(r.getPath().relativize(facade.getArtifactUri(e)).toString().replace(File.separatorChar, '/'));
 		}
 
 		return files;
@@ -299,6 +300,7 @@ public class DeploymentHelper {
 			}
 		}
 		
+		// FIXME: remove directories that got empty
 		if(false)
 		for(Path p : toRemove) {
 			throw new Error("p=" + p);
