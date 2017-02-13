@@ -195,9 +195,14 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	// Implementation-Url: http://hibernate.org
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		final String qualifiedVersion = project.getProperties().getProperty("qualifiedVersion");
-		if (Strings.isNullOrEmpty(qualifiedVersion))
+		final String buildQualifier = project.getProperties().getProperty("buildQualifier");
+		if (Strings.isNullOrEmpty(buildQualifier))
 			throw new MojoExecutionException("FIXME");
+
+		Version unqualifiedVersion = MavenVersion.parseString(project.getVersion()).getOSGiVersion();
+
+		Version qualifiedVersion = new Version(unqualifiedVersion.getMajor(), unqualifiedVersion.getMinor(),
+				unqualifiedVersion.getMinor(), buildQualifier);
 
 		final Path repoDependencies = target.toPath().resolve("repository-source");
 		final Path repoDependenciesPlugins = repoDependencies.resolve("plugins");
@@ -300,7 +305,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			Feature f = new Feature();
 			f.label = project.getName(); // null is ok
 			f.id = project.getArtifactId();
-			f.version = qualifiedVersion;
+			f.version = qualifiedVersion.toString();
 			f.plugins = plugins.toArray(new Plugin[plugins.size()]);
 
 			Files.createDirectories(repoFeaturesFeatures);
