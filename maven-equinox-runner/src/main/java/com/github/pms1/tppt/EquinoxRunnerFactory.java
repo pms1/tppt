@@ -16,7 +16,8 @@ public class EquinoxRunnerFactory {
 
 	class EquinoxRunnerBuilderImpl implements EquinoxRunnerBuilder {
 
-		Set<Path> installations = new HashSet<>();
+		private Set<Path> installations = new HashSet<>();
+		private Set<Plugin> bundles = new HashSet<>();
 
 		@Override
 		public EquinoxRunnerBuilder withInstallation(Path path) {
@@ -41,7 +42,24 @@ public class EquinoxRunnerFactory {
 				});
 			}
 
+			plugins.addAll(bundles);
+
 			return new EquinoxRunner(plugins);
+		}
+
+		@Override
+		public EquinoxRunnerBuilder withPlugin(Path path) throws IOException {
+			Plugin bundle;
+			try {
+				bundle = EquinoxRunner.scanPlugin(path);
+			} catch (BundleException e) {
+				throw new RuntimeException(e);
+			}
+
+			if (bundle == null)
+				throw new IllegalArgumentException("Not an OSGi bundle: " + path);
+			bundles.add(bundle);
+			return this;
 		}
 
 	}

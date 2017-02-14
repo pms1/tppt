@@ -27,6 +27,12 @@
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
+			<artifactId>tppt-mirror-application</artifactId>
+			<version>0.0.2-SNAPSHOT</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>p2-tooling</artifactId>
 			<version>0.0.2-SNAPSHOT</version>
 		</dependency>

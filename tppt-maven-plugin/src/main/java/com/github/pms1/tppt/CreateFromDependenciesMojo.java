@@ -3,6 +3,7 @@ package com.github.pms1.tppt;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,6 +39,7 @@ import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -79,6 +81,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
+
+	@Parameter(defaultValue = "${mojoExecution}", readonly = true)
+	private MojoExecution mojoExecution;
 
 	@Component
 	private RepositorySystem repositorySystem;
@@ -319,6 +324,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 										// since it's the last entry
 			}
 
+			StringWriter sw = new StringWriter();
+			JAXB.marshal(f, sw);
+
+			exitCode = createRunner().run("-application", "tppt-mirror-application.id1", sw.toString());
+			if (exitCode != 0)
+				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+
 			exitCode = createRunner().run("-application",
 					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source", repoFeatures.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
@@ -516,8 +528,11 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			Artifact platform = resolveDependency(session,
 					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "0.26.0", "zip"));
 
+			Artifact extra = resolveDependency(session, repositorySystem.createArtifact("com.github.pms1.tppt",
+					"tppt-mirror-application", mojoExecution.getVersion(), "jar"));
+
 			Path p = installer.addRuntimeArtifact(session, platform);
-			runner = runnerFactory.newBuilder().withInstallation(p).build();
+			runner = runnerFactory.newBuilder().withInstallation(p).withPlugin(extra.getFile().toPath()).build();
 		}
 		return runner;
 	}

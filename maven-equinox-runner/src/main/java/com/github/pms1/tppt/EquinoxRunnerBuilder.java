@@ -13,4 +13,6 @@ public interface EquinoxRunnerBuilder {
 
 	EquinoxRunner build() throws IOException;
 
+	EquinoxRunnerBuilder withPlugin(Path path) throws IOException;
+
 }

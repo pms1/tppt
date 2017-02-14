@@ -204,6 +204,7 @@
 		<module>p2-tooling</module>
 		<module>tppt-core</module>
 		<module>tppt-maven-plugin</module>
+		<module>tppt-mirror-application</module>
 	</modules>
 
 	<profiles>
