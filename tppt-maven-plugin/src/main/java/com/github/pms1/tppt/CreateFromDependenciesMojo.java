@@ -296,10 +296,10 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					repoDependencies.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
-					"-publishArtifacts" //
-			// "-metadataRepositoryName", "foo1", "-artifactRepositoryName",
-			// "bar"
-			);
+					"-publishArtifacts", //
+					"-append", "true", //
+					"-metadataRepositoryName", "tppt", //
+					"-artifactRepositoryName", "tppt");
 
 			// ** create and publish feature
 			Feature f = new Feature();
