@@ -7,6 +7,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "feature")
 public class Feature {
 
+	@XmlElement
+	public String description;
+
 	@XmlAttribute
 	public String id;
 

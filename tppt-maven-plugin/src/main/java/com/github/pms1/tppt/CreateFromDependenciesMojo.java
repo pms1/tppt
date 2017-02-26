@@ -308,6 +308,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			// ** create and publish feature
 			Feature f = new Feature();
+			f.description = project.getDescription();
 			f.label = project.getName(); // null is ok
 			f.id = project.getArtifactId();
 			f.version = qualifiedVersion.toString();
