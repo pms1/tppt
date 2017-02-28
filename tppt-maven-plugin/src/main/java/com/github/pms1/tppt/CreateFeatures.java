@@ -3,7 +3,7 @@ package com.github.pms1.tppt;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -11,10 +11,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
@@ -24,6 +23,8 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import javax.xml.bind.JAXB;
 
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
@@ -43,23 +44,25 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
-import org.apache.maven.shared.dependency.graph.DependencyNode;
-import org.apache.maven.shared.dependency.graph.traversal.DependencyNodeVisitor;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
+import com.github.pms1.tppt.jaxb.Feature;
 import com.github.pms1.tppt.jaxb.Plugin;
+import com.github.pms1.tppt.p2.ArtifactId;
+import com.github.pms1.tppt.p2.P2Repository;
+import com.github.pms1.tppt.p2.P2RepositoryFactory;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
+import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
+import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
 
-import aQute.bnd.osgi.Builder;
-import aQute.bnd.osgi.Jar;
 import aQute.bnd.version.MavenVersion;
 import aQute.bnd.version.Version;
 
@@ -68,8 +71,8 @@ import aQute.bnd.version.Version;
  * 
  * @author pms1
  **/
-@Mojo(name = "create-from-dependencies", requiresDependencyResolution = ResolutionScope.COMPILE)
-public class CreateFromDependenciesMojo extends AbstractMojo {
+@Mojo(name = "create-features", requiresDependencyResolution = ResolutionScope.COMPILE)
+public class CreateFeatures extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project.build.directory}", required = true, readonly = true)
 	private File target;
@@ -104,6 +107,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
 
+	@Component
+	private P2RepositoryFactory p2repositoryFactory;
+
 	@Parameter
 	private ArtifactFilter exclusionTransitives = new ExclusionSetFilter(Collections.emptySet());
 
@@ -118,14 +124,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		this.exclusions = new ExclusionSetFilter(exclusions);
 	}
 
-	static Plugin scanPlugin(Path p) throws IOException, BundleException, MojoExecutionException {
+	static Plugin scanPlugin(Path path, Plugin plugin) throws IOException, BundleException, MojoExecutionException {
 		long compressedSize = 0;
 		long uncompressedSize = 0;
-		Map<String, String> manifest = null;
 
 		// Cannot use ZipInputStream since that leaves getCompressedSize() and
 		// getSize() of ZipEntry unfilled
-		try (ZipFile zf = new ZipFile(p.toFile())) {
+		try (ZipFile zf = new ZipFile(path.toFile())) {
 			for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
 				ZipEntry entry = e.nextElement();
 
@@ -136,40 +141,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				if (entry.getSize() == -1)
 					throw new Error();
 				uncompressedSize += entry.getSize();
-
-				boolean isManifest = entry.getName().equals("META-INF/MANIFEST.MF");
-
-				if (isManifest) {
-					if (manifest != null)
-						throw new IllegalStateException();
-
-					manifest = ManifestElement.parseBundleManifest(zf.getInputStream(entry), null);
-				}
 			}
 		}
 
-		if (manifest == null)
-			return null;
+		plugin.download_size = compressedSize / 1024;
+		plugin.install_size = uncompressedSize / 1024;
 
-		ManifestElement[] elements = ManifestElement.parseHeader(Constants.BUNDLE_SYMBOLICNAME,
-				manifest.get(Constants.BUNDLE_SYMBOLICNAME));
-		if (elements == null)
-			return null;
-
-		if (elements.length != 1)
-			throw new MojoExecutionException("FIXME");
-		Plugin result = new Plugin();
-		result.id = elements[0].getValue();
-
-		elements = ManifestElement.parseHeader(Constants.BUNDLE_VERSION, manifest.get(Constants.BUNDLE_VERSION));
-		if (elements.length != 1)
-			throw new MojoExecutionException("FIXME");
-		result.version = elements[0].getValue();
-		result.download_size = compressedSize / 1024;
-		result.install_size = uncompressedSize / 1024;
-		result.unpack = true;
-
-		return result;
+		return plugin;
 	}
 
 	private final static List<Name> binaryHeaders = Arrays
@@ -194,113 +172,89 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	// Specification-Version: 5.2.3.Final
 	// Implementation-Url: http://hibernate.org
 
+	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-
-		final Path repoDependencies = target.toPath().resolve("repository-source");
-		final Path repoDependenciesPlugins = repoDependencies.resolve("plugins");
-
-		final Path repoOut = target.toPath().resolve("repository");
-
 		try {
-			Files.createDirectories(repoDependenciesPlugins);
+			final String buildQualifier = project.getProperties().getProperty("buildQualifier");
+			if (Strings.isNullOrEmpty(buildQualifier))
+				throw new MojoExecutionException("FIXME");
 
-			List<Plugin> plugins = new LinkedList<>();
+			Version unqualifiedVersion = MavenVersion.parseString(project.getVersion()).getOSGiVersion();
 
-			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
-			pbRequest.setLocalRepository(localRepository);
-			pbRequest.setProject(project);
-			pbRequest.setRemoteRepositories(remoteRepositories);
-			pbRequest.setRepositorySession(session.getRepositorySession());
-			pbRequest.setResolveDependencies(true);
-			pbRequest.setResolveVersionRanges(true);
+			Version qualifiedVersion = new Version(unqualifiedVersion.getMajor(), unqualifiedVersion.getMinor(),
+					unqualifiedVersion.getMinor(), buildQualifier);
 
-			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);
+			final Path repoFeatures = target.toPath().resolve("repository-features");
+			final Path repoFeaturesFeatures = repoFeatures.resolve("features");
+			final Path repoOut = target.toPath().resolve("repository");
 
-			Set<Artifact> artifacts = new HashSet<>();
+			List<Plugin> plugins = new ArrayList<>();
 
-			n.accept(new DependencyNodeVisitor() {
-				@Override
-				public boolean visit(DependencyNode node) {
-					if (node.getArtifact() != project.getArtifact() && exclusions.include(node.getArtifact())) {
-						artifacts.add(node.getArtifact());
-					}
+			P2Repository p2 = p2repositoryFactory.create(repoOut);
+			for (Unit u : p2.getMetadataRepositoryFacade().getMetadata().getUnits().getUnit()) {
+				Optional<Provided> provided = u.getProvides().getProvided().stream()
+						.filter(p -> p.getNamespace().equals("osgi.bundle")).findAny();
+				if (!provided.isPresent())
+					continue;
 
-					return exclusionTransitives.include(node.getArtifact());
-				}
-
-				@Override
-				public boolean endVisit(DependencyNode node) {
-					return true;
-				}
-			});
-
-			for (Artifact a : artifacts) {
-				Plugin plugin = scanPlugin(a.getFile().toPath());
-				if (plugin == null) {
-					getLog().info("Dependency is not an OSGi bundle: " + a);
-					plugin = createPlugin(a, repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
-				} else {
-					Files.copy(a.getFile().toPath(),
-							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
-				}
-
-				if (plugin == null)
+				if (u.getArtifacts().getArtifact().size() != 1)
 					throw new Error();
 
-				plugins.add(plugin);
+				MetadataArtifact a = Iterables.getOnlyElement(u.getArtifacts().getArtifact());
+				Path path = p2.getArtifactRepositoryFacade().getArtifactUri(new ArtifactId(a.getId(), a.getVersion()));
+				System.err.println("P " + path);
 
-				// try to find artifacts with "sources" qualifier
-				Artifact sourcesArtifact = repositorySystem.createArtifactWithClassifier(a.getGroupId(),
-						a.getArtifactId(), a.getVersion(), "jar", "sources");
-				ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-				request.setArtifact(sourcesArtifact);
-				request.setRemoteRepositories(remoteRepositories);
-				request.setLocalRepository(localRepository);
-				ArtifactResolutionResult resolution = repositorySystem.resolve(request);
-
-				switch (resolution.getArtifacts().size()) {
-				case 0:
-					// no sources: sad, but ok
-					break;
-				case 1:
-					Artifact sourceArtifact = Iterables.getOnlyElement(resolution.getArtifacts());
-
-					Path out1 = repoDependenciesPlugins.resolve(sourceArtifact.getFile().toPath().getFileName());
-
-					createSourceBundle(plugin, sourceArtifact.getFile().toPath(), out1);
-
-					plugins.add(scanPlugin(out1));
-
-					break;
-				default:
-					for (Artifact a2 : resolution.getArtifacts()) {
-						System.err.println("SOURCE " + a2 + " " + a2.isResolved() + " " + a2.getFile());
-					}
-					throw new Error("FIXME");
-				}
+				Plugin p = new Plugin();
+				p.id = provided.get().getName();
+				p.version = provided.get().getVersion().toString();
+				scanPlugin(path, p);
+				p.unpack = true; // FIXME
+				plugins.add(p);
 			}
 
-			int exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source",
-					repoDependencies.toString(), //
-					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
-					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
-					"-publishArtifacts", //
-					"-append", "true", //
-					"-metadataRepositoryName", "tppt", //
-					"-artifactRepositoryName", "tppt");
+			// ** create and publish feature
+			Feature f = new Feature();
+			f.description = project.getDescription();
+			f.label = project.getName(); // null is ok
+			f.id = project.getArtifactId();
+			f.version = qualifiedVersion.toString();
+			f.plugins = plugins.toArray(new Plugin[plugins.size()]);
+
+			Files.createDirectories(repoFeaturesFeatures);
+
+			try (OutputStream os = Files.newOutputStream(repoFeaturesFeatures.resolve("feature.jar"));
+					JarOutputStream jar = new JarOutputStream(os)) {
+				JarEntry je = new JarEntry("feature.xml");
+
+				jar.putNextEntry(je);
+				JAXB.marshal(f, jar); // might close the stream, but that's ok
+										// since it's the last entry
+			}
+
+			StringWriter sw = new StringWriter();
+			JAXB.marshal(f, sw);
+
+			int exitCode = createRunner().run("-application", "tppt-mirror-application.id1", sw.toString());
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 
-			Files.write(repoOut.resolve("p2.index"),
-					"version = 1\rmetadata.repository.factory.order = content.xml,\\!\rartifact.repository.factory.order = artifacts.xml,\\!\r"
-							.getBytes(StandardCharsets.US_ASCII));
+			exitCode = createRunner().run("-application",
+					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source", repoFeatures.toString(), //
+					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
+					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
+					"-publishArtifacts", //
+					// "-metadataRepositoryName", "foo1",
+					// "-artifactRepositoryName", "bar",
+					"-append");
+			if (exitCode != 0)
+				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
+
 	}
 
 	private Artifact resolve(Artifact artifact) {
@@ -405,36 +359,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				throw new MojoExecutionException("Failed creating source bundle '" + out1 + "' from '" + bundle + "'",
 						e);
 			}
-		}
-	}
-
-	private Plugin createPlugin(Artifact a, Path resolve) throws Exception {
-		try (Builder builder = new Builder()) {
-			builder.setTrace(true);
-
-			Jar classesDirJar = new Jar(a.getFile());
-			// classesDirJar.setManifest(new Manifest());
-
-			builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
-			// builder.setProperty(Constants.BUNDLE_NAME, project.getName());
-
-			Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
-			builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
-			builder.setProperty(Constants.EXPORT_PACKAGE, "*");
-
-			// builder.setProperty("ver", "1.1.1");
-			// builder.setProperty("Export-Package", "*;version=${ver}");
-			builder.setJar(classesDirJar);
-
-			Jar j = builder.build();
-
-			if (false)
-				for (Object o : j.getManifest().getMainAttributes().entrySet())
-					System.err.println(o);
-
-			j.write(resolve.toFile());
-
-			return scanPlugin(resolve);
 		}
 	}
 

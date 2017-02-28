@@ -13,6 +13,7 @@ import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
+import com.github.pms1.tppt.p2.jaxb.artifact.Property;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
@@ -62,6 +63,18 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 		public Artifact getData() {
 			return data;
 		}
+
+		@Override
+		public String getFormat() {
+			return getPropertyString("format");
+		}
+
+		@Override
+		public String getPropertyString(String key) {
+			return data.getProperties().getProperty().stream().filter(p -> p.getName().equals(key))
+					.map(Property::getValue).findAny().orElse(null);
+		}
+
 	}
 
 	@Override
@@ -94,6 +107,8 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 				switch (k) {
 				case "classifier":
 					return artifact.data.getClassifier();
+				case "format":
+					return artifact.getFormat();
 				default:
 					throw new Error("" + k);
 				}

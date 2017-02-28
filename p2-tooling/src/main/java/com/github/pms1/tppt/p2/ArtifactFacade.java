@@ -8,4 +8,9 @@ public interface ArtifactFacade {
 	String getClassifier();
 
 	Artifact getData();
+
+	String getFormat();
+
+	String getPropertyString(String key);
+
 }
