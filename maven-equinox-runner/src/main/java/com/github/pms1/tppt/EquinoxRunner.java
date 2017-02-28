@@ -36,14 +36,26 @@ public class EquinoxRunner {
 			try {
 				for (;;) {
 					int c;
+					// FIXME: be efficient and read multiple at once
 					c = is.read();
 					if (c == -1)
 						break;
 					os.write(c);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				e.printStackTrace(System.err);
+			} finally {
+				try {
+					is.close();
+				} catch (IOException e) {
+					e.printStackTrace(System.err);
+				}
+				if (os != System.out && os != System.err)
+					try {
+						os.close();
+					} catch (IOException e) {
+						e.printStackTrace(System.err);
+					}
 			}
 		}
 	}
@@ -93,6 +105,10 @@ public class EquinoxRunner {
 	}
 
 	public int run(String... args) throws IOException, InterruptedException {
+		return run(null, args);
+	}
+
+	public int run(InputStream is, String... args) throws IOException, InterruptedException {
 
 		Path temp = Files.createTempDirectory("com.github.pms1.tppt");
 
@@ -153,12 +169,23 @@ public class EquinoxRunner {
 		Collections.addAll(command, args);
 		System.err.println(command);
 		Process pr = new ProcessBuilder(command).directory(temp.toFile()).start();
-		pr.getOutputStream().close();
+
+		CopyThread stdin = null;
+		if (is != null) {
+			stdin = new CopyThread(is, pr.getOutputStream());
+			stdin.start();
+		} else {
+			stdin = null;
+			pr.getOutputStream().close();
+		}
+
 		CopyThread stdout = new CopyThread(pr.getInputStream(), System.out);
 		stdout.start();
 		CopyThread stderr = new CopyThread(pr.getErrorStream(), System.err);
 		stderr.start();
 		int exitCode = pr.waitFor();
+		if (stdin != null)
+			stdin.join();
 		stdout.join();
 		stderr.join();
 

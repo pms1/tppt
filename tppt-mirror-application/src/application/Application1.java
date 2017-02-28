@@ -1,6 +1,8 @@
 package application;
 
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import javax.xml.bind.JAXB;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -54,6 +58,28 @@ public class Application1 implements IApplication {
 	public Object start(IApplicationContext context) throws Exception {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 		System.err.println("Application1.start " + Arrays.asList((String[]) args));
+
+		for (String s : Arrays.asList((String[]) args)) {
+			MirrorSpec ms;
+			if (s.equals("-")) {
+				if (false)
+					for (;;) {
+						int c = System.in.read();
+						System.err.println("XX " + c);
+						if (c == -1)
+							return null;
+					}
+				System.err.println("Application1.reading");
+				ms = JAXB.unmarshal(System.in, MirrorSpec.class);
+				System.err.println("Application1.read");
+			} else {
+				try (InputStream is = Files.newInputStream(Paths.get(s))) {
+					ms = JAXB.unmarshal(is, MirrorSpec.class);
+				}
+			}
+			System.err.println("Application1.MS " + ms);
+			System.err.println("Application1.IUS " + Arrays.toString(ms.ius));
+		}
 
 		IProgressMonitor monitor = new IProgressMonitor() {
 

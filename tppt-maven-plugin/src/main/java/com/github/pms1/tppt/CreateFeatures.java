@@ -1,9 +1,9 @@
 package com.github.pms1.tppt;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +26,7 @@ import java.util.zip.ZipFile;
 
 import javax.xml.bind.JAXB;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -226,12 +227,22 @@ public class CreateFeatures extends AbstractMojo {
 										// since it's the last entry
 			}
 
-			StringWriter sw = new StringWriter();
-			JAXB.marshal(f, sw);
+			application.MirrorSpec ms = new application.MirrorSpec();
+			ms.ius = new String[] { "foo", "bar" };
 
-			int exitCode = createRunner().run("-application", "tppt-mirror-application.id1", sw.toString());
-			if (exitCode != 0)
-				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+			byte[] bytes;
+			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+				JAXB.marshal(ms, baos);
+				baos.flush();
+				bytes = baos.toByteArray();
+			}
+
+			int exitCode;
+			try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+				exitCode = createRunner().run(bais, "-application", "tppt-mirror-application.id1", "-");
+				if (exitCode != 0)
+					throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+			}
 
 			exitCode = createRunner().run("-application",
 					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source", repoFeatures.toString(), //
