@@ -125,7 +125,6 @@ public class CreateFeatures extends AbstractMojo {
 	}
 
 	static Plugin scanPlugin(Path path, Plugin plugin) throws IOException, BundleException, MojoExecutionException {
-		long compressedSize = 0;
 		long uncompressedSize = 0;
 
 		// Cannot use ZipInputStream since that leaves getCompressedSize() and
@@ -134,17 +133,13 @@ public class CreateFeatures extends AbstractMojo {
 			for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
 				ZipEntry entry = e.nextElement();
 
-				if (entry.getCompressedSize() == -1)
-					throw new Error();
-				compressedSize += entry.getCompressedSize();
-
 				if (entry.getSize() == -1)
 					throw new Error();
 				uncompressedSize += entry.getSize();
 			}
 		}
 
-		plugin.download_size = compressedSize / 1024;
+		plugin.download_size = Files.size(path) / 1024;
 		plugin.install_size = uncompressedSize / 1024;
 
 		return plugin;
@@ -208,7 +203,7 @@ public class CreateFeatures extends AbstractMojo {
 				p.id = provided.get().getName();
 				p.version = provided.get().getVersion().toString();
 				scanPlugin(path, p);
-				p.unpack = true; // FIXME
+				p.unpack = false;
 				plugins.add(p);
 			}
 
