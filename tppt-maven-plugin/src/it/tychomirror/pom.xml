@@ -2,8 +2,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.pms1.tppt</groupId>
-	<artifactId>test</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<artifactId>tychomirror</artifactId>
+	<version>0.0.0-SNAPSHOT</version>
 	<packaging>tppt-repository</packaging>
 
 	<dependencies>
@@ -37,7 +37,7 @@
 					<source>
 						<!-- source repositories to mirror from -->
 						<repository>
-							<url>http://download.eclipse.org/releases/neon/</url>
+							<url>http://download.eclipse.org/releases/neon/201612211000</url>
 							<layout>p2</layout>
 							<!-- supported layouts are "p2-metadata", "p2-artifacts", and "p2" (for joint repositories; default) -->
 						</repository>

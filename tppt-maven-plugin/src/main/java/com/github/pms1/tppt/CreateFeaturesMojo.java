@@ -1,6 +1,5 @@
 package com.github.pms1.tppt;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,7 +25,6 @@ import java.util.zip.ZipFile;
 
 import javax.xml.bind.JAXB;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -73,7 +71,7 @@ import aQute.bnd.version.Version;
  * @author pms1
  **/
 @Mojo(name = "create-features", requiresDependencyResolution = ResolutionScope.COMPILE)
-public class CreateFeatures extends AbstractMojo {
+public class CreateFeaturesMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project.build.directory}", required = true, readonly = true)
 	private File target;
@@ -187,6 +185,9 @@ public class CreateFeatures extends AbstractMojo {
 			List<Plugin> plugins = new ArrayList<>();
 
 			P2Repository p2 = p2repositoryFactory.create(repoOut);
+			if (p2 == null)
+				throw new IllegalArgumentException("Could not find a p2 repository at " + repoOut);
+
 			for (Unit u : p2.getMetadataRepositoryFacade().getMetadata().getUnits().getUnit()) {
 				Optional<Provided> provided = u.getProvides().getProvided().stream()
 						.filter(p -> p.getNamespace().equals("osgi.bundle")).findAny();
@@ -198,8 +199,8 @@ public class CreateFeatures extends AbstractMojo {
 
 				MetadataArtifact a = Iterables.getOnlyElement(u.getArtifacts().getArtifact());
 				Path path = p2.getArtifactRepositoryFacade().getArtifactUri(new ArtifactId(a.getId(), a.getVersion()));
-				System.err.println("P " + path);
 
+				// FIXME: fragments
 				Plugin p = new Plugin();
 				p.id = provided.get().getName();
 				p.version = provided.get().getVersion().toString();
@@ -227,30 +228,12 @@ public class CreateFeatures extends AbstractMojo {
 										// since it's the last entry
 			}
 
-			application.MirrorSpec ms = new application.MirrorSpec();
-			ms.ius = new String[] { "foo", "bar" };
-
-			byte[] bytes;
-			try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-				JAXB.marshal(ms, baos);
-				baos.flush();
-				bytes = baos.toByteArray();
-			}
-
-			int exitCode;
-			try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-				exitCode = createRunner().run(bais, "-application", "tppt-mirror-application.id1", "-");
-				if (exitCode != 0)
-					throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
-			}
-
-			exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source", repoFeatures.toString(), //
+			int exitCode = createRunner().run("-application",
+					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
+					"-source", repoFeatures.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-publishArtifacts", //
-					// "-metadataRepositoryName", "foo1",
-					// "-artifactRepositoryName", "bar",
 					"-append");
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
