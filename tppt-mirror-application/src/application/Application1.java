@@ -71,6 +71,8 @@ public class Application1 implements IApplication {
 			System.out.println("Application1.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
 			System.out.println("Application1.targetRepository   = " + ms.targetRepository);
 			System.out.println("Application1.installableUnit    = " + Arrays.toString(ms.ius));
+			System.out.println("Application1.offline            = " + ms.offline);
+			System.out.println("Application1.stats              = " + ms.stats);
 
 			IProgressMonitor monitor = new IProgressMonitor() {
 
@@ -134,7 +136,7 @@ public class Application1 implements IApplication {
 				Activator.getContext().ungetService(serviceReference);
 			}
 
-			MyTransport transport = new MyTransport(ms.mirrorRepository);
+			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
 			ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 			MirrorApplication ma = new MirrorApplication() {

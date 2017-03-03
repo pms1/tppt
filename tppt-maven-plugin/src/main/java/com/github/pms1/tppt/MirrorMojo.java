@@ -34,6 +34,9 @@ import org.apache.maven.repository.RepositorySystem;
 
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 
+import application.MirrorSpec.OfflineType;
+import application.MirrorSpec.StatsType;
+
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
  * 
@@ -78,6 +81,9 @@ public class MirrorMojo extends AbstractMojo {
 	@Parameter
 	private List<Mirror> mirrors = Collections.emptyList();
 
+	@Parameter
+	private StatsType stats = StatsType.collect;
+
 	public static class Mirror {
 		@Parameter
 		public List<String> ius;
@@ -100,6 +106,8 @@ public class MirrorMojo extends AbstractMojo {
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
 				ms.sourceRepositories = m.sources.toArray(new URI[m.sources.size()]);
 				ms.targetRepository = repoOut;
+				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
+				ms.stats = stats;
 
 				byte[] bytes;
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

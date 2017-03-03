@@ -44,15 +44,28 @@ import org.eclipse.equinox.p2.core.ProvisionException;
 import org.eclipse.equinox.p2.repository.IRepository;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
 
+import application.MirrorSpec.OfflineType;
+import application.MirrorSpec.StatsType;
 import application.jaxb.Mirror;
 import application.jaxb.Mirrors;
 
 public class MyTransport extends Transport {
-	final static int BUFFER_SIZE = 4096;
+	private final static int BUFFER_SIZE = 4096;
 
-	public MyTransport(Path root) {
+	private final Path root;
+
+	private final OfflineType offline;
+
+	private final StatsType stats;
+
+	// see p2's OfflineTransport
+	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
+
+	public MyTransport(Path root, OfflineType offline, StatsType stats) {
 		Objects.requireNonNull(root);
 		this.root = root;
+		this.offline = offline;
+		this.stats = stats;
 	}
 
 	@Override
@@ -85,6 +98,9 @@ public class MyTransport extends Transport {
 				} catch (NoSuchFileException e) {
 
 				}
+
+				if (offline == OfflineType.offline)
+					return OFFLINE_STATUS;
 
 				System.err.println(uri + " -> " + path);
 
@@ -211,8 +227,6 @@ public class MyTransport extends Transport {
 		return result;
 	}
 
-	private final Path root;
-
 	private Path toPath(URI toDownload) {
 		Path path = root;
 
@@ -268,17 +282,22 @@ public class MyTransport extends Transport {
 
 		boolean isStats = mirrorFiles.values().stream()
 				.anyMatch(p -> p.stats != null && toDownload.toString().startsWith(p.stats));
-		System.err.println("IS STATUS " + isStats);
 
-		if (isStats)
+		if (isStats) {
+			// FileNotFound is the expected result for statistics anyway, so we
+			// can use it safely if we don't access them at all.
+
+			if (offline == OfflineType.offline)
+				throw new FileNotFoundException("Offline: " + toDownload);
+
+			if (stats == StatsType.suppress)
+				throw new FileNotFoundException("Accessing statistics was suppressed: " + toDownload);
+
 			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
 
 				HttpHead get = new HttpHead(toDownload);
 
 				try (CloseableHttpResponse response = httpClient.execute(get)) {
-
-					HttpEntity entity = response.getEntity();
-					System.err.println("E=" + entity);
 					switch (response.getStatusLine().getStatusCode()) {
 					case HttpStatus.SC_UNAUTHORIZED:
 						throw new AuthenticationFailedException();
@@ -291,9 +310,12 @@ public class MyTransport extends Transport {
 					}
 
 				}
+			} catch (FileNotFoundException | AuthenticationFailedException e) {
+				throw e;
 			} catch (IOException e) {
 				throw new Error(e);
 			}
+		}
 
 		Path p = toPath(toDownload);
 		IStatus status = mirror(toDownload, p, monitor);

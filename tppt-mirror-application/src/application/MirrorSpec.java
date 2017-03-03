@@ -39,4 +39,17 @@ public class MirrorSpec {
 	@XmlElement(name = "iu")
 	public String[] ius;
 
+	@XmlElement
+	public OfflineType offline;
+
+	public static enum OfflineType {
+		offline, online;
+	}
+
+	@XmlElement
+	public StatsType stats;
+
+	public static enum StatsType {
+		collect, suppress;
+	}
 }
