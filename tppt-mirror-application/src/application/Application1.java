@@ -134,7 +134,7 @@ public class Application1 implements IApplication {
 				Activator.getContext().ungetService(serviceReference);
 			}
 
-			MyTransport transport = new MyTransport();
+			MyTransport transport = new MyTransport(ms.mirrorRepository);
 			ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 			MirrorApplication ma = new MirrorApplication() {

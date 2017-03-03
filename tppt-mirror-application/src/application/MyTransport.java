@@ -8,7 +8,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -16,6 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -48,6 +48,11 @@ import application.jaxb.Mirrors;
 
 public class MyTransport extends Transport {
 	final static int BUFFER_SIZE = 4096;
+
+	public MyTransport(Path root) {
+		Objects.requireNonNull(root);
+		this.root = root;
+	}
 
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, long startPos, IProgressMonitor monitor) {
@@ -205,11 +210,13 @@ public class MyTransport extends Transport {
 		return result;
 	}
 
-	private Path toPath(URI toDownload) {
-		Path root = Paths.get("c:/temp/mirror2");
+	private final Path root;
 
-		root = root.resolve(toDownload.getScheme());
-		root = root.resolve(toDownload.getHost());
+	private Path toPath(URI toDownload) {
+		Path path = root;
+
+		path = path.resolve(toDownload.getScheme());
+		path = path.resolve(toDownload.getHost());
 
 		String p = toDownload.getPath();
 		if (!p.startsWith("/"))
@@ -220,9 +227,9 @@ public class MyTransport extends Transport {
 		if (q != null)
 			p += "_" + q;
 
-		root = root.resolve(p);
+		path = path.resolve(p);
 
-		return root;
+		return path;
 	}
 
 	@Override
