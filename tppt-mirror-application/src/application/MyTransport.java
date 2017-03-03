@@ -27,6 +27,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.DateUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -265,6 +266,35 @@ public class MyTransport extends Transport {
 	public long getLastModified(URI toDownload, IProgressMonitor monitor)
 			throws CoreException, FileNotFoundException, AuthenticationFailedException {
 
+		boolean isStats = mirrorFiles.values().stream()
+				.anyMatch(p -> p.stats != null && toDownload.toString().startsWith(p.stats));
+		System.err.println("IS STATUS " + isStats);
+
+		if (isStats)
+			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+
+				HttpHead get = new HttpHead(toDownload);
+
+				try (CloseableHttpResponse response = httpClient.execute(get)) {
+
+					HttpEntity entity = response.getEntity();
+					System.err.println("E=" + entity);
+					switch (response.getStatusLine().getStatusCode()) {
+					case HttpStatus.SC_UNAUTHORIZED:
+						throw new AuthenticationFailedException();
+					case HttpStatus.SC_OK:
+						return parseLastModified(response).getTime();
+					case HttpStatus.SC_NOT_FOUND:
+						throw new FileNotFoundException("not found: " + toDownload);
+					default:
+						throw new Error(get + " -> " + response);
+					}
+
+				}
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+
 		Path p = toPath(toDownload);
 		IStatus status = mirror(toDownload, p, monitor);
 
@@ -319,19 +349,21 @@ public class MyTransport extends Transport {
 	}
 
 	static class RepoMirror {
-		public RepoMirror(String base, String mirrorFile) {
+		public RepoMirror(String base, String mirrorFile, String stats) {
 			this.base = base;
 			this.mirrorFile = mirrorFile;
+			this.stats = stats;
 		}
 
 		final String mirrorFile;
 		final String base;
+		final String stats;
 
 		Mirror[] mirrors = new Mirror[0];
 
 		@Override
 		public String toString() {
-			return "RepoMirror(mirrorFile=" + mirrorFile + ",base=" + base + ")";
+			return "RepoMirror(mirrorFile=" + mirrorFile + ",base=" + base + ",stats=" + stats + ")";
 		}
 	}
 
@@ -341,13 +373,21 @@ public class MyTransport extends Transport {
 		for (IArtifactRepository repo : repositories) {
 			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);
 			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);
+			String stats = repo.getProperties().get("p2.statsURI"); // no public
+																	// constant
 			if (mirror == null)
 				continue;
+
+			// be a bit paranoid and sanitize these values
+			if (base != null && base.isEmpty())
+				base = null;
+			if (stats != null && stats.isEmpty())
+				stats = null;
 
 			if (base == null)
 				base = repo.getLocation().toString();
 
-			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror));
+			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));
 		}
 	}
 
