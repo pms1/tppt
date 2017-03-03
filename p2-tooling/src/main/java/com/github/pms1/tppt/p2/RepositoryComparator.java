@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,6 +51,9 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 
@@ -265,6 +267,45 @@ public class RepositoryComparator {
 		return run(pr1, pr2, new Supplier[0]);
 	}
 
+	private void compareArtifacts(ArtifactRepositoryFacade r1, FileId r1id, ArtifactFacade a1,
+			ArtifactRepositoryFacade r2, FileId r2id, ArtifactFacade a2, List<FileDelta> dest, List<Change> changes)
+			throws IOException {
+
+		Path p1 = r1.getArtifactUri(a1.getId());
+		Path p2 = r2.getArtifactUri(a2.getId());
+
+		String classifier1 = a1.getClassifier();
+		String classifier2 = a2.getClassifier();
+		if (!classifier1.equals(classifier2)) {
+			dest.add(new ArtifactClassifierDelta(r1id, r2id, a1.getId().getId(), render(a1), render(a2)));
+			return;
+		}
+
+		FileId file1 = FileId.newRoot(p1);
+		FileId file2 = FileId.newRoot(p2);
+
+		FileComparator comparator = null;
+		switch (classifier1) {
+		case "osgi.bundle":
+			comparator = comparators.get(BundleComparator.HINT);
+			changes.add(new BundleVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
+					a2.getId().getVersion()));
+			break;
+		case "org.eclipse.update.feature":
+			comparator = comparators.get(FeatureComparator.HINT);
+			changes.add(new FeatureVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
+					a2.getId().getVersion()));
+			break;
+		case "binary":
+			comparator = comparators.get(BinaryComparator.HINT);
+			break;
+		default:
+			throw new Error("Unhandled artifact classifier " + classifier1);
+		}
+
+		comparator.compare(file1, p1, file2, p2, dest::add);
+	}
+
 	@SafeVarargs
 	public final boolean run(P2Repository pr1, P2Repository pr2, Supplier<Change>... acceptedChanges)
 			throws IOException {
@@ -362,65 +403,35 @@ public class RepositoryComparator {
 
 		dest.addAll(oc.compare(md1, md2));
 
-		Map<String, ArtifactFacade> m1 = new HashMap<>();
-		Map<String, ArtifactFacade> m2 = new HashMap<>();
-		for (ArtifactFacade a : r1.getArtifacts().values()) {
-			ArtifactFacade old = m1.put(a.getId().getId(), a);
-			if (old != null)
-				throw new Error();
-		}
-		for (ArtifactFacade a : r2.getArtifacts().values()) {
-			ArtifactFacade old = m2.put(a.getId().getId(), a);
-			if (old != null)
-				throw new Error();
-		}
+		Multimap<String, ArtifactId> id1 = HashMultimap.create();
+		Multimap<String, ArtifactId> id2 = HashMultimap.create();
 
-		for (Map.Entry<String, ArtifactFacade> e1 : m1.entrySet()) {
-			ArtifactFacade a2 = m2.get(e1.getKey());
-			if (a2 == null) {
-				dest.add(new ArtifactRemovedDelta(r1id, r2id, render(e1.getValue()), e1.getValue().getId()));
-				continue;
+		r1.getArtifacts().values().forEach(a -> id1.put(a.getId().getId(), a.getId()));
+		r2.getArtifacts().values().forEach(a -> id2.put(a.getId().getId(), a.getId()));
+
+		for (String a : Sets.union(id1.keySet(), id2.keySet())) {
+			Set<ArtifactId> i1 = new HashSet<>(id1.get(a));
+			Set<ArtifactId> i2 = new HashSet<>(id2.get(a));
+
+			Set<ArtifactId> intersection = new HashSet<>(i1);
+			intersection.retainAll(i2);
+
+			for (ArtifactId id : intersection) {
+				compareArtifacts(r1, r1id, r1.getArtifacts().get(id), r2, r2id, r2.getArtifacts().get(id), dest,
+						changes);
+
+				i1.remove(id);
+				i2.remove(id);
 			}
 
-			Path p1 = r1.getArtifactUri(e1.getValue().getId());
-			Path p2 = r2.getArtifactUri(a2.getId());
-
-			String classifier1 = e1.getValue().getClassifier();
-			String classifier2 = a2.getClassifier();
-			if (!classifier1.equals(classifier2)) {
-				dest.add(new ArtifactClassifierDelta(r1id, r2id, e1.getKey(), render(e1.getValue()), render(a2)));
-				continue;
-			}
-
-			FileId file1 = FileId.newRoot(p1);
-			FileId file2 = FileId.newRoot(p2);
-
-			FileComparator comparator = null;
-			switch (classifier1) {
-			case "osgi.bundle":
-				comparator = comparators.get(BundleComparator.HINT);
-				changes.add(new BundleVersionChange(e1.getKey(), file1, e1.getValue().getId().getVersion(), file2,
-						a2.getId().getVersion()));
-				break;
-			case "org.eclipse.update.feature":
-				comparator = comparators.get(FeatureComparator.HINT);
-				changes.add(new FeatureVersionChange(e1.getKey(), file1, e1.getValue().getId().getVersion(), file2,
-						a2.getId().getVersion()));
-				break;
-			case "binary":
-				comparator = comparators.get(BinaryComparator.HINT);
-				break;
-			default:
-				throw new Error("Unhandled artifact classifier " + classifier1);
-			}
-
-			comparator.compare(file1, p1, file2, p2, dest::add);
-		}
-
-		for (Map.Entry<String, ArtifactFacade> e2 : m2.entrySet()) {
-			ArtifactFacade a1 = m1.get(e2.getKey());
-			if (a1 == null) {
-				dest.add(new ArtifactAddedDelta(r1id, r2id, e2.getValue().getId(), render(e2.getValue())));
+			if (i1.size() == 1 && i2.size() == 1) {
+				compareArtifacts(r1, r1id, r1.getArtifacts().get(Iterables.getOnlyElement(i1)), r2, r2id,
+						r2.getArtifacts().get(Iterables.getOnlyElement(i2)), dest, changes);
+			} else {
+				for (ArtifactId id : i1)
+					dest.add(new ArtifactRemovedDelta(r1id, r2id, render(r1.getArtifacts().get(id)), id));
+				for (ArtifactId id : i2)
+					dest.add(new ArtifactAddedDelta(r1id, r2id, id, render(r2.getArtifacts().get(id))));
 			}
 		}
 

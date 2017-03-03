@@ -5,11 +5,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -163,37 +166,50 @@ public class FeatureXmlComparator implements FileComparator {
 			DeltaReporter deltaReporter) {
 
 		for (String id : Sets.union(baseline.keySet(), current.keySet())) {
-			Multimap<String, Element> b = baseline.get(id);
+			Multimap<String, Element> b = HashMultimap.create(baseline.get(id));
 			if (b == null)
 				b = HashMultimap.create();
-			Multimap<String, Element> c = current.get(id);
+			Multimap<String, Element> c = HashMultimap.create(current.get(id));
 			if (c == null)
 				c = HashMultimap.create();
 
+			AttributesDeltaReporter r = new AttributesDeltaReporter() {
+
+				@Override
+				public void removed(String key) {
+					deltaReporter.fileDelta("Plugin {0} attribute {1} removed", id, key);
+				}
+
+				@Override
+				public void changed(String key, String left, String right) {
+					if (key.equals("version")) {
+						deltaReporter.pluginVersionDelta(id, left, right);
+					} else {
+						deltaReporter.fileDelta("Plugin {0} attribute {1} changed {2} -> {3}", id, key, left, right);
+					}
+				}
+
+				@Override
+				public void added(String key, String value) {
+					deltaReporter.fileDelta("Plugin {0} attribute {1} / {2} added", id, key, value);
+				}
+			};
+
+			Set<String> intersection = new HashSet<>(b.keys());
+			intersection.retainAll(c.keys());
+
+			for (String v : intersection) {
+				Collection<Element> be = b.get(v);
+				Collection<Element> ce = c.get(v);
+				if (be.size() == 1 && ce.size() == 1) {
+					compareAttributes(Iterables.getOnlyElement(be), Iterables.getOnlyElement(ce), r);
+					b.removeAll(v);
+					c.removeAll(v);
+				}
+			}
+
 			if (b.size() == 1 && c.size() == 1) {
-				compareAttributes(Iterables.getOnlyElement(b.values()), Iterables.getOnlyElement(c.values()),
-						new AttributesDeltaReporter() {
-
-							@Override
-							public void removed(String key) {
-								deltaReporter.fileDelta("Plugin {0} attribute {1} removed", id, key);
-							}
-
-							@Override
-							public void changed(String key, String left, String right) {
-								if (key.equals("version")) {
-									deltaReporter.pluginVersionDelta(id, left, right);
-								} else {
-									deltaReporter.fileDelta("Plugin {0} attribute {1} changed {2} -> {3}", id, key,
-											left, right);
-								}
-							}
-
-							@Override
-							public void added(String key, String value) {
-								deltaReporter.fileDelta("Plugin {0} attribute {1} / {2} added", id, key, value);
-							}
-						});
+				compareAttributes(Iterables.getOnlyElement(b.values()), Iterables.getOnlyElement(c.values()), r);
 			} else {
 				for (Element e : b.values())
 					deltaReporter.fileDelta("Plugin removed: {0}", domRenderer.render(e));
