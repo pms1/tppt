@@ -146,13 +146,7 @@ public class Application1 implements IApplication {
 				}
 			};
 
-			IMetadataRepository destinationMetadataRepository = createDestinationMetadataRepository(
-					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
-					ms.targetRepository, "");
-
-			IArtifactRepository destination = createDestinationArtifactRepository(
-					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
-					ms.targetRepository, "");
+			Set<IInstallableUnit> finalIus = new HashSet<>();
 
 			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters
 					: new Map[] { Collections.emptyMap() }) {
@@ -207,8 +201,6 @@ public class Application1 implements IApplication {
 						root.add(iu1);
 				}
 
-				Set<IInstallableUnit> finalIus = new HashSet<>();
-
 				for (;;) {
 					int oldRootSize = root.size();
 
@@ -260,18 +252,29 @@ public class Application1 implements IApplication {
 					if (oldRootSize == root.size())
 						break;
 				}
-
-				destinationMetadataRepository.addInstallableUnits(finalIus);
-
-				Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destination, true);
-				mirroring.setTransport(transport);
-				mirroring.setIncludePacked(false);
-				mirroring.setArtifactKeys(
-						finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
-
-				MultiStatus multiStatus = mirroring.run(true, false);
-				System.err.println("STATUS=" + multiStatus);
 			}
+
+			// mirror metadata
+			IMetadataRepository destinationMetadataRepository = createDestinationMetadataRepository(
+					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
+					ms.targetRepository, "");
+
+			destinationMetadataRepository.addInstallableUnits(finalIus);
+
+			// mirror artifacts
+			IArtifactRepository destinationArtifactRepository = createDestinationArtifactRepository(
+					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
+					ms.targetRepository, "");
+
+			Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destinationArtifactRepository,
+					true);
+			mirroring.setTransport(transport);
+			mirroring.setIncludePacked(false);
+			mirroring.setArtifactKeys(
+					finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
+
+			MultiStatus multiStatus = mirroring.run(true, false);
+			System.err.println("STATUS=" + multiStatus);
 		}
 
 		return null;
