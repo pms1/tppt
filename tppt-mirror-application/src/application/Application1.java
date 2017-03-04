@@ -172,9 +172,8 @@ public class Application1 implements IApplication {
 
 				for (URI sr : ms.sourceRepositories) {
 					RepositoryDescriptor rd = new RepositoryDescriptor();
-					URI uri = URI.create("http://download.eclipse.org/releases/neon/201612211000");
-					rd.setLocation(uri);
-					rd.setFormat(uri);
+					rd.setLocation(sr);
+					rd.setFormat(sr);
 
 					ma.addSource(rd);
 				}
