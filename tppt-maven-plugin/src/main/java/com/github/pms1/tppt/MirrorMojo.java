@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXB;
 
@@ -90,6 +91,9 @@ public class MirrorMojo extends AbstractMojo {
 
 		@Parameter
 		public List<URI> sources;
+
+		@Parameter
+		public Map<String, String>[] filters = new Map[0];
 	}
 
 	private final String cacheRelPath = ".cache/tppt/p2";
@@ -108,6 +112,7 @@ public class MirrorMojo extends AbstractMojo {
 				ms.targetRepository = repoOut;
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
+				ms.filters = m.filters;
 
 				byte[] bytes;
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {

@@ -73,6 +73,7 @@ public class Application1 implements IApplication {
 			System.out.println("Application1.installableUnit    = " + Arrays.toString(ms.ius));
 			System.out.println("Application1.offline            = " + ms.offline);
 			System.out.println("Application1.stats              = " + ms.stats);
+			System.out.println("Application1.filter             = " + Arrays.toString(ms.filters));
 
 			IProgressMonitor monitor = new IProgressMonitor() {
 
@@ -144,142 +145,132 @@ public class Application1 implements IApplication {
 					this.agent = ourAgent;
 				}
 			};
-			SlicingOptions slicingOptions = new SlicingOptions();
-			Map<String, String> filter = new HashMap<String, String>() {
-				@Override
-				public String get(Object key) {
-					System.err.println("GET " + key);
-					// TODO Auto-generated method stub
-					return super.get(key);
-				}
-			};
-			filter.put("osgi.os", "win32");
-			filter.put("osgi.ws", "win32");
-			filter.put("osgi.arch", "x86");
-			filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
-
-			slicingOptions.setFilter(filter);
-			slicingOptions.considerStrictDependencyOnly(false);
-			ma.setSlicingOptions(slicingOptions);
-
-			ma.setIncludePacked(false);
-
-			for (URI sr : ms.sourceRepositories) {
-				RepositoryDescriptor rd = new RepositoryDescriptor();
-				URI uri = URI.create("http://download.eclipse.org/releases/neon/201612211000");
-				rd.setLocation(uri);
-				rd.setFormat(uri);
-
-				ma.addSource(rd);
-			}
-
-			ma.setVerbose(false);
-			ma.setLog(new IArtifactMirrorLog() {
-
-				@Override
-				public void log(IArtifactDescriptor descriptor, IStatus status) {
-					System.err.println("LOG " + descriptor + " " + status);
-				}
-
-				@Override
-				public void log(IStatus status) {
-					System.err.println("LOG " + status);
-
-				}
-
-				@Override
-				public void close() {
-					System.err.println("CLOSE");
-				}
-			});
-
-			transport.addRepositories(
-					((CompositeArtifactRepository) ma.getCompositeArtifactRepository()).getLoadedChildren());
-			IMetadataRepository md = ma.getCompositeMetadataRepository();
-
-			List<IInstallableUnit> sourceIUs = new LinkedList<>();
-			for (String iu : ms.ius) {
-				for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(iu), null)) {
-					sourceIUs.add(iu1);
-				}
-			}
-			ma.setSourceIUs(sourceIUs);
-
-			PermissiveSlicer slicer = new PermissiveSlicer(md, slicingOptions.getFilter(),
-					slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
-					slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
-					slicingOptions.followOnlyFilteredRequirements());
-			IQueryable<IInstallableUnit> slice = slicer.slice(sourceIUs.toArray(new IInstallableUnit[sourceIUs.size()]),
-					monitor);
-
-			IQueryResult<IInstallableUnit> r1 = slice.query(QueryUtil.ALL_UNITS, monitor);
-			ArrayList<IArtifactKey> keys = new ArrayList<IArtifactKey>();
-			ArrayList<IInstallableUnit> finalIus = new ArrayList<>();
-
-			for (IInstallableUnit iu : r1) {
-				System.err.println("SLICE " + iu + " -- " + getType(iu));
-				keys.addAll(iu.getArtifacts());
-				finalIus.add(iu);
-
-				switch (getType(iu)) {
-				case source_bundle:
-					break;
-				case bundle:
-					for (IInstallableUnit iu1 : md
-							.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null)) {
-						System.err.println("--> SLICE " + iu1 + " " + getType(iu1));
-					}
-					break;
-				case feature:
-					// if (iu.getId().endsWith(featureSuffix)) {
-					String x = stripSuffix(iu.getId(), ".feature.jar");
-					System.err.println("X " + x);
-					if (x.endsWith(".feature")) {
-						String x1 = stripSuffix(x, ".feature");
-						for (IInstallableUnit iu1 : md.query(
-								QueryUtil.createIUQuery(x1 + ".source.feature" + featureSuffix, iu.getVersion()),
-								null)) {
-							System.err.println("--> SLICEF1 " + iu1 + " " + getType(iu1));
-						}
-					}
-					for (IInstallableUnit iu1 : md
-							.query(QueryUtil.createIUQuery(x + ".source" + featureSuffix, iu.getVersion()), null)) {
-						System.err.println("--> SLICEF2 " + iu1 + " " + getType(iu1));
-					}
-					// }
-					break;
-				case other:
-					break;
-				}
-
-			}
 
 			IMetadataRepository destinationMetadataRepository = createDestinationMetadataRepository(
 					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
 					ms.targetRepository, "");
-			destinationMetadataRepository.addInstallableUnits(finalIus);
 
 			IArtifactRepository destination = createDestinationArtifactRepository(
 					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
 					ms.targetRepository, "");
-			Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destination, true);
-			mirroring.setTransport(transport);
-			mirroring.setIncludePacked(false);
-			mirroring.setArtifactKeys(keys.toArray(new IArtifactKey[keys.size()]));
 
-			MultiStatus multiStatus = mirroring.run(true, false);
-			System.err.println("STATUS=" + multiStatus);
+			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters
+					: new Map[] { Collections.emptyMap() }) {
+				SlicingOptions slicingOptions = new SlicingOptions();
 
-			if (true)
-				return null;
+				Map<String, String> filter = new HashMap<String, String>(basicFilter);
+				// filter.put("osgi.os", "win32");
+				// filter.put("osgi.ws", "win32");
+				// filter.put("osgi.arch", "x86");
+				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
 
-			RepositoryDescriptor dest = new RepositoryDescriptor();
-			dest.setLocation(ms.targetRepository.toUri());
-			dest.setFormat(ms.targetRepository.toUri());
-			ma.addDestination(dest);
+				slicingOptions.setFilter(filter);
+				slicingOptions.considerStrictDependencyOnly(false);
+				ma.setSlicingOptions(slicingOptions);
 
-			ma.run(monitor);
+				ma.setIncludePacked(false);
 
+				for (URI sr : ms.sourceRepositories) {
+					RepositoryDescriptor rd = new RepositoryDescriptor();
+					URI uri = URI.create("http://download.eclipse.org/releases/neon/201612211000");
+					rd.setLocation(uri);
+					rd.setFormat(uri);
+
+					ma.addSource(rd);
+				}
+
+				ma.setVerbose(false);
+				ma.setLog(new IArtifactMirrorLog() {
+
+					@Override
+					public void log(IArtifactDescriptor descriptor, IStatus status) {
+						System.err.println("LOG " + descriptor + " " + status);
+					}
+
+					@Override
+					public void log(IStatus status) {
+						System.err.println("LOG " + status);
+
+					}
+
+					@Override
+					public void close() {
+						System.err.println("CLOSE");
+					}
+				});
+
+				transport.addRepositories(
+						((CompositeArtifactRepository) ma.getCompositeArtifactRepository()).getLoadedChildren());
+				IMetadataRepository md = ma.getCompositeMetadataRepository();
+
+				List<IInstallableUnit> sourceIUs = new LinkedList<>();
+				for (String iu : ms.ius) {
+					for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(iu), null)) {
+						sourceIUs.add(iu1);
+					}
+				}
+				ma.setSourceIUs(sourceIUs);
+
+				PermissiveSlicer slicer = new PermissiveSlicer(md, slicingOptions.getFilter(),
+						slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
+						slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
+						slicingOptions.followOnlyFilteredRequirements());
+				IQueryable<IInstallableUnit> slice = slicer
+						.slice(sourceIUs.toArray(new IInstallableUnit[sourceIUs.size()]), monitor);
+
+				IQueryResult<IInstallableUnit> r1 = slice.query(QueryUtil.ALL_UNITS, monitor);
+				ArrayList<IArtifactKey> keys = new ArrayList<IArtifactKey>();
+				ArrayList<IInstallableUnit> finalIus = new ArrayList<>();
+
+				for (IInstallableUnit iu : r1) {
+					System.err.println("SLICE " + iu + " -- " + getType(iu));
+					keys.addAll(iu.getArtifacts());
+					finalIus.add(iu);
+
+					switch (getType(iu)) {
+					case source_bundle:
+						break;
+					case bundle:
+						for (IInstallableUnit iu1 : md
+								.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null)) {
+							System.err.println("--> SLICE " + iu1 + " " + getType(iu1));
+						}
+						break;
+					case feature:
+						// if (iu.getId().endsWith(featureSuffix)) {
+						String x = stripSuffix(iu.getId(), ".feature.jar");
+						System.err.println("X " + x);
+						if (x.endsWith(".feature")) {
+							String x1 = stripSuffix(x, ".feature");
+							for (IInstallableUnit iu1 : md.query(
+									QueryUtil.createIUQuery(x1 + ".source.feature" + featureSuffix, iu.getVersion()),
+									null)) {
+								System.err.println("--> SLICEF1 " + iu1 + " " + getType(iu1));
+							}
+						}
+						for (IInstallableUnit iu1 : md
+								.query(QueryUtil.createIUQuery(x + ".source" + featureSuffix, iu.getVersion()), null)) {
+							System.err.println("--> SLICEF2 " + iu1 + " " + getType(iu1));
+						}
+						// }
+						break;
+					case other:
+						break;
+					}
+
+				}
+
+				destinationMetadataRepository.addInstallableUnits(finalIus);
+
+				Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destination, true);
+				mirroring.setTransport(transport);
+				mirroring.setIncludePacked(false);
+				mirroring.setArtifactKeys(keys.toArray(new IArtifactKey[keys.size()]));
+
+				MultiStatus multiStatus = mirroring.run(true, false);
+				System.err.println("STATUS=" + multiStatus);
+
+			}
 		}
 
 		return null;
