@@ -166,12 +166,17 @@ public class FeatureXmlComparator implements FileComparator {
 			DeltaReporter deltaReporter) {
 
 		for (String id : Sets.union(baseline.keySet(), current.keySet())) {
-			Multimap<String, Element> b = HashMultimap.create(baseline.get(id));
+			Multimap<String, Element> b = baseline.get(id);
 			if (b == null)
 				b = HashMultimap.create();
-			Multimap<String, Element> c = HashMultimap.create(current.get(id));
+			else
+				b = HashMultimap.create(b);
+
+			Multimap<String, Element> c = current.get(id);
 			if (c == null)
 				c = HashMultimap.create();
+			else
+				c = HashMultimap.create(c);
 
 			AttributesDeltaReporter r = new AttributesDeltaReporter() {
 
