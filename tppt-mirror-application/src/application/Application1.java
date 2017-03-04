@@ -53,7 +53,7 @@ public class Application1 implements IApplication {
 	@Override
 	public Object start(IApplicationContext context) throws Exception {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
-		System.err.println("Application1.commandLine        = " + Arrays.asList((String[]) args));
+		System.out.println("Application1.commandLine        = " + Arrays.asList((String[]) args));
 
 		for (String s : Arrays.asList((String[]) args)) {
 			MirrorSpec ms;
