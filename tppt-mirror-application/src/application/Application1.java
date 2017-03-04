@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +20,6 @@ import java.util.Set;
 import javax.xml.bind.JAXB;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -29,22 +27,19 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository;
 import org.eclipse.equinox.internal.p2.director.PermissiveSlicer;
+import org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository;
 import org.eclipse.equinox.internal.p2.repository.Transport;
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.eclipse.equinox.p2.core.IProvisioningAgentProvider;
 import org.eclipse.equinox.p2.core.ProvisionException;
 import org.eclipse.equinox.p2.engine.IProfile;
-import org.eclipse.equinox.p2.internal.repository.mirroring.IArtifactMirrorLog;
 import org.eclipse.equinox.p2.internal.repository.mirroring.Mirroring;
-import org.eclipse.equinox.p2.internal.repository.tools.MirrorApplication;
-import org.eclipse.equinox.p2.internal.repository.tools.RepositoryDescriptor;
 import org.eclipse.equinox.p2.internal.repository.tools.SlicingOptions;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
-import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepositoryManager;
 import org.eclipse.equinox.p2.repository.metadata.IMetadataRepository;
@@ -52,6 +47,7 @@ import org.eclipse.equinox.p2.repository.metadata.IMetadataRepositoryManager;
 import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
 import org.osgi.framework.ServiceReference;
 
+@SuppressWarnings("restriction")
 public class Application1 implements IApplication {
 
 	@Override
@@ -140,71 +136,39 @@ public class Application1 implements IApplication {
 			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
 			ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
-			MirrorApplication ma = new MirrorApplication() {
-				{
-					this.agent = ourAgent;
-				}
-			};
+			CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository
+					.createMemoryComposite(ourAgent);
+			for (URI sr : ms.sourceRepositories)
+				sourceArtifactRepo.addChild(sr);
+			transport.addRepositories(sourceArtifactRepo.getLoadedChildren());
+
+			CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository
+					.createMemoryComposite(ourAgent);
+			for (URI sr : ms.sourceRepositories)
+				sourceMetadataRepo.addChild(sr);
 
 			Set<IInstallableUnit> finalIus = new HashSet<>();
 
 			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters
 					: new Map[] { Collections.emptyMap() }) {
 				SlicingOptions slicingOptions = new SlicingOptions();
-
 				Map<String, String> filter = new HashMap<String, String>(basicFilter);
 				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
-
 				slicingOptions.setFilter(filter);
 				slicingOptions.considerStrictDependencyOnly(false);
-				ma.setSlicingOptions(slicingOptions);
-
-				ma.setIncludePacked(false);
-
-				for (URI sr : ms.sourceRepositories) {
-					RepositoryDescriptor rd = new RepositoryDescriptor();
-					rd.setLocation(sr);
-					rd.setFormat(sr);
-
-					ma.addSource(rd);
-				}
-
-				ma.setVerbose(false);
-				ma.setLog(new IArtifactMirrorLog() {
-
-					@Override
-					public void log(IArtifactDescriptor descriptor, IStatus status) {
-						System.err.println("LOG " + descriptor + " " + status);
-					}
-
-					@Override
-					public void log(IStatus status) {
-						System.err.println("LOG " + status);
-
-					}
-
-					@Override
-					public void close() {
-						System.err.println("CLOSE");
-					}
-				});
-
-				transport.addRepositories(
-						((CompositeArtifactRepository) ma.getCompositeArtifactRepository()).getLoadedChildren());
-				IMetadataRepository md = ma.getCompositeMetadataRepository();
 
 				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
 					// TODO: allow version to be specified, only latest version,
 					// ...
-					for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(iu), null))
+					for (IInstallableUnit iu1 : sourceMetadataRepo.query(QueryUtil.createIUQuery(iu), null))
 						root.add(iu1);
 				}
 
 				for (;;) {
 					int oldRootSize = root.size();
 
-					PermissiveSlicer slicer = new PermissiveSlicer(md, slicingOptions.getFilter(),
+					PermissiveSlicer slicer = new PermissiveSlicer(sourceMetadataRepo, slicingOptions.getFilter(),
 							slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
 							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
 							slicingOptions.followOnlyFilteredRequirements());
@@ -223,7 +187,7 @@ public class Application1 implements IApplication {
 
 						switch (getType(iu)) {
 						case bundle:
-							for (IInstallableUnit iu1 : md
+							for (IInstallableUnit iu1 : sourceMetadataRepo
 									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null))
 								if (getType(iu1) == Type.source_bundle)
 									todo.add(iu1);
@@ -240,7 +204,8 @@ public class Application1 implements IApplication {
 								cand.add(s2 + ".source.feature.feature.group");
 							}
 							for (String c : cand)
-								for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(c, iu.getVersion()), null))
+								for (IInstallableUnit iu1 : sourceMetadataRepo
+										.query(QueryUtil.createIUQuery(c, iu.getVersion()), null))
 									if (root.add(iu1))
 										System.out.println("Adding " + iu1 + " as source of " + iu);
 							break;
@@ -255,19 +220,18 @@ public class Application1 implements IApplication {
 			}
 
 			// mirror metadata
-			IMetadataRepository destinationMetadataRepository = createDestinationMetadataRepository(
+			IMetadataRepository destinationMetadataRepo = createDestinationMetadataRepository(
 					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
 					ms.targetRepository, "");
 
-			destinationMetadataRepository.addInstallableUnits(finalIus);
+			destinationMetadataRepo.addInstallableUnits(finalIus);
 
 			// mirror artifacts
-			IArtifactRepository destinationArtifactRepository = createDestinationArtifactRepository(
+			IArtifactRepository destinationArtifactRepo = createDestinationArtifactRepository(
 					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
 					ms.targetRepository, "");
 
-			Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destinationArtifactRepository,
-					true);
+			Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);
 			mirroring.setTransport(transport);
 			mirroring.setIncludePacked(false);
 			mirroring.setArtifactKeys(
@@ -316,22 +280,8 @@ public class Application1 implements IApplication {
 
 	final String featureSuffix = ".feature.group";
 
-	private Collection<String> guessSourceUnitIds(IInstallableUnit iu) {
-		System.err.println("IU " + iu.getProperties());
-		String id = iu.getId();
-		if (id.endsWith(".feature" + featureSuffix)) {
-			id = id.substring(0, 22);
-			return Arrays.asList(id + ".source.feature" + featureSuffix);
-		} else if (id.endsWith(featureSuffix)) {
-			id = id.substring(0, 14);
-			return Arrays.asList(id + ".source.feature" + featureSuffix, id + ".feature.source" + featureSuffix);
-		} else {
-			return Collections.singleton(id + ".source");
-		}
-	}
-
 	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, Path path,
-			String string) {
+			String name) {
 		try {
 			try {
 				return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
@@ -342,7 +292,7 @@ public class Application1 implements IApplication {
 
 			IArtifactRepository dest;
 			try {
-				dest = mgr.createRepository(path.toUri(), string, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY,
+				dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY,
 						null);
 				return dest;
 			} catch (ProvisionException e) {
