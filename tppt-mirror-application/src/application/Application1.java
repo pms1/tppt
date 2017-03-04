@@ -121,7 +121,6 @@ public class Application1 implements IApplication {
 				@Override
 				public void beginTask(String name, int totalWork) {
 					System.err.println("BT " + name);
-
 				}
 			};
 
@@ -160,9 +159,6 @@ public class Application1 implements IApplication {
 				SlicingOptions slicingOptions = new SlicingOptions();
 
 				Map<String, String> filter = new HashMap<String, String>(basicFilter);
-				// filter.put("osgi.os", "win32");
-				// filter.put("osgi.ws", "win32");
-				// filter.put("osgi.arch", "x86");
 				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
 
 				slicingOptions.setFilter(filter);
@@ -221,8 +217,8 @@ public class Application1 implements IApplication {
 							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
 							slicingOptions.followOnlyFilteredRequirements());
 
-					IQueryable<IInstallableUnit> slice = slicer
-							.slice(root.stream().toArray(size -> new IInstallableUnit[size]), monitor);
+					IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new),
+							monitor);
 
 					LinkedList<IInstallableUnit> todo = new LinkedList<>();
 					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))
@@ -247,13 +243,14 @@ public class Application1 implements IApplication {
 							List<String> cand = new ArrayList<>();
 							cand.add(shortId + ".source.feature.group");
 							if (shortId.endsWith(".feature")) {
-								String s2 = removeSuffix(iu.getId(), ".feature");
+								String s2 = removeSuffix(shortId, ".feature");
 								cand.add(s2 + ".source.feature.group");
 								cand.add(s2 + ".source.feature.feature.group");
 							}
 							for (String c : cand)
 								for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(c, iu.getVersion()), null))
-									root.add(iu1);
+									if (root.add(iu1))
+										System.out.println("Adding " + iu1 + " as source of " + iu);
 							break;
 						default:
 							break;
@@ -269,8 +266,8 @@ public class Application1 implements IApplication {
 				Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destination, true);
 				mirroring.setTransport(transport);
 				mirroring.setIncludePacked(false);
-				mirroring.setArtifactKeys(finalIus.stream().flatMap(p -> p.getArtifacts().stream())
-						.toArray(size -> new IArtifactKey[size]));
+				mirroring.setArtifactKeys(
+						finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
 
 				MultiStatus multiStatus = mirroring.run(true, false);
 				System.err.println("STATUS=" + multiStatus);
