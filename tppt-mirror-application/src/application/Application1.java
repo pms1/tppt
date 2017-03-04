@@ -10,11 +10,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.xml.bind.JAXB;
 
@@ -40,7 +42,6 @@ import org.eclipse.equinox.p2.internal.repository.tools.SlicingOptions;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
-import org.eclipse.equinox.p2.query.IQueryResult;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor;
@@ -202,61 +203,65 @@ public class Application1 implements IApplication {
 						((CompositeArtifactRepository) ma.getCompositeArtifactRepository()).getLoadedChildren());
 				IMetadataRepository md = ma.getCompositeMetadataRepository();
 
-				List<IInstallableUnit> sourceIUs = new LinkedList<>();
+				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
-					for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(iu), null)) {
-						sourceIUs.add(iu1);
-					}
+					// TODO: allow version to be specified, only latest version,
+					// ...
+					for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(iu), null))
+						root.add(iu1);
 				}
-				ma.setSourceIUs(sourceIUs);
 
-				PermissiveSlicer slicer = new PermissiveSlicer(md, slicingOptions.getFilter(),
-						slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
-						slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
-						slicingOptions.followOnlyFilteredRequirements());
-				IQueryable<IInstallableUnit> slice = slicer
-						.slice(sourceIUs.toArray(new IInstallableUnit[sourceIUs.size()]), monitor);
+				Set<IInstallableUnit> finalIus = new HashSet<>();
 
-				IQueryResult<IInstallableUnit> r1 = slice.query(QueryUtil.ALL_UNITS, monitor);
-				ArrayList<IArtifactKey> keys = new ArrayList<IArtifactKey>();
-				ArrayList<IInstallableUnit> finalIus = new ArrayList<>();
+				for (;;) {
+					int oldRootSize = root.size();
 
-				for (IInstallableUnit iu : r1) {
-					System.err.println("SLICE " + iu + " -- " + getType(iu));
-					keys.addAll(iu.getArtifacts());
-					finalIus.add(iu);
+					PermissiveSlicer slicer = new PermissiveSlicer(md, slicingOptions.getFilter(),
+							slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
+							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
+							slicingOptions.followOnlyFilteredRequirements());
 
-					switch (getType(iu)) {
-					case source_bundle:
-						break;
-					case bundle:
-						for (IInstallableUnit iu1 : md
-								.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null)) {
-							System.err.println("--> SLICE " + iu1 + " " + getType(iu1));
-						}
-						break;
-					case feature:
-						// if (iu.getId().endsWith(featureSuffix)) {
-						String x = stripSuffix(iu.getId(), ".feature.jar");
-						System.err.println("X " + x);
-						if (x.endsWith(".feature")) {
-							String x1 = stripSuffix(x, ".feature");
-							for (IInstallableUnit iu1 : md.query(
-									QueryUtil.createIUQuery(x1 + ".source.feature" + featureSuffix, iu.getVersion()),
-									null)) {
-								System.err.println("--> SLICEF1 " + iu1 + " " + getType(iu1));
+					IQueryable<IInstallableUnit> slice = slicer
+							.slice(root.stream().toArray(size -> new IInstallableUnit[size]), monitor);
+
+					LinkedList<IInstallableUnit> todo = new LinkedList<>();
+					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))
+						todo.add(iu);
+
+					while (!todo.isEmpty()) {
+						IInstallableUnit iu = todo.removeFirst();
+						if (!finalIus.add(iu))
+							continue;
+
+						switch (getType(iu)) {
+						case bundle:
+							for (IInstallableUnit iu1 : md
+									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null))
+								if (getType(iu1) == Type.source_bundle)
+									todo.add(iu1);
+							break;
+						case feature:
+							if (!iu.getId().endsWith(".feature.jar"))
+								throw new Error("");
+							String shortId = removeSuffix(iu.getId(), ".feature.jar");
+							List<String> cand = new ArrayList<>();
+							cand.add(shortId + ".source.feature.group");
+							if (shortId.endsWith(".feature")) {
+								String s2 = removeSuffix(iu.getId(), ".feature");
+								cand.add(s2 + ".source.feature.group");
+								cand.add(s2 + ".source.feature.feature.group");
 							}
+							for (String c : cand)
+								for (IInstallableUnit iu1 : md.query(QueryUtil.createIUQuery(c, iu.getVersion()), null))
+									root.add(iu1);
+							break;
+						default:
+							break;
 						}
-						for (IInstallableUnit iu1 : md
-								.query(QueryUtil.createIUQuery(x + ".source" + featureSuffix, iu.getVersion()), null)) {
-							System.err.println("--> SLICEF2 " + iu1 + " " + getType(iu1));
-						}
-						// }
-						break;
-					case other:
-						break;
 					}
 
+					if (oldRootSize == root.size())
+						break;
 				}
 
 				destinationMetadataRepository.addInstallableUnits(finalIus);
@@ -264,18 +269,19 @@ public class Application1 implements IApplication {
 				Mirroring mirroring = new Mirroring(ma.getCompositeArtifactRepository(), destination, true);
 				mirroring.setTransport(transport);
 				mirroring.setIncludePacked(false);
-				mirroring.setArtifactKeys(keys.toArray(new IArtifactKey[keys.size()]));
+				mirroring.setArtifactKeys(finalIus.stream().flatMap(p -> p.getArtifacts().stream())
+						.toArray(size -> new IArtifactKey[size]));
 
 				MultiStatus multiStatus = mirroring.run(true, false);
 				System.err.println("STATUS=" + multiStatus);
-
 			}
 		}
 
 		return null;
+
 	}
 
-	private String stripSuffix(String id, String suffix) {
+	private String removeSuffix(String id, String suffix) {
 		Objects.requireNonNull(id);
 		Objects.requireNonNull(suffix);
 		if (!id.endsWith(suffix))
