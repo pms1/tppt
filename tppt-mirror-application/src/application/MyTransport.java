@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -177,9 +178,11 @@ public class MyTransport extends Transport {
 					default:
 						throw new Error(get + " -> " + response);
 					}
-
 				}
 			}
+		} catch (ConnectException e) {
+			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,
+					"foo", e);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
