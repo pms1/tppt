@@ -73,8 +73,8 @@ public class DeployMojo extends AbstractMojo {
 
 	private void doInstall(Path zip, Path targetRoot) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(zip, null)) {
-			P2Repository r1 = repositoryFactory.create(fs.getPath("/"));
-			P2Repository r2 = repositoryFactory.create(targetRoot);
+			P2Repository r1 = repositoryFactory.load(fs.getPath("/"));
+			P2Repository r2 = repositoryFactory.load(targetRoot);
 
 			if (r2 == null) {
 				deploymentHelper.install(r1, targetRoot);

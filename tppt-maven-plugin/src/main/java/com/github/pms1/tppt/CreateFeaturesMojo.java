@@ -184,7 +184,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 			List<Plugin> plugins = new ArrayList<>();
 
-			P2Repository p2 = p2repositoryFactory.create(repoOut);
+			P2Repository p2 = p2repositoryFactory.load(repoOut);
 			if (p2 == null)
 				throw new IllegalArgumentException("Could not find a p2 repository at " + repoOut);
 

@@ -120,18 +120,7 @@ public class Application1 implements IApplication {
 				}
 			};
 
-			ServiceReference<?> serviceReference = Activator.getContext()
-					.getServiceReference(IProvisioningAgentProvider.SERVICE_NAME);
-			IProvisioningAgentProvider agentFactory = (IProvisioningAgentProvider) Activator.getContext()
-					.getService(serviceReference);
-			IProvisioningAgent ourAgent;
-			try {
-				ourAgent = agentFactory.createAgent(null); // targetDirectory.getChild("p2agent").toURI());
-			} catch (ProvisionException e) {
-				throw e;
-			} finally {
-				Activator.getContext().ungetService(serviceReference);
-			}
+			IProvisioningAgent ourAgent = getAgent();
 
 			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
 			ourAgent.registerService(Transport.SERVICE_NAME, transport);
@@ -161,7 +150,7 @@ public class Application1 implements IApplication {
 				for (String iu : ms.ius) {
 					// TODO: allow version to be specified, only latest version,
 					// ...
-					for (IInstallableUnit iu1 : sourceMetadataRepo.query(QueryUtil.createIUQuery(iu), null))
+					for (IInstallableUnit iu1 : sourceMetadataRepo.query(QueryUtil.createIUQuery(iu), monitor))
 						root.add(iu1);
 				}
 
@@ -188,7 +177,7 @@ public class Application1 implements IApplication {
 						switch (getType(iu)) {
 						case bundle:
 							for (IInstallableUnit iu1 : sourceMetadataRepo
-									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), null))
+									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), monitor))
 								if (getType(iu1) == Type.source_bundle)
 									todo.add(iu1);
 							break;
@@ -205,7 +194,7 @@ public class Application1 implements IApplication {
 							}
 							for (String c : cand)
 								for (IInstallableUnit iu1 : sourceMetadataRepo
-										.query(QueryUtil.createIUQuery(c, iu.getVersion()), null))
+										.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))
 									if (root.add(iu1))
 										System.out.println("Adding " + iu1 + " as source of " + iu);
 							break;
@@ -242,7 +231,22 @@ public class Application1 implements IApplication {
 		}
 
 		return null;
+	}
 
+	static IProvisioningAgent getAgent() throws ProvisionException {
+		ServiceReference<?> serviceReference = Activator.getContext()
+				.getServiceReference(IProvisioningAgentProvider.SERVICE_NAME);
+		IProvisioningAgentProvider agentFactory = (IProvisioningAgentProvider) Activator.getContext()
+				.getService(serviceReference);
+		IProvisioningAgent ourAgent;
+		try {
+			ourAgent = agentFactory.createAgent(null); // targetDirectory.getChild("p2agent").toURI());
+		} catch (ProvisionException e) {
+			throw e;
+		} finally {
+			Activator.getContext().ungetService(serviceReference);
+		}
+		return ourAgent;
 	}
 
 	private String removeSuffix(String id, String suffix) {

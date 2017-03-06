@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" jxb:version="1.0">
+	<xsd:include schemaLocation="shared.xsd"></xsd:include>
+	
+	<xsd:complexType name="compositeRepository">
+		<xsd:all>
+			<xsd:element name="properties" type="properties"></xsd:element>
+			<xsd:element name="children" type="children"></xsd:element>
+		</xsd:all>
+		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="type" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+		<xsd:attribute name="description" type="xsd:string" ></xsd:attribute>
+	</xsd:complexType>
+	
+    <xsd:complexType name="children">
+		<xsd:sequence>
+			<xsd:element name="child" type="child" minOccurs="0" maxOccurs="unbounded"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:complexType name="child">
+		<xsd:attribute name="location" type="xsd:anyURI" use="required"></xsd:attribute>
+    </xsd:complexType>
+
+    <xsd:element name="repository" type="compositeRepository"></xsd:element>
+</xsd:schema>

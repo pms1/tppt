@@ -103,6 +103,25 @@
 					</execution>
 
 					<execution>
+						<id>generate-composite-artifact</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<schemaIncludes>
+								<include>compositeRepository.xsd</include>
+								<include>shared.xsd</include>
+							</schemaIncludes>
+							<bindingIncludes>
+								<include>composite.xjb</include>
+								<include>shared.xjb</include>
+							</bindingIncludes>
+							<generateDirectory>${project.build.directory}/generated-sources/xjc-composite</generateDirectory>
+							<extension>true</extension>
+						</configuration>
+					</execution>
+
+					<execution>
 						<id>generate-metadata</id>
 						<goals>
 							<goal>generate</goal>
