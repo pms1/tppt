@@ -108,6 +108,14 @@ public class DeploymentHelper {
 	}
 
 	public Path getPath(MavenProject p) throws MojoExecutionException {
+		try {
+			return getPath(p, extractP2Timestamp(p.getArtifact().getFile().toPath()));
+		} catch (IOException e1) {
+			throw new MojoExecutionException("foo", e1);
+		}
+	}
+	
+	public Path getPath(MavenProject p, LocalDateTime timestamp) throws MojoExecutionException {
 		Preconditions.checkNotNull(p);
 
 		String layout = getLayout(p);
@@ -116,11 +124,7 @@ public class DeploymentHelper {
 		context.put("group", p.getGroupId());
 		context.put("artifactId", p.getArtifactId());
 		context.put("version", p.getVersion());
-		try {
-			context.put("timestamp", extractP2Timestamp(p.getArtifact().getFile().toPath()));
-		} catch (IOException e1) {
-			throw new MojoExecutionException("foo", e1);
-		}
+		context.put("timestamp", timestamp);
 
 		return Paths.get(interpolate(layout1, context));
 	}
