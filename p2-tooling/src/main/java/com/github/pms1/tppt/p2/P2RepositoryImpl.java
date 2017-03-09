@@ -53,4 +53,14 @@ class P2RepositoryImpl implements P2Repository {
 	public Set<DataCompression> getArtifactDataCompressions() {
 		return availableArtifacts;
 	}
+
+	@Override
+	public void setCompression(DataCompression... compressions) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void accept(P2RepositoryVisitor visitor) {
+		visitor.visit(this);
+	}
 }

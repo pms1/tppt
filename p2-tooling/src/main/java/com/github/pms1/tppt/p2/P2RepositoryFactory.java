@@ -1,10 +1,10 @@
 package com.github.pms1.tppt.p2;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,10 +59,6 @@ public class P2RepositoryFactory {
 			tried.add(p1.getFileName().toString());
 			if (Files.exists(p1))
 				availableCompressions.add(c);
-		}
-
-		if (availableCompressions.isEmpty()) {
-			throw new IllegalArgumentException("No data found at '" + p + "', tried " + tried);
 		}
 
 		return availableCompressions;
@@ -167,40 +163,92 @@ public class P2RepositoryFactory {
 			}
 		}
 
-	}
+		P2IndexEntry getIndexEntry(P2Kind artifact) {
+			String p2entry = properties.getProperty(artifact.getProperty());
+			if (p2entry == null)
+				throw new IllegalArgumentException("No entry in p2.index for '" + artifact + "'");
 
-	public P2Repository load(Path p) throws IOException {
-		Properties p2index = new Properties();
+			P2IndexEntry result = null;
 
-		try (InputStream is = Files.newInputStream(p.resolve(P2INDEX))) {
-			p2index.load(is);
-		} catch (java.nio.file.NoSuchFileException e) {
-			return null;
+			for (String e : p2entry.trim().split(",")) {
+				if (e.equals("!"))
+					break;
+
+				int idx = e.lastIndexOf('.');
+				if (idx == -1)
+					throw new IllegalArgumentException();
+
+				P2IndexEntry t = P2IndexEntry.valueOf(e.substring(0, idx));
+				if (result == null)
+					result = t;
+				else if (result != null)
+					throw new IllegalArgumentException("Mixed types for '" + artifact + "'");
+			}
+
+			if (result == null)
+				throw new IllegalArgumentException("No types for '" + artifact + "'");
+
+			return result;
 		}
 
-		if (!Objects.equals(p2index.getProperty(P2_VERSION_PROPERTY, null), P2_VERSION))
-			throw new Error();
+		public P2Type identifyType() {
+			P2Type type = null;
 
-		Set<DataCompression> availableMetadata = findData(p, METADATA_PREFIX);
-		Set<DataCompression> availableArtifacts = findData(p, ARTIFACT_PREFIX);
+			for (P2Kind t : P2Kind.values()) {
+				P2IndexEntry entry = getIndexEntry(t);
+				if (entry.getKind() != t)
+					throw new IllegalArgumentException();
+				if (type == null)
+					type = entry.getType();
+				else if (type != entry.getType())
+					throw new IllegalArgumentException();
+			}
+
+			if (type == null)
+				throw new Error();
+
+			return type;
+		}
+
+		public String getProperty(String p2MetadataProperty) {
+			return properties.getProperty(p2MetadataProperty);
+		}
+
+	}
+
+	public P2Repository loadContent(Path path) throws IOException {
+		P2Index p2index;
+		try {
+			p2index = new P2Index(path);
+		} catch (NoSuchFileException e) {
+			throw new NoRepositoryFoundException("no repository with p2.index found at " + path, e);
+		}
+
+		return loadContent(path, p2index);
+	}
+
+	private P2Repository loadContent(Path path, P2Index p2index) throws IOException {
+
+		Set<DataCompression> availableMetadata = findData(path, METADATA_PREFIX);
+		Set<DataCompression> availableArtifacts = findData(path, ARTIFACT_PREFIX);
 
 		DataCompression preferedMetadata = prefered(p2index.getProperty(P2_METADATA_PROPERTY), METADATA_PREFIX,
 				compressions.values(), availableMetadata);
 		DataCompression preferedArtifacts = prefered(p2index.getProperty(P2_ARTIFACT_PROPERTY), ARTIFACT_PREFIX,
 				compressions.values(), availableArtifacts);
 
-		return new P2RepositoryImpl(p, new CachingSupplier<ArtifactRepositoryFacade>(() -> {
-			try (InputStream is = preferedArtifacts.openInputStream(p, ARTIFACT_PREFIX)) {
+		return new P2RepositoryImpl(path, new CachingSupplier<ArtifactRepositoryFacade>(() -> {
+			try (InputStream is = preferedArtifacts.openInputStream(path, ARTIFACT_PREFIX)) {
 				return new ArtifactRepositoryFacadeImpl(
-						p.resolve(ARTIFACT_PREFIX + "." + preferedArtifacts.getFileSuffix()),
+						path.resolve(ARTIFACT_PREFIX + "." + preferedArtifacts.getFileSuffix()),
 						artifactRepositoryFactory.read(is));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}), availableArtifacts, preferedArtifacts, new CachingSupplier<MetadataRepositoryFacade>(() -> {
-			try (InputStream is = preferedMetadata.openInputStream(p, METADATA_PREFIX)) {
+			try (InputStream is = preferedMetadata.openInputStream(path, METADATA_PREFIX)) {
 				return new MetadataRepositoryFacadeImpl(
-						p.resolve(METADATA_PREFIX + "." + preferedMetadata.getFileSuffix()),
+						path.resolve(METADATA_PREFIX + "." + preferedMetadata.getFileSuffix()),
 						metadataRepositoryFactory.read(is));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
@@ -235,7 +283,11 @@ public class P2RepositoryFactory {
 		protected final Path root;
 		protected final P2Index p2index;
 
-		protected AbstractRepository(String artifactPrefix, String metadataPrefix, Path root, P2Index p2index) {
+		protected Set<DataCompression> availableMetadata;
+		protected Set<DataCompression> availableArtifacts;
+
+		protected AbstractRepository(P2Type type, String artifactPrefix, String metadataPrefix, Path root,
+				P2Index p2index) {
 			Objects.requireNonNull(artifactPrefix);
 			this.artifactPrefix = artifactPrefix;
 			Objects.requireNonNull(metadataPrefix);
@@ -244,6 +296,19 @@ public class P2RepositoryFactory {
 			this.root = root;
 			Objects.requireNonNull(p2index);
 			this.p2index = p2index;
+
+			availableMetadata = findData(root, type.getIndexEntry(P2Kind.metadata).name());
+			availableArtifacts = findData(root, type.getIndexEntry(P2Kind.artifact).name());
+		}
+
+		@Override
+		public Set<DataCompression> getMetadataDataCompressions() {
+			return availableMetadata;
+		}
+
+		@Override
+		public Set<DataCompression> getArtifactDataCompressions() {
+			return availableArtifacts;
 		}
 
 		@Override
@@ -297,7 +362,7 @@ public class P2RepositoryFactory {
 		public P2CompositeRepositoryImpl(Path root, P2Index p2index,
 				CachingSupplier<CompositeRepositoryFacade> artifact,
 				CachingSupplier<CompositeRepositoryFacade> metadata) {
-			super(COMPOSITE_ARTIFACT_PREFIX, COMPOSITE_METADATA_PREFIX, root, p2index);
+			super(P2Type.composite, COMPOSITE_ARTIFACT_PREFIX, COMPOSITE_METADATA_PREFIX, root, p2index);
 			Objects.requireNonNull(root);
 			this.root = root;
 			Objects.requireNonNull(p2index);
@@ -309,12 +374,12 @@ public class P2RepositoryFactory {
 		}
 
 		@Override
-		public CompositeRepositoryFacade getCompositeArtifactRepositoryFacade() throws IOException {
+		public CompositeRepositoryFacade getArtifactRepositoryFacade() throws IOException {
 			return artifact.get();
 		}
 
 		@Override
-		public CompositeRepositoryFacade getCompositeMetadataRepositoryFacade() throws IOException {
+		public CompositeRepositoryFacade getMetadataRepositoryFacade() throws IOException {
 			return metadata.get();
 		}
 
@@ -335,6 +400,15 @@ public class P2RepositoryFactory {
 			preferredMetadataCompression = noCompression;
 		}
 
+		@Override
+		public void accept(P2RepositoryVisitor visitor) {
+			visitor.visit(this);
+		}
+
+		@Override
+		public Path getPath() {
+			return root;
+		}
 	}
 
 	private <T> CachingSupplier<T> onDemand(Supplier<T> t) {
@@ -354,15 +428,22 @@ public class P2RepositoryFactory {
 		P2Index p2index;
 		try {
 			p2index = new P2Index(path);
-		} catch (FileNotFoundException e) {
-			throw new IllegalArgumentException("no repository with p2.index found at " + path);
+		} catch (NoSuchFileException e) {
+			throw new NoRepositoryFoundException("no repository with p2.index found at " + path, e);
 		}
+		return loadComposite(path, p2index);
+	}
 
+	private P2CompositeRepository loadComposite(Path path, P2Index p2index) throws IOException {
 		Set<DataCompression> artifactAvailable = findData(path, COMPOSITE_ARTIFACT_PREFIX);
+		if (artifactAvailable.isEmpty())
+			throw new IllegalArgumentException();
 		DataCompression artifactCompressions = p2index.prefered(P2_ARTIFACT_PROPERTY, COMPOSITE_ARTIFACT_PREFIX,
 				compressions.values(), artifactAvailable);
 
 		Set<DataCompression> metadataAvailable = findData(path, COMPOSITE_METADATA_PREFIX);
+		if (metadataAvailable.isEmpty())
+			throw new IllegalArgumentException();
 		DataCompression metadataCompressions = p2index.prefered(P2_METADATA_PROPERTY, COMPOSITE_METADATA_PREFIX,
 				compressions.values(), metadataAvailable);
 
@@ -387,5 +468,75 @@ public class P2RepositoryFactory {
 		});
 
 		return new P2CompositeRepositoryImpl(path, p2index, artifactRepository, metadataRepository);
+	}
+
+	private enum P2IndexEntry {
+		compositeArtifacts(P2Kind.artifact, P2Type.composite), //
+		compositeContent(P2Kind.metadata, P2Type.composite), //
+		artifacts(P2Kind.artifact, P2Type.content), //
+		content(P2Kind.metadata, P2Type.content);
+
+		private final P2Kind kind;
+		private final P2Type type;
+
+		P2IndexEntry(P2Kind key, P2Type type) {
+			Objects.requireNonNull(key);
+			Objects.requireNonNull(type);
+			this.kind = key;
+			this.type = type;
+		}
+
+		P2Kind getKind() {
+			return kind;
+		}
+
+		P2Type getType() {
+			return type;
+		}
+	}
+
+	private enum P2Type {
+		composite, //
+		content;
+
+		public P2IndexEntry getIndexEntry(P2Kind d) {
+			for (P2IndexEntry e : P2IndexEntry.values())
+				if (e.getKind() == d && e.getType() == this)
+					return e;
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	private enum P2Kind {
+		artifact, metadata;
+
+		public String getProperty() {
+			return name() + ".repository.factory.order";
+		}
+	}
+
+	public CommonP2Repository loadAny(Path path) throws IOException {
+		P2Index p2index;
+		try {
+			p2index = new P2Index(path);
+		} catch (NoSuchFileException e) {
+			throw new NoRepositoryFoundException("no repository with p2.index found at " + path, e);
+		}
+
+		P2Type type = p2index.identifyType();
+		switch (type) {
+		case composite:
+			return loadComposite(path, p2index);
+		case content:
+			return loadContent(path, p2index);
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
+
+	public class NoRepositoryFoundException extends RuntimeException {
+		public NoRepositoryFoundException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }

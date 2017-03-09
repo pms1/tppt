@@ -267,6 +267,14 @@ public class RepositoryComparator {
 		return run(pr1, pr2, new Supplier[0]);
 	}
 
+	@SuppressWarnings("unchecked")
+	public final boolean run(CommonP2Repository pr1, CommonP2Repository pr2) throws IOException {
+		if (pr1 instanceof P2Repository && pr2 instanceof P2Repository)
+			return run((P2Repository) pr1, (P2Repository) pr2, new Supplier[0]);
+		else
+			throw new Error();
+	}
+
 	private void compareArtifacts(ArtifactRepositoryFacade r1, FileId r1id, ArtifactFacade a1,
 			ArtifactRepositoryFacade r2, FileId r2id, ArtifactFacade a2, List<FileDelta> dest, List<Change> changes)
 			throws IOException {
@@ -324,8 +332,8 @@ public class RepositoryComparator {
 		MetadataRepositoryFacade mdf2 = pr2.getMetadataRepositoryFacade();
 		FileId mdf2id = FileId.newRoot(mdf2.getPath());
 
-		MetadataRepository md1 = mdf1.getMetadata();
-		MetadataRepository md2 = mdf2.getMetadata();
+		MetadataRepository md1 = mdf1.getRepository();
+		MetadataRepository md2 = mdf2.getRepository();
 
 		ArtifactRepositoryFacade r1 = pr1.getArtifactRepositoryFacade();
 		FileId r1id = FileId.newRoot(r1.getPath());

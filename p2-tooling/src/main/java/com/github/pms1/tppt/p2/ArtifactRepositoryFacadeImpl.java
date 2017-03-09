@@ -11,6 +11,7 @@ import com.github.pms1.ldap.AttributeDescription;
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.tppt.p2.jaxb.Repository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Property;
@@ -161,5 +162,10 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 	@Override
 	public Path getPath() {
 		return path;
+	}
+
+	@Override
+	public Repository getRepository() {
+		return data;
 	}
 }

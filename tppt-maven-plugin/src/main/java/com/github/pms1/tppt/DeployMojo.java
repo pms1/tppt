@@ -29,8 +29,9 @@ import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.repository.ScmRepository;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
-import com.github.pms1.tppt.p2.P2Repository;
+import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
+import com.github.pms1.tppt.p2.P2RepositoryFactory.NoRepositoryFoundException;
 import com.github.pms1.tppt.p2.RepositoryComparator;
 
 /**
@@ -73,12 +74,11 @@ public class DeployMojo extends AbstractMojo {
 
 	private void doInstall(Path zip, Path targetRoot) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(zip, null)) {
-			P2Repository r1 = repositoryFactory.load(fs.getPath("/"));
-			P2Repository r2 = repositoryFactory.load(targetRoot);
+			CommonP2Repository r1 = repositoryFactory.loadAny(fs.getPath("/"));
 
-			if (r2 == null) {
-				deploymentHelper.install(r1, targetRoot);
-			} else {
+			try {
+				CommonP2Repository r2 = repositoryFactory.loadAny(targetRoot);
+
 				boolean equal = repositoryComparator.run(r1, r2);
 				if (!equal) {
 					getLog().info("Replacing existing repository");
@@ -86,6 +86,8 @@ public class DeployMojo extends AbstractMojo {
 				} else {
 					getLog().info("Equal to existing repository, skipping deployment");
 				}
+			} catch (NoRepositoryFoundException e) {
+				deploymentHelper.install(r1, targetRoot);
 			}
 		}
 	}
@@ -94,8 +96,13 @@ public class DeployMojo extends AbstractMojo {
 		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
 
 		for (MavenProject p : session.getProjects()) {
-			if (!p.getPackaging().equals("tppt-repository"))
+			switch (p.getPackaging()) {
+			case "tppt-repository":
+			case "tppt-composite-repository":
+				break;
+			default:
 				continue;
+			}
 
 			if (p.getArtifact() == null)
 				throw new MojoExecutionException("The project " + p + " did not create a build artifact");

@@ -25,14 +25,14 @@ public class CompositeRepositoryTest {
 
 		P2CompositeRepository composite = factory.createComposite(folder.getRoot().toPath());
 
-		CompositeRepository repository = composite.getCompositeArtifactRepositoryFacade().getRepository();
+		CompositeRepository repository = composite.getArtifactRepositoryFacade().getRepository();
 
 		repository.setName("name1");
 		Child c = new Child();
 		c.setLocation("foo1");
 		repository.getChildren().getChild().add(c);
 
-		repository = composite.getCompositeMetadataRepositoryFacade().getRepository();
+		repository = composite.getMetadataRepositoryFacade().getRepository();
 
 		repository.setName("name2");
 		c = new Child();
@@ -46,13 +46,13 @@ public class CompositeRepositoryTest {
 
 		P2CompositeRepository loaded = factory.loadComposite(folder.getRoot().toPath());
 
-		CompositeRepository repoloaded = loaded.getCompositeArtifactRepositoryFacade().getRepository();
+		CompositeRepository repoloaded = loaded.getArtifactRepositoryFacade().getRepository();
 
 		assertThat(repoloaded.getName()).isEqualTo("name1");
 
 		assertThat(repoloaded.getChildren().getChild()).extracting(Child::getLocation).containsExactly("foo1");
 
-		repoloaded = loaded.getCompositeMetadataRepositoryFacade().getRepository();
+		repoloaded = loaded.getMetadataRepositoryFacade().getRepository();
 
 		assertThat(repoloaded.getName()).isEqualTo("name2");
 
@@ -65,4 +65,5 @@ public class CompositeRepositoryTest {
 		assertThat(Files.exists(folder.getRoot().toPath().resolve("compositeArtifacts.jar"))).isTrue();
 		assertThat(Files.exists(folder.getRoot().toPath().resolve("compositeContent.jar"))).isTrue();
 	}
+
 }

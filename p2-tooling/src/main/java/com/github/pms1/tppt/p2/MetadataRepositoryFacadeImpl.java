@@ -23,7 +23,7 @@ public class MetadataRepositoryFacadeImpl implements MetadataRepositoryFacade {
 	}
 
 	@Override
-	public MetadataRepository getMetadata() {
+	public MetadataRepository getRepository() {
 		return data;
 	}
 

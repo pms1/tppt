@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +63,7 @@ import com.github.pms1.tppt.p2.P2CompositeRepository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
+import com.github.pms1.tppt.p2.jaxb.composite.Property;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
 
@@ -253,8 +255,8 @@ public class CreateCompositeRepository extends AbstractMojo {
 
 			P2CompositeRepository composite = factory.createComposite(repoOut);
 
-			CompositeRepository artifactRepository = composite.getCompositeArtifactRepositoryFacade().getRepository();
-			CompositeRepository metadataRepository = composite.getCompositeMetadataRepositoryFacade().getRepository();
+			CompositeRepository artifactRepository = composite.getArtifactRepositoryFacade().getRepository();
+			CompositeRepository metadataRepository = composite.getMetadataRepositoryFacade().getRepository();
 
 			artifactRepository.setName("name1");
 			metadataRepository.setName("name2");
@@ -281,6 +283,18 @@ public class CreateCompositeRepository extends AbstractMojo {
 				metadataRepository.getChildren().getChild().add(c);
 
 			}
+
+			LocalDateTime now = LocalDateTime.now();
+			long ts = now.toEpochSecond(ZoneOffset.UTC) * 1000 + now.getNano() / 1_000_000;
+
+			Property p = new Property();
+			p.setName("p2.timestamp");
+			p.setValue(Long.toString(ts));
+			artifactRepository.getProperties().getProperty().add(p);
+			p = new Property();
+			p.setName("p2.timestamp");
+			p.setValue(Long.toString(ts));
+			metadataRepository.getProperties().getProperty().add(p);
 
 			composite.save();
 

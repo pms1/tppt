@@ -1,14 +1,63 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>my-osgi-bundles</groupId>
-	<artifactId>root</artifactId>
-	<packaging>pom</packaging>
+	<groupId>com.github.pms1.tppt</groupId>
+	<artifactId>composite</artifactId>
 	<version>0.0.0-SNAPSHOT</version>
+
+	<packaging>pom</packaging>
 
 	<modules>
 		<module>r1</module>
 		<module>r2</module>
-		<module>composite</module>
+		<module>rcomp</module>
 	</modules>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.github.pms1.tppt</groupId>
+				<artifactId>tppt-maven-plugin</artifactId>
+				<version>@project.version@</version>
+				<extensions>true</extensions>
+
+				<configuration>
+					<deploymentTarget>${deploymentTarget}</deploymentTarget>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.gmavenplus</groupId>
+				<artifactId>gmavenplus-plugin</artifactId>
+				<version>1.5</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.groovy</groupId>
+						<artifactId>groovy-all</artifactId>
+						<version>2.4.7</version>
+						<scope>runtime</scope>
+					</dependency>
+				</dependencies>
+				<executions>
+					<execution>
+						<id>add-dynamic-properties</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<scripts>
+								<script>
+<![CDATA[
+project.properties.setProperty('deploymentTarget',java.nio.file.Paths.get(project.build.directory).resolve("deploymentTarget").toUri().toString())
+]]>
+								</script>
+							</scripts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
 </project>

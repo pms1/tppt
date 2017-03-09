@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -29,6 +30,7 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import com.github.pms1.tppt.core.InterpolatedString;
@@ -37,10 +39,15 @@ import com.github.pms1.tppt.core.RepositoryPathPattern;
 import com.github.pms1.tppt.core.InterpolatedString.Visitor;
 import com.github.pms1.tppt.p2.ArtifactId;
 import com.github.pms1.tppt.p2.ArtifactRepositoryFacade;
+import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.DataCompression;
+import com.github.pms1.tppt.p2.P2CompositeRepository;
 import com.github.pms1.tppt.p2.P2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
+import com.github.pms1.tppt.p2.P2RepositoryVisitor;
 import com.github.pms1.tppt.p2.PathByteSource;
+import com.github.pms1.tppt.p2.RepositoryFacade;
+import com.github.pms1.tppt.p2.jaxb.Property;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -54,6 +61,9 @@ import de.pdark.decentxml.XMLParser;
 
 @Component(role = DeploymentHelper.class)
 public class DeploymentHelper {
+	@Requirement
+	private P2RepositoryFactory factory;
+
 	private Attribute findTimestamp(Document d) {
 
 		Attribute ts = null;
@@ -76,20 +86,35 @@ public class DeploymentHelper {
 		return ts;
 	}
 
-	private LocalDateTime extractP2Timestamp(Path p) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(p, null)) {
-			Path path = fs.getPath("artifacts.xml");
+	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
+		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
+			
+			CommonP2Repository repo = factory.loadAny(fs.getPath("/"));
 
-			XMLParser parser = new XMLParser();
+			RepositoryFacade artifactRepositoryFacade = repo.getArtifactRepositoryFacade();
+			
+			Optional<? extends Property> prop = artifactRepositoryFacade.getRepository().getProperties().getProperty().stream().filter(
+					p -> p.getName().equals("p2.timestamp")
+					).findAny();
+			
+			if(!prop.isPresent())
+				throw new Error();
+			
+			
+//			Path path = fs.getPath("artifacts.xml");
+//
+//			XMLParser parser = new XMLParser();
+//
+//			de.pdark.decentxml.Document d;
+//
+//			try (InputStream is = Files.newInputStream(path)) {
+//				d = parser.parse(new XMLIOSource(is));
+//			}
+//
+//			String ts = findTimestamp(d).getValue();
 
-			de.pdark.decentxml.Document d;
-
-			try (InputStream is = Files.newInputStream(path)) {
-				d = parser.parse(new XMLIOSource(is));
-			}
-
-			String ts = findTimestamp(d).getValue();
-
+			String ts = prop.get().getValue();
+			
 			long ts_ms = Long.parseLong(ts);
 
 			return LocalDateTime.ofEpochSecond(ts_ms / 1000, (int) (ts_ms % 1000) * 1000000, ZoneOffset.UTC);
@@ -257,23 +282,43 @@ public class DeploymentHelper {
 
 	}
 
-	private Set<String> getFiles(P2Repository r) throws IOException {
+	private Set<String> getFiles(CommonP2Repository repo) throws IOException {
 		Set<String> files = new TreeSet<>();
 
 		files.add(P2RepositoryFactory.P2INDEX);
 
-		for (DataCompression dc : r.getArtifactDataCompressions())
-			files.add(P2RepositoryFactory.ARTIFACT_PREFIX + "." + dc.getFileSuffix());
+		repo.accept(new P2RepositoryVisitor() {
+			
+			@Override
+			public void visit(P2CompositeRepository repo) {
+				for (DataCompression dc : repo.getArtifactDataCompressions())
+					files.add(P2RepositoryFactory.COMPOSITE_ARTIFACT_PREFIX + "." + dc.getFileSuffix());
 
-		for (DataCompression dc : r.getMetadataDataCompressions())
-			files.add(P2RepositoryFactory.METADATA_PREFIX + "." + dc.getFileSuffix());
+				for (DataCompression dc : repo.getMetadataDataCompressions())
+					files.add(P2RepositoryFactory.COMPOSITE_METADATA_PREFIX + "." + dc.getFileSuffix());
+			}
+			
+			@Override
+			public void visit(P2Repository repo) {
+				for (DataCompression dc : repo.getArtifactDataCompressions())
+					files.add(P2RepositoryFactory.ARTIFACT_PREFIX + "." + dc.getFileSuffix());
 
-		ArtifactRepositoryFacade facade = r.getArtifactRepositoryFacade();
+				for (DataCompression dc : repo.getMetadataDataCompressions())
+					files.add(P2RepositoryFactory.METADATA_PREFIX + "." + dc.getFileSuffix());
 
-		for (ArtifactId e : facade.getArtifacts().keySet()) {
-			files.add(r.getPath().relativize(facade.getArtifactUri(e)).toString().replace(File.separatorChar, '/'));
-		}
 
+				try {
+					ArtifactRepositoryFacade facade;
+					facade = repo.getArtifactRepositoryFacade();
+					for (ArtifactId e : facade.getArtifacts().keySet())
+						files.add(repo.getPath().relativize(facade.getArtifactUri(e)).toString().replace(File.separatorChar, '/'));
+				} catch (IOException e1) {
+					throw new RuntimeException(e1); 
+				}
+
+			}
+		});
+	
 		return files;
 	}
 
@@ -311,7 +356,7 @@ public class DeploymentHelper {
 		}
 	}
 	
-	public void replace(P2Repository source, P2Repository target) throws IOException {
+	public void replace(CommonP2Repository source, CommonP2Repository target) throws IOException {
 		Preconditions.checkNotNull(source);
 		Preconditions.checkNotNull(target);
 		
@@ -321,7 +366,7 @@ public class DeploymentHelper {
 		doInstall(source.getPath(),f1,target.getPath(),f2);
 	}
 
-	public void install(P2Repository source, Path target) throws IOException {
+	public void install(CommonP2Repository source, Path target) throws IOException {
 		Preconditions.checkNotNull(source);
 		Preconditions.checkNotNull(target);
 

@@ -184,11 +184,11 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 			List<Plugin> plugins = new ArrayList<>();
 
-			P2Repository p2 = p2repositoryFactory.load(repoOut);
+			P2Repository p2 = p2repositoryFactory.loadContent(repoOut);
 			if (p2 == null)
 				throw new IllegalArgumentException("Could not find a p2 repository at " + repoOut);
 
-			for (Unit u : p2.getMetadataRepositoryFacade().getMetadata().getUnits().getUnit()) {
+			for (Unit u : p2.getMetadataRepositoryFacade().getRepository().getUnits().getUnit()) {
 				Optional<Provided> provided = u.getProvides().getProvided().stream()
 						.filter(p -> p.getNamespace().equals("osgi.bundle")).findAny();
 				if (!provided.isPresent())

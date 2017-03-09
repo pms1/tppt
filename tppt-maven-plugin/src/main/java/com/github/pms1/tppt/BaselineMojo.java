@@ -89,8 +89,8 @@ public class BaselineMojo extends AbstractMojo {
 			} else {
 				getLog().info("Comparing repository to baseline at " + previous);
 
-				P2Repository r1 = repositoryFactory.load(dt.getPath().resolve(previous));
-				P2Repository r2 = repositoryFactory.load(target.toPath().resolve("repository"));
+				P2Repository r1 = repositoryFactory.loadContent(dt.getPath().resolve(previous));
+				P2Repository r2 = repositoryFactory.loadContent(target.toPath().resolve("repository"));
 				boolean eq = repositoryComparator.run(r1, r2, RepositoryDataCompressionChange::new);
 
 				if (eq) {
