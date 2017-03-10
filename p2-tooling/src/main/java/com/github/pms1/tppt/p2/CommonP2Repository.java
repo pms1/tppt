@@ -8,7 +8,7 @@ public interface CommonP2Repository {
 
 	void setCompression(DataCompression... compressions) throws IOException;
 
-	void accept(P2RepositoryVisitor visitor);
+	<T> T accept(P2RepositoryVisitor<T> visitor);
 
 	Set<DataCompression> getMetadataDataCompressions();
 

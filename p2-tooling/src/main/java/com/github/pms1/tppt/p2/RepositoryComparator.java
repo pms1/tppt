@@ -274,15 +274,39 @@ public class RepositoryComparator {
 		return run(pr1, pr2, new Supplier[0]);
 	}
 
-	@SuppressWarnings("unchecked")
-	public final boolean run(CommonP2Repository pr1, CommonP2Repository pr2) throws IOException {
-		if (pr1 instanceof P2Repository && pr2 instanceof P2Repository)
-			return run((P2Repository) pr1, (P2Repository) pr2, new Supplier[0]);
-		else
-			return run((P2CompositeRepository) pr1, (P2CompositeRepository) pr2);
+	@SafeVarargs
+	public final boolean run(CommonP2Repository pr1, CommonP2Repository pr2, Supplier<Change>... acceptedChanges)
+			throws IOException {
+		if (pr1.getClass() != pr2.getClass()) {
+			// FIXME: path
+			logger.info("Repository type changed");
+			return false;
+		}
+
+		return pr1.accept(new P2RepositoryVisitor<Boolean>() {
+
+			@Override
+			public Boolean visit(P2CompositeRepository repo) {
+				try {
+					return run((P2CompositeRepository) pr1, (P2CompositeRepository) pr2, acceptedChanges);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+
+			@Override
+			public Boolean visit(P2Repository repo) {
+				try {
+					return run((P2Repository) pr1, (P2Repository) pr2, acceptedChanges);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
 	}
 
-	private boolean run(P2CompositeRepository pr1, P2CompositeRepository pr2) throws IOException {
+	private boolean run(P2CompositeRepository pr1, P2CompositeRepository pr2,
+			@SuppressWarnings("unchecked") Supplier<Change>... acceptedChanges) throws IOException {
 		List<FileDelta> dest = new ArrayList<>();
 
 		FileId root1 = FileId.newRoot(pr1.getPath());
@@ -311,11 +335,18 @@ public class RepositoryComparator {
 		// ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
 		// FileId r2id = FileId.newRoot(r2.getPath());
 
-		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder()
+		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder().addDecomposer("//properties/property",
+				ObjectComparator.<com.github.pms1.tppt.p2.jaxb.composite.Property>listToMapDecomposer(p -> p.getName()))
 				.setDeltaCreator(new DeltaCreator<FileDelta>() {
 
 					@Override
 					public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
+						// FIXME: here?
+						switch (p.getPath()) {
+						case "//properties/property[p2.timestamp]/value":
+							return null;
+						}
+
 						throw new Error(p + " " + change + " " + m1 + " " + m2);
 					}
 
@@ -326,8 +357,7 @@ public class RepositoryComparator {
 		List<String> incompatibleChanges = new ArrayList<>();
 
 		for (FileDelta d : dest) {
-			// if (!changes.stream().anyMatch(c -> c.accept(d))) {
-
+			// if (!changes.stream().anyMatch(c -> c.accept(d)))
 			incompatibleChanges.add(render(d));
 		}
 

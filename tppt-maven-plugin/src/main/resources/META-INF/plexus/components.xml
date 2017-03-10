@@ -68,11 +68,11 @@
 							</validate>
 <!-- 															${project.groupId}:${project.artifactId}:${project.version}:mirror,
 								${project.groupId}:${project.artifactId}:${project.version}:create-features,
-								${project.groupId}:${project.artifactId}:${project.version}:replace-by-baseline,
 								${project.groupId}:${project.artifactId}:${project.version}:compress-metadata,
  -->							
 							<package>
 								${project.groupId}:${project.artifactId}:${project.version}:create-composite-repository,
+								${project.groupId}:${project.artifactId}:${project.version}:replace-by-baseline,
 								org.eclipse.tycho:tycho-p2-repository-plugin:${tycho.version}:archive-repository
 							</package>
 							<install>

@@ -401,8 +401,8 @@ public class P2RepositoryFactory {
 		}
 
 		@Override
-		public void accept(P2RepositoryVisitor visitor) {
-			visitor.visit(this);
+		public <T> T accept(P2RepositoryVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 
 		@Override

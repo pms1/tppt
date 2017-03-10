@@ -287,19 +287,21 @@ public class DeploymentHelper {
 
 		files.add(P2RepositoryFactory.P2INDEX);
 
-		repo.accept(new P2RepositoryVisitor() {
+		repo.accept(new P2RepositoryVisitor<Void>() {
 			
 			@Override
-			public void visit(P2CompositeRepository repo) {
+			public Void visit(P2CompositeRepository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
 					files.add(P2RepositoryFactory.COMPOSITE_ARTIFACT_PREFIX + "." + dc.getFileSuffix());
 
 				for (DataCompression dc : repo.getMetadataDataCompressions())
 					files.add(P2RepositoryFactory.COMPOSITE_METADATA_PREFIX + "." + dc.getFileSuffix());
+				
+				return null;
 			}
 			
 			@Override
-			public void visit(P2Repository repo) {
+			public Void visit(P2Repository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
 					files.add(P2RepositoryFactory.ARTIFACT_PREFIX + "." + dc.getFileSuffix());
 
@@ -316,6 +318,7 @@ public class DeploymentHelper {
 					throw new RuntimeException(e1); 
 				}
 
+				return null;
 			}
 		});
 	

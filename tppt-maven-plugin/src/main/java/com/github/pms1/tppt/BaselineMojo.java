@@ -19,7 +19,7 @@ import org.apache.maven.project.MavenProject;
 import com.github.pms1.tppt.core.DeploymentHelper;
 import com.github.pms1.tppt.core.RepositoryPathMatcher;
 import com.github.pms1.tppt.core.RepositoryPathPattern;
-import com.github.pms1.tppt.p2.P2Repository;
+import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.RepositoryComparator;
 import com.github.pms1.tppt.p2.RepositoryDataCompressionChange;
@@ -89,8 +89,8 @@ public class BaselineMojo extends AbstractMojo {
 			} else {
 				getLog().info("Comparing repository to baseline at " + previous);
 
-				P2Repository r1 = repositoryFactory.loadContent(dt.getPath().resolve(previous));
-				P2Repository r2 = repositoryFactory.loadContent(target.toPath().resolve("repository"));
+				CommonP2Repository r1 = repositoryFactory.loadAny(dt.getPath().resolve(previous));
+				CommonP2Repository r2 = repositoryFactory.loadAny(target.toPath().resolve("repository"));
 				boolean eq = repositoryComparator.run(r1, r2, RepositoryDataCompressionChange::new);
 
 				if (eq) {
