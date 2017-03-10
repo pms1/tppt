@@ -82,13 +82,12 @@ public class Application1 implements IApplication {
 
 				@Override
 				public void subTask(String name) {
-					System.err.println("ST " + name);
-
+					// System.err.println("ST " + name);
 				}
 
 				@Override
 				public void setTaskName(String name) {
-					System.err.println("STN " + name);
+					// System.err.println("STN " + name);
 				}
 
 				@Override
@@ -111,12 +110,12 @@ public class Application1 implements IApplication {
 
 				@Override
 				public void done() {
-					System.err.println("DONE");
+					// System.err.println("DONE");
 				}
 
 				@Override
 				public void beginTask(String name, int totalWork) {
-					System.err.println("BT " + name);
+					// System.err.println("BT " + name);
 				}
 			};
 
