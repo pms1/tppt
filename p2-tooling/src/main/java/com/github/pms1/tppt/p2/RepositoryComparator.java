@@ -43,6 +43,7 @@ import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
 import com.github.pms1.ocomp.ObjectDelta;
+import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
@@ -171,6 +172,20 @@ public class RepositoryComparator {
 			Preconditions.checkNotNull(required);
 			this.required = required;
 		}
+	}
+
+	static class RepositoryAdded extends FileDelta {
+		RepositoryAdded(FileId id1, Child left, FileId id2, Child right) {
+			super(id1, id2, "Repository added: {0}", right);
+		}
+
+	}
+
+	static class RepositoryRemoved extends FileDelta {
+		RepositoryRemoved(FileId id1, Child left, FileId id2, Child right) {
+			super(id1, id2, "Repository removed: {0}", left);
+		}
+
 	}
 
 	static final SearchFilterPrinter printer = new SearchFilterPrinter();
@@ -318,7 +333,9 @@ public class RepositoryComparator {
 				P2RepositoryFactory.METADATA_PREFIX, dest::add);
 
 		CompositeRepositoryFacade arf1 = pr1.getArtifactRepositoryFacade();
+		FileId arf1id = FileId.newRoot(arf1.getPath());
 		CompositeRepositoryFacade arf2 = pr2.getArtifactRepositoryFacade();
+		FileId arf2id = FileId.newRoot(arf2.getPath());
 
 		CompositeRepository ar1 = arf1.getRepository();
 		CompositeRepository ar2 = arf2.getRepository();
@@ -335,12 +352,28 @@ public class RepositoryComparator {
 		// ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
 		// FileId r2id = FileId.newRoot(r2.getPath());
 
-		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder().addDecomposer("//properties/property",
-				ObjectComparator.<com.github.pms1.tppt.p2.jaxb.composite.Property>listToMapDecomposer(p -> p.getName()))
+		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder() //
+				.addDecomposer("//properties/property",
+						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.composite.Property>listToMapDecomposer(
+								com.github.pms1.tppt.p2.jaxb.composite.Property::getName)) //
+				.addDecomposer("//children/child", ObjectComparator.<Child>listToMapDecomposer(Child::getLocation)) //
 				.setDeltaCreator(new DeltaCreator<FileDelta>() {
 
 					@Override
 					public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
+						if (p.size() > 3) {
+							OPath2 unitPath = p.subPath(0, 3);
+							if (unitPath.getPath().equals("//children/child")) {
+								switch (change) {
+								case ADDED:
+									return new RepositoryAdded(arf1id, (Child) m1, arf2id, (Child) m2);
+								case REMOVED:
+									return new RepositoryRemoved(arf1id, (Child) m1, arf2id, (Child) m2);
+								default:
+									throw new Error(p + " " + change + " " + m1 + " " + m2);
+								}
+							}
+						}
 						// FIXME: here?
 						switch (p.getPath()) {
 						case "//properties/property[p2.timestamp]/value":
@@ -1079,6 +1112,13 @@ public class RepositoryComparator {
 			Provided p = (Provided) o;
 			return "Provided(" + p.getNamespace() + "," + p.getName() + "," + p.getVersion() + ")";
 		}
+
+		// if (o instanceof Child) {
+		// return new
+		// DomRenderer().jaxbRender(CompositeRepositoryFacade.getJaxbContext(),
+		// o,
+		// DomRenderer.Options.TOP_LEVEL);
+		// }
 
 		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {
 			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,
