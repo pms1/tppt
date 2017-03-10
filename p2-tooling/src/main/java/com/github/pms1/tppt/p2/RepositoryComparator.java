@@ -43,6 +43,7 @@ import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
 import com.github.pms1.ocomp.ObjectDelta;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
@@ -174,68 +175,74 @@ public class RepositoryComparator {
 
 	static final SearchFilterPrinter printer = new SearchFilterPrinter();
 
-	static ObjectComparatorBuilder<ObjectDelta> oc1 = ObjectComparatorBuilder.newBuilder()
-			.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
-				return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
-			}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
-			.addDecomposer(DecomposerMatchers.isAssignable(listProvided), listToBag)
-			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
-					new Decomposer<String>() {
+	static ObjectComparatorBuilder<ObjectDelta> createMetadataComparator() {
+		return ObjectComparatorBuilder.newBuilder()
+				.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
+					return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
+				}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
+				.addDecomposer(DecomposerMatchers.isAssignable(listProvided), listToBag)
+				.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
+						new Decomposer<String>() {
 
-						@Override
-						public DecomposedObject decompose(String value) {
+							@Override
+							public DecomposedObject decompose(String value) {
 
-							try {
-								Map<String, String> ml = ManifestElement.parseBundleManifest(
-										new ByteArrayInputStream(value.trim().getBytes(StandardCharsets.UTF_8)), null);
+								try {
+									Map<String, String> ml = ManifestElement.parseBundleManifest(
+											new ByteArrayInputStream(value.trim().getBytes(StandardCharsets.UTF_8)),
+											null);
 
-								DecomposedObject decomposedObject = new DecomposedObject();
-								for (Map.Entry<String, String> e : ml.entrySet()) {
-									decomposedObject.put(OPath.index(e.getKey()), e.getValue());
+									DecomposedObject decomposedObject = new DecomposedObject();
+									for (Map.Entry<String, String> e : ml.entrySet()) {
+										decomposedObject.put(OPath.index(e.getKey()), e.getValue());
+									}
+									return decomposedObject;
+								} catch (IOException | BundleException e) {
+									throw new RuntimeException(e);
 								}
-								return decomposedObject;
-							} catch (IOException | BundleException e) {
-								throw new RuntimeException(e);
 							}
+
+						})
+				.addDecomposer("//units/unit", new Decomposer<List<Unit>>() {
+
+					DecomposedObject dc1(List<Unit> units, Function<Unit, String> f) {
+						DecomposedObject r = new DecomposedObject();
+
+						for (Unit u : units) {
+							if (!r.put(OPath.index(f.apply(u)), u))
+								return null;
 						}
 
-					})
-			.addDecomposer("//units/unit", new Decomposer<List<Unit>>() {
-
-				DecomposedObject dc1(List<Unit> units, Function<Unit, String> f) {
-					DecomposedObject r = new DecomposedObject();
-
-					for (Unit u : units) {
-						if (!r.put(OPath.index(f.apply(u)), u))
-							return null;
+						return r;
 					}
 
-					return r;
-				}
+					@Override
+					public DecomposedObject decompose(List<Unit> o) {
+						DecomposedObject r;
 
-				@Override
-				public DecomposedObject decompose(List<Unit> o) {
-					DecomposedObject r;
+						r = dc1(o, p -> p.getId());
+						if (r != null)
+							return r;
 
-					r = dc1(o, p -> p.getId());
-					if (r != null)
-						return r;
+						r = dc1(o, p -> p.getId() + "/" + p.getVersion());
+						if (r != null)
+							return r;
 
-					r = dc1(o, p -> p.getId() + "/" + p.getVersion());
-					if (r != null)
-						return r;
+						throw new Error();
+					}
 
-					throw new Error();
-				}
-
-			})
-			// ObjectComparator.<Unit>listToMapDecomposer(p -> p.getId() + "/" +
-			// p.getVersion()))
-			.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction",
-					ObjectComparator.<Instruction>listToMapDecomposer(p -> p.getKey()))
-			.addDecomposer("//units/unit[*]/artifacts/artifact",
-					ObjectComparator.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
-			.addDecomposer("//properties/property", ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()));
+				})
+				// ObjectComparator.<Unit>listToMapDecomposer(p -> p.getId() +
+				// "/" +
+				// p.getVersion()))
+				.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction",
+						ObjectComparator.<Instruction>listToMapDecomposer(p -> p.getKey()))
+				.addDecomposer("//units/unit[*]/artifacts/artifact",
+						ObjectComparator
+								.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
+				.addDecomposer("//properties/property",
+						ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()));
+	}
 
 	static class MetadataDelta extends FileDelta {
 		private final OPath2 path;
@@ -272,7 +279,64 @@ public class RepositoryComparator {
 		if (pr1 instanceof P2Repository && pr2 instanceof P2Repository)
 			return run((P2Repository) pr1, (P2Repository) pr2, new Supplier[0]);
 		else
-			throw new Error();
+			return run((P2CompositeRepository) pr1, (P2CompositeRepository) pr2);
+	}
+
+	private boolean run(P2CompositeRepository pr1, P2CompositeRepository pr2) throws IOException {
+		List<FileDelta> dest = new ArrayList<>();
+
+		FileId root1 = FileId.newRoot(pr1.getPath());
+		FileId root2 = FileId.newRoot(pr2.getPath());
+
+		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(),
+				P2RepositoryFactory.ARTIFACT_PREFIX, dest::add);
+		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(),
+				P2RepositoryFactory.METADATA_PREFIX, dest::add);
+
+		CompositeRepositoryFacade arf1 = pr1.getArtifactRepositoryFacade();
+		CompositeRepositoryFacade arf2 = pr2.getArtifactRepositoryFacade();
+
+		CompositeRepository ar1 = arf1.getRepository();
+		CompositeRepository ar2 = arf2.getRepository();
+		// MetadataRepositoryFacade mdf1 = pr1.getMetadataRepositoryFacade();
+		// FileId mdf1id = FileId.newRoot(mdf1.getPath());
+		// MetadataRepositoryFacade mdf2 = pr2.getMetadataRepositoryFacade();
+		// FileId mdf2id = FileId.newRoot(mdf2.getPath());
+		//
+		// MetadataRepository md1 = mdf1.getRepository();
+		// MetadataRepository md2 = mdf2.getRepository();
+		//
+		// ArtifactRepositoryFacade r1 = pr1.getArtifactRepositoryFacade();
+		// FileId r1id = FileId.newRoot(r1.getPath());
+		// ArtifactRepositoryFacade r2 = pr2.getArtifactRepositoryFacade();
+		// FileId r2id = FileId.newRoot(r2.getPath());
+
+		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder()
+				.setDeltaCreator(new DeltaCreator<FileDelta>() {
+
+					@Override
+					public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
+						throw new Error(p + " " + change + " " + m1 + " " + m2);
+					}
+
+				}).build();
+
+		dest.addAll(oc.compare(ar1, ar2));
+
+		List<String> incompatibleChanges = new ArrayList<>();
+
+		for (FileDelta d : dest) {
+			// if (!changes.stream().anyMatch(c -> c.accept(d))) {
+
+			incompatibleChanges.add(render(d));
+		}
+
+		// for (Change c : changes)
+		// c.check(incompatibleChanges::add);
+
+		incompatibleChanges.forEach(p -> logger.info("Incompatible change: " + p));
+
+		return incompatibleChanges.isEmpty();
 	}
 
 	private void compareArtifacts(ArtifactRepositoryFacade r1, FileId r1id, ArtifactFacade a1,
@@ -344,7 +408,7 @@ public class RepositoryComparator {
 		for (Supplier<Change> a : acceptedChanges)
 			changes.add(a.get());
 
-		ObjectComparator<FileDelta> oc = oc1.setDeltaCreator(new DeltaCreator<FileDelta>() {
+		ObjectComparator<FileDelta> oc = createMetadataComparator().setDeltaCreator(new DeltaCreator<FileDelta>() {
 
 			@Override
 			public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
@@ -445,18 +509,9 @@ public class RepositoryComparator {
 
 		List<String> incompatibleChanges = new ArrayList<>();
 
-		for (FileDelta d : dest) {
-			if (!changes.stream().anyMatch(c -> c.accept(d))) {
-
-				if (d instanceof FileDelta) {
-					FileDelta d1 = (FileDelta) d;
-
-					incompatibleChanges.add(render(d1));
-				} else {
-					incompatibleChanges.add(render(d));
-				}
-			}
-		}
+		for (FileDelta d : dest)
+			if (!changes.stream().anyMatch(c -> c.accept(d)))
+				incompatibleChanges.add(render(d));
 
 		for (Change c : changes)
 			c.check(incompatibleChanges::add);
