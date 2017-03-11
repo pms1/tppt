@@ -1,8 +1,5 @@
 package com.github.pms1.tppt.p2;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
@@ -16,10 +13,6 @@ public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<Artifac
 
 	protected ArtifactRepositoryFactory() {
 		super(getJaxbContext(), ArtifactRepository.class, "artifact", "artifacts", "artifactRepository.xsd");
-	}
-
-	public ArtifactRepositoryFacade createFacade(Path p) throws IOException {
-		return new ArtifactRepositoryFacadeImpl(p, readRepository(p));
 	}
 
 	private static class Holder {

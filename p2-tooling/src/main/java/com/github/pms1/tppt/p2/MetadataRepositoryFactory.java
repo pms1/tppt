@@ -1,8 +1,5 @@
 package com.github.pms1.tppt.p2;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
@@ -16,10 +13,6 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 
 	protected MetadataRepositoryFactory() {
 		super(getJaxbContext(), MetadataRepository.class, "metadata", "content", "metadataRepository.xsd");
-	}
-
-	public MetadataRepositoryFacade createFacade(Path p) throws IOException {
-		return new MetadataRepositoryFacadeImpl(p, readRepository(p));
 	}
 
 	private static class Holder {

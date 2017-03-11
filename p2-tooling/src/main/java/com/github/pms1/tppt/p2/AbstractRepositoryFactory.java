@@ -1,12 +1,7 @@
 package com.github.pms1.tppt.p2;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Objects;
-import java.util.Properties;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -106,32 +101,6 @@ public abstract class AbstractRepositoryFactory<T> {
 		} catch (JAXBException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	protected T readRepository(Path p) throws IOException {
-		Properties p2index = new Properties();
-
-		try (InputStream is = Files.newInputStream(p.resolve("p2.index"))) {
-			p2index.load(is);
-		}
-
-		if (!Objects.equals(p2index.getProperty("version", null), "1"))
-			throw new Error();
-
-		T data = null;
-		for (String f : p2index.getProperty(prefix + ".repository.factory.order", "").split(",")) {
-			if (f.equals(content + ".xml")) {
-				try (InputStream is = Files.newInputStream(p.resolve(content + ".xml"))) {
-					return read(is);
-				}
-			} else if (f.equals("!")) {
-				throw new Error();
-			} else {
-				throw new Error("f=" + f);
-			}
-		}
-
-		return data;
 	}
 
 }
