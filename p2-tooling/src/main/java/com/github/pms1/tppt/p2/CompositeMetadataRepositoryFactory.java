@@ -15,8 +15,7 @@ import com.google.common.base.Throwables;
 public class CompositeMetadataRepositoryFactory extends AbstractRepositoryFactory<CompositeRepository> {
 
 	protected CompositeMetadataRepositoryFactory() {
-		super(getJaxbContext(), CompositeRepository.class, "compositeMetadata", "compositeContent",
-				"compositeRepository.xsd");
+		super(getJaxbContext(), CompositeRepository.class, "compositeMetadata", "compositeRepository.xsd");
 	}
 
 	private static class Holder {

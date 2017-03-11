@@ -12,7 +12,7 @@ import com.google.common.base.Throwables;
 public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<ArtifactRepository> {
 
 	protected ArtifactRepositoryFactory() {
-		super(getJaxbContext(), ArtifactRepository.class, "artifact", "artifacts", "artifactRepository.xsd");
+		super(getJaxbContext(), ArtifactRepository.class, "artifact", "artifactRepository.xsd");
 	}
 
 	private static class Holder {

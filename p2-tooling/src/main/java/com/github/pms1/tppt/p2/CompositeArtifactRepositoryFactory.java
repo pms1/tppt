@@ -15,8 +15,7 @@ import com.google.common.base.Throwables;
 public class CompositeArtifactRepositoryFactory extends AbstractRepositoryFactory<CompositeRepository> {
 
 	protected CompositeArtifactRepositoryFactory() {
-		super(getJaxbContext(), CompositeRepository.class, "compositeArtifact", "compositeArtifacts",
-				"compositeRepository.xsd");
+		super(getJaxbContext(), CompositeRepository.class, "compositeArtifact", "compositeRepository.xsd");
 	}
 
 	private static class Holder {

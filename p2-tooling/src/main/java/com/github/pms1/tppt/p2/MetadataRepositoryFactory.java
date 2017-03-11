@@ -12,7 +12,7 @@ import com.google.common.base.Throwables;
 public class MetadataRepositoryFactory extends AbstractRepositoryFactory<MetadataRepository> {
 
 	protected MetadataRepositoryFactory() {
-		super(getJaxbContext(), MetadataRepository.class, "metadata", "content", "metadataRepository.xsd");
+		super(getJaxbContext(), MetadataRepository.class, "metadata", "metadataRepository.xsd");
 	}
 
 	private static class Holder {

@@ -32,21 +32,18 @@ import com.google.common.base.Preconditions;
 public abstract class AbstractRepositoryFactory<T> {
 	private final Class<T> clazz;
 	private final String prefix;
-	private final String content;
 	private final Schema schema;
 	private final JAXBContext jaxbContext;
 
 	@Requirement
 	DomRenderer renderer;
 
-	protected AbstractRepositoryFactory(JAXBContext jaxbContext, Class<T> clazz, String prefix, String content,
-			String xsd) {
+	protected AbstractRepositoryFactory(JAXBContext jaxbContext, Class<T> clazz, String prefix, String xsd) {
 		Preconditions.checkNotNull(jaxbContext);
 		Preconditions.checkNotNull(clazz);
 		this.jaxbContext = jaxbContext;
 		this.clazz = clazz;
 		this.prefix = prefix;
-		this.content = content;
 		this.schema = Xml.createSchema(VersionAdapter.class, xsd);
 	}
 
