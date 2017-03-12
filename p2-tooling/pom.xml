@@ -103,7 +103,7 @@
 					</execution>
 
 					<execution>
-						<id>generate-composite-artifact</id>
+						<id>generate-composite</id>
 						<goals>
 							<goal>generate</goal>
 						</goals>
