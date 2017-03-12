@@ -1108,17 +1108,16 @@ public class RepositoryComparator {
 			List<Object> l = (List<Object>) (List<?>) o;
 			return "[" + l.stream().map(this::render).collect(Collectors.joining(", ")) + "]";
 		}
+
 		if (o instanceof Provided) {
 			Provided p = (Provided) o;
 			return "Provided(" + p.getNamespace() + "," + p.getName() + "," + p.getVersion() + ")";
 		}
 
-		// if (o instanceof Child) {
-		// return new
-		// DomRenderer().jaxbRender(CompositeRepositoryFacade.getJaxbContext(),
-		// o,
-		// DomRenderer.Options.TOP_LEVEL);
-		// }
+		if (o instanceof Child) {
+			return new DomRenderer().jaxbRender(CompositeRepositoryFactory.getJaxbContext(), o,
+					DomRenderer.Options.TOP_LEVEL);
+		}
 
 		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {
 			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,
