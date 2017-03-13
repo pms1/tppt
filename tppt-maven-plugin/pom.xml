@@ -108,10 +108,10 @@
 		</dependency>
 		
 		<dependency>
-    <groupId>org.apache.maven.shared</groupId>
-    <artifactId>maven-artifact-resolver</artifactId>
-    <version>1.0</version>
-</dependency>
+    		<groupId>org.apache.maven.shared</groupId>
+    		<artifactId>maven-artifact-resolver</artifactId>
+    		<version>1.0</version>
+		</dependency>
 
 	</dependencies>
 
@@ -166,15 +166,6 @@
 			<plugin>
 				<groupId>org.codehaus.gmavenplus</groupId>
 				<artifactId>gmavenplus-plugin</artifactId>
-				<version>1.5</version>
-				<dependencies>
-					<dependency>
-						<groupId>org.codehaus.groovy</groupId>
-						<artifactId>groovy-all</artifactId>
-						<version>2.4.7</version>
-						<scope>runtime</scope>
-					</dependency>
-				</dependencies>
 				<executions>
 					<execution>
 						<id>add-dynamic-properties</id>
@@ -197,7 +188,6 @@ project.properties.setProperty('deploymentTarget',java.nio.file.Paths.get(projec
 
 			<plugin>
 				<artifactId>maven-invoker-plugin</artifactId>
-				<version>2.0.0</version>
 				<configuration>
 					<cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
 					<!-- use local repository for installing -->

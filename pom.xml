@@ -52,6 +52,7 @@
 		<maven.guava.version>18.0</maven.guava.version>
 		<maven.slf4j.version>1.7.5</maven.slf4j.version>
 		<plexus-component-version>1.7.1</plexus-component-version>
+		<groovy.version>2.4.9</groovy.version>
 	</properties>
 
 	<dependencyManagement>
@@ -218,6 +219,31 @@
 					</execution>
 				</executions>
 			</plugin>
+			
+			<plugin>
+				<artifactId>maven-invoker-plugin</artifactId>
+				<version>2.0.0</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.groovy</groupId>
+    					<artifactId>groovy-all</artifactId>
+						<version>${groovy.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>
+			
+			<plugin>
+				<groupId>org.codehaus.gmavenplus</groupId>
+				<artifactId>gmavenplus-plugin</artifactId>
+				<version>1.5</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.codehaus.groovy</groupId>
+						<artifactId>groovy-all</artifactId>
+						<version>${groovy.version}</version>
+					</dependency>
+				</dependencies>
+			</plugin>			
 		</plugins>
 	</build>
 
