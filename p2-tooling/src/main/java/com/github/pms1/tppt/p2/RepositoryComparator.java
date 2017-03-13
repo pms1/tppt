@@ -43,6 +43,7 @@ import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
 import com.github.pms1.ocomp.ObjectDelta;
+import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
@@ -121,11 +122,35 @@ public class RepositoryComparator {
 		}
 	}
 
+	static abstract class AbstractArtifactDelta extends FileDelta {
+		protected final Artifact left;
+		protected final Artifact right;
+
+		AbstractArtifactDelta(FileId id1, Artifact left, FileId id2, Artifact right, String message,
+				Object... parameters) {
+			super(id1, id2, message, parameters);
+			Preconditions.checkNotNull(left);
+			this.left = left;
+			Preconditions.checkNotNull(right);
+			this.right = right;
+		}
+	}
+
 	static class UnitDelta extends AbstractUnitDelta {
 		final OPath2 path;
 
 		UnitDelta(FileId id1, Unit left, FileId id2, Unit right, OPath2 path) {
 			super(id1, left, id2, right, "Unit changed {0} -> {1}: {2}: {3} -> {4}", left, right, path.getPath(),
+					path.getLeft(), path.getRight());
+			this.path = path;
+		}
+	}
+
+	static class ArtifactDelta extends AbstractArtifactDelta {
+		final OPath2 path;
+
+		ArtifactDelta(FileId id1, Artifact left, FileId id2, Artifact right, OPath2 path) {
+			super(id1, left, id2, right, "Artifact changed {0} -> {1}: {2}: {3} -> {4}", left, right, path.getPath(),
 					path.getLeft(), path.getRight());
 			this.path = path;
 		}
@@ -189,6 +214,45 @@ public class RepositoryComparator {
 	}
 
 	static final SearchFilterPrinter printer = new SearchFilterPrinter();
+
+	static ObjectComparatorBuilder<ObjectDelta> createArtifactComparator() {
+		return ObjectComparatorBuilder.newBuilder() //
+				.addDecomposer("//artifacts/artifact", new Decomposer<List<Artifact>>() {
+
+					DecomposedObject dc1(List<Artifact> units, Function<Artifact, String> f) {
+						DecomposedObject r = new DecomposedObject();
+
+						for (Artifact u : units) {
+							if (!r.put(OPath.index(f.apply(u)), u))
+								return null;
+						}
+
+						return r;
+					}
+
+					@Override
+					public DecomposedObject decompose(List<Artifact> o) {
+						DecomposedObject r;
+
+						r = dc1(o, p -> p.getId());
+						if (r != null)
+							return r;
+
+						r = dc1(o, p -> p.getId() + "/" + p.getVersion());
+						if (r != null)
+							return r;
+
+						throw new Error();
+					}
+
+				}) //
+				.addDecomposer("//artifacts/artifact[*]/properties/property",
+						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.artifact.Property>listToMapDecomposer(
+								p -> p.getName())) //
+				.addDecomposer("//properties/property",
+						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.artifact.Property>listToMapDecomposer(
+								p -> p.getName()));
+	}
 
 	static ObjectComparatorBuilder<ObjectDelta> createMetadataComparator() {
 		return ObjectComparatorBuilder.newBuilder()
@@ -265,6 +329,17 @@ public class RepositoryComparator {
 
 		public MetadataDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
 			super(id1, id2, "Metadata change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
+			this.path = p;
+			this.change = change;
+		}
+	}
+
+	static class ArtifactsDelta extends FileDelta {
+		private final OPath2 path;
+		private final ChangeType change;
+
+		public ArtifactsDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
+			super(id1, id2, "Artifacts change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
 			this.path = p;
 			this.change = change;
 		}
@@ -509,14 +584,9 @@ public class RepositoryComparator {
 
 							switch (change) {
 							case ADDED:
-								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
-										(Unit) p.subPath(3, 4).getRight(), rel);
 							case REMOVED:
-								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
-										(Unit) p.subPath(3, 4).getRight(), rel);
 							case CHANGED:
-								return new UnitDelta(mdf1id, (Unit) p.subPath(3, 4).getLeft(), mdf2id,
-										(Unit) p.subPath(3, 4).getRight(), rel);
+								return new UnitDelta(mdf1id, uleft, mdf2id, uright, rel);
 							default:
 								throw new Error(change + " " + rel.getPath());
 							}
@@ -537,6 +607,49 @@ public class RepositoryComparator {
 		}).build();
 
 		dest.addAll(oc.compare(md1, md2));
+
+		ObjectComparator<FileDelta> oc2 = createArtifactComparator().setDeltaCreator(new DeltaCreator<FileDelta>() {
+
+			@Override
+			public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
+
+				if (p.size() > 3) {
+					OPath2 unitPath = p.subPath(0, 3);
+					if (unitPath.getPath().equals("//artifacts/artifact")) {
+
+						OPath2 rel = p.subPath(4);
+						if (rel == null) {
+							return new ArtifactsDelta(mdf1id, mdf2id, p, change);
+						} else {
+							Artifact uleft = (Artifact) p.subPath(3, 4).getLeft();
+							Artifact uright = (Artifact) p.subPath(3, 4).getRight();
+
+							switch (change) {
+							case ADDED:
+							case REMOVED:
+							case CHANGED:
+								return new ArtifactDelta(mdf1id, uleft, mdf2id, uright, rel);
+							default:
+								throw new Error(change + " " + rel.getPath());
+							}
+
+						}
+					}
+				}
+
+				// FIXME: here?
+				switch (p.getPath()) {
+				case "//properties/property[p2.timestamp]/value":
+					return null;
+				}
+
+				return new ArtifactsDelta(mdf1id, mdf2id, p, change);
+			}
+
+		}).build();
+
+		dest.addAll(oc2.compare(pr1.getArtifactRepositoryFacade().getRepository(),
+				pr2.getArtifactRepositoryFacade().getRepository()));
 
 		Multimap<String, ArtifactId> id1 = HashMultimap.create();
 		Multimap<String, ArtifactId> id2 = HashMultimap.create();
@@ -602,7 +715,7 @@ public class RepositoryComparator {
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
 			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
 
-	class FeatureVersionChange extends Change {
+	class FeatureVersionChange extends ArtifactVersionChange {
 		private final String featureId;
 		private final FileId file1;
 		private final FileId file2;
@@ -676,7 +789,7 @@ public class RepositoryComparator {
 				if (isFeatureGroup(d)) {
 					// if (is(d.right, featureId + ".feature.group", v2)) {
 					if (new RequiredMatcher() //
-							.withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+							.withNamespace("org.eclipse.equinox.p2.iu"::equals)
 							.withName(p -> p.equals(featureId + ".feature.jar")) //
 							.withRange(p -> Objects.equals(p,
 									new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED))) //
@@ -692,13 +805,35 @@ public class RepositoryComparator {
 				if (isFeatureGroup(d)) {
 					// if (is(d.left, featureId + ".feature.group", v1)) {
 					if (new RequiredMatcher() //
-							.withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+							.withNamespace("org.eclipse.equinox.p2.iu"::equals)
 							.withName(p -> p.equals(featureId + ".feature.jar")) //
 							.withRange(p -> Objects.equals(p,
 									new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED))) //
 							.withFilter(featureFilter) //
 							.test(d.required))
 						return true;
+				}
+
+				return false;
+			} else if (delta instanceof ArtifactDelta) {
+				ArtifactDelta d = (ArtifactDelta) delta;
+
+				switch (d.path.getPath()) {
+				case "/properties/property[download.md5]/value":
+				case "/properties/property[artifact.size]/value":
+				case "/properties/property[download.size]/value":
+					return true;
+				}
+
+				if (isFeatureJar(d)) {
+					switch (d.path.getPath()) {
+					case "/version":
+						if (d.path.getLeft().equals(v1) && d.path.getRight().equals(v2)) {
+							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));
+							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));
+							return true;
+						}
+					}
 				}
 
 				return false;
@@ -738,6 +873,9 @@ public class RepositoryComparator {
 							return false;
 						if (!r.getVersion().equals(v2))
 							return false;
+
+						removedArtifactsMetadata.add(ArtifactKey.create(l));
+						addedArtifactsMetadata.add(ArtifactKey.create(r));
 						return true;
 					}
 				}
@@ -752,13 +890,81 @@ public class RepositoryComparator {
 			return is(d.left, featureId + ".feature.jar", v1) && is(d.right, featureId + ".feature.jar", v2);
 		}
 
+		boolean isFeatureJar(ArtifactDelta d) {
+			return d.left.getClassifier().equals("org.eclipse.update.feature")
+					&& d.right.getClassifier().equals("org.eclipse.update.feature") && is(d.left, featureId, v1)
+					&& is(d.right, featureId, v2);
+		}
+
 		boolean isFeatureGroup(AbstractUnitDelta d) {
 			return is(d.left, featureId + ".feature.group", v1) && is(d.right, featureId + ".feature.group", v2);
 		}
+	}
+
+	static class ArtifactKey {
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());
+			result = prime * result + ((id == null) ? 0 : id.hashCode());
+			result = prime * result + ((version == null) ? 0 : version.hashCode());
+			return result;
+		}
 
 		@Override
-		void check(Consumer<String> incompatibleChanges) {
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			ArtifactKey other = (ArtifactKey) obj;
+			if (classifier == null) {
+				if (other.classifier != null)
+					return false;
+			} else if (!classifier.equals(other.classifier))
+				return false;
+			if (id == null) {
+				if (other.id != null)
+					return false;
+			} else if (!id.equals(other.id))
+				return false;
+			if (version == null) {
+				if (other.version != null)
+					return false;
+			} else if (!version.equals(other.version))
+				return false;
+			return true;
 		}
+
+		private final String id;
+		private final Version version;
+		private final String classifier;
+
+		public ArtifactKey(String id, Version version, String classifier) {
+			Preconditions.checkNotNull(id);
+			Preconditions.checkNotNull(version);
+			Preconditions.checkNotNull(classifier);
+			this.id = id;
+			this.version = version;
+			this.classifier = classifier;
+		}
+
+		public static ArtifactKey create(Artifact a) {
+			return new ArtifactKey(a.getId(), a.getVersion(), a.getClassifier());
+		}
+
+		public static ArtifactKey create(MetadataArtifact r) {
+			return new ArtifactKey(r.getId(), r.getVersion(), r.getClassifier());
+		}
+
+		@Override
+		public String toString() {
+			return "ArtifactKey(" + id + "," + version + "," + classifier + ")";
+		}
+
 	}
 
 	final static private OPathMatcher unitArtifactVersionMatcher = OPathMatcher
@@ -850,6 +1056,10 @@ public class RepositoryComparator {
 		return u.getId().equals(id) && u.getVersion().equals(version);
 	}
 
+	static boolean is(Artifact u, String id, Version version) {
+		return u.getId().equals(id) && u.getVersion().equals(version);
+	}
+
 	static boolean isEqual(Provided p, String namespace, String name, Version version) {
 		return p.getNamespace().equals(namespace) && p.getName().equals(name) && p.getVersion().equals(version);
 	}
@@ -870,7 +1080,43 @@ public class RepositoryComparator {
 
 	}
 
-	class BundleVersionChange extends Change {
+	/**
+	 * Common super class for metadata changes that imply version changes in
+	 * associated artifacts.
+	 * 
+	 */
+	abstract class ArtifactVersionChange extends Change {
+
+		Set<ArtifactKey> removedArtifactsMetadata = new HashSet<>();
+		Set<ArtifactKey> addedArtifactsMetadata = new HashSet<>();
+		Set<ArtifactKey> removedArtifactsArtifacts = new HashSet<>();
+		Set<ArtifactKey> addedArtifactsArtifacts = new HashSet<>();
+
+		@Override
+		void check(Consumer<String> incompatibleChanges) {
+			for (ArtifactKey u : Sets.union(removedArtifactsArtifacts, removedArtifactsMetadata)) {
+				boolean a = removedArtifactsArtifacts.contains(u);
+				boolean m = removedArtifactsMetadata.contains(u);
+
+				if (!a)
+					incompatibleChanges.accept("Only removed in metadata: " + u);
+				if (!m)
+					incompatibleChanges.accept("Only removed in artifacts: " + u);
+			}
+
+			for (ArtifactKey u : Sets.union(addedArtifactsArtifacts, addedArtifactsMetadata)) {
+				boolean a = addedArtifactsArtifacts.contains(u);
+				boolean m = addedArtifactsMetadata.contains(u);
+
+				if (!a)
+					incompatibleChanges.accept("Only added in metadata: " + u);
+				if (!m)
+					incompatibleChanges.accept("Only added in artifacts: " + u);
+			}
+		}
+	}
+
+	class BundleVersionChange extends ArtifactVersionChange {
 		private final String bundleId;
 		private final FileId file1;
 		private final FileId file2;
@@ -899,6 +1145,8 @@ public class RepositoryComparator {
 
 		@Override
 		void check(Consumer<String> incompatibleChanges) {
+			super.check(incompatibleChanges);
+
 			for (Unit u : Sets.union(addedUnit, removedUnit)) {
 				boolean a = addedUnit.contains(u);
 				boolean r = removedUnit.contains(u);
@@ -918,6 +1166,8 @@ public class RepositoryComparator {
 				if (!r)
 					incompatibleChanges.accept("Only added package: " + u + " " + bundleId);
 			}
+
+			return;
 		}
 
 		@Override
@@ -1015,7 +1265,7 @@ public class RepositoryComparator {
 			} else if (delta instanceof RequiredAdded) {
 				RequiredAdded d = (RequiredAdded) delta;
 
-				if (new RequiredMatcher().withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+				if (new RequiredMatcher().withNamespace("org.eclipse.equinox.p2.iu"::equals)
 						.withName(p -> p.equals(bundleId))
 						.withRange(p -> p
 								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)))
@@ -1028,13 +1278,35 @@ public class RepositoryComparator {
 			} else if (delta instanceof RequiredRemoved) {
 				RequiredRemoved d = (RequiredRemoved) delta;
 
-				if (new RequiredMatcher().withNamespace(p -> p.equals("org.eclipse.equinox.p2.iu"))
+				if (new RequiredMatcher().withNamespace("org.eclipse.equinox.p2.iu"::equals)
 						.withName(p -> p.equals(bundleId))
 						.withRange(p -> p
 								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)))
 						.test(d.required)) {
 					removedUnit.add(d.right);
 					return true;
+				}
+
+				return false;
+			} else if (delta instanceof ArtifactDelta) {
+				ArtifactDelta d = (ArtifactDelta) delta;
+
+				switch (d.path.getPath()) {
+				case "/properties/property[download.md5]/value":
+				case "/properties/property[artifact.size]/value":
+				case "/properties/property[download.size]/value":
+					return true;
+				}
+
+				if (isBundle(d)) {
+					switch (d.path.getPath()) {
+					case "/version":
+						if (d.path.getLeft().equals(v1) && d.path.getRight().equals(v2)) {
+							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));
+							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));
+							return true;
+						}
+					}
 				}
 
 				return false;
@@ -1074,6 +1346,10 @@ public class RepositoryComparator {
 						return false;
 					if (!r.getVersion().equals(v2))
 						return false;
+
+					removedArtifactsMetadata.add(ArtifactKey.create(l));
+					addedArtifactsMetadata.add(ArtifactKey.create(r));
+
 					return true;
 				} else if (unitTouchpointInstructionValueMatcher.matches(d.path)) {
 					// Instruction l = (Instruction)
@@ -1096,6 +1372,10 @@ public class RepositoryComparator {
 		}
 
 		boolean isBundle(AbstractUnitDelta d) {
+			return is(d.left, bundleId, v1) && is(d.right, bundleId, v2);
+		}
+
+		boolean isBundle(ArtifactDelta d) {
 			return is(d.left, bundleId, v1) && is(d.right, bundleId, v2);
 		}
 
@@ -1125,8 +1405,12 @@ public class RepositoryComparator {
 		}
 
 		if (o instanceof ArtifactFacade) {
-			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(),
-					((ArtifactFacade) o).getData(), DomRenderer.Options.TOP_LEVEL);
+			o = ((ArtifactFacade) o).getData();
+		}
+
+		if (o instanceof Artifact) {
+			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(), o,
+					DomRenderer.Options.TOP_LEVEL);
 		}
 
 		if (o instanceof MetadataArtifact) {
