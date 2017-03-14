@@ -89,6 +89,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
 
+	@Parameter(readonly = true, required = true, defaultValue = "${project.basedir}/src/main/bnd")
+	private File sourceDir;
+
 	@Component
 	private EquinoxRunnerFactory runnerFactory;
 
@@ -237,7 +240,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			for (Artifact a : artifacts) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				if (plugin == null) {
-					getLog().info("Dependency is not an OSGi bundle: " + a);
 					plugin = createPlugin(a, repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 				} else {
 					Files.copy(a.getFile().toPath(),
@@ -410,27 +412,38 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 	private Plugin createPlugin(Artifact a, Path resolve) throws Exception {
 		try (Builder builder = new Builder()) {
-			builder.setTrace(true);
+			builder.setTrace(getLog().isDebugEnabled());
 
 			Jar classesDirJar = new Jar(a.getFile());
-			// classesDirJar.setManifest(new Manifest());
 
-			builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
-			// builder.setProperty(Constants.BUNDLE_NAME, project.getName());
+			Path noVersionPath = sourceDir.toPath().resolve(a.getGroupId()).resolve(a.getArtifactId());
+			Path versionPath = noVersionPath.resolve(a.getVersion());
 
-			Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
-			builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
-			builder.setProperty(Constants.EXPORT_PACKAGE, "*");
+			for (Path path : new Path[] { versionPath, noVersionPath }) {
+				Path bndFile = path.resolve("bnd.bnd");
 
-			// builder.setProperty("ver", "1.1.1");
-			// builder.setProperty("Export-Package", "*;version=${ver}");
+				if (Files.isReadable(bndFile)) {
+					getLog().info("Using " + sourceDir.toPath().relativize(bndFile) + " to create an OSGi bundle");
+					builder.setProperties(path.toFile(), builder.loadProperties(bndFile.toFile()));
+					break;
+				}
+			}
+
+			if (builder.getProperty(Constants.BUNDLE_SYMBOLICNAME) == null)
+				builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
+
+			if (builder.getProperty(Constants.BUNDLE_VERSION) == null) {
+				Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
+				builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
+			}
+
+			if (builder.getProperty(Constants.EXPORT_PACKAGE) == null) {
+				builder.setProperty(Constants.EXPORT_PACKAGE, "*");
+			}
+
 			builder.setJar(classesDirJar);
 
 			Jar j = builder.build();
-
-			if (false)
-				for (Object o : j.getManifest().getMainAttributes().entrySet())
-					System.err.println(o);
 
 			j.write(resolve.toFile());
 
