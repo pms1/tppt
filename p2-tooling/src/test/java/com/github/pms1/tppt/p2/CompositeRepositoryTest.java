@@ -50,12 +50,14 @@ public class CompositeRepositoryTest {
 
 		assertThat(repoloaded.getName()).isEqualTo("name1");
 
+		assertThat(repoloaded.getChildren().getSize()).isEqualTo(1);
 		assertThat(repoloaded.getChildren().getChild()).extracting(Child::getLocation).containsExactly("foo1");
 
 		repoloaded = loaded.getMetadataRepositoryFacade().getRepository();
 
 		assertThat(repoloaded.getName()).isEqualTo("name2");
 
+		assertThat(repoloaded.getChildren().getSize()).isEqualTo(1);
 		assertThat(repoloaded.getChildren().getChild()).extracting(Child::getLocation).containsExactly("foo2");
 
 		composite.setCompression(plexusContainer.lookup(DataCompression.class, "jar"));

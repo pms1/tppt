@@ -385,8 +385,6 @@ public class P2RepositoryFactory {
 
 		@Override
 		public void save() throws IOException {
-			// FIXME: normalize before saving (i.e. set size attributes
-			// correctly
 			p2index.set(P2_ARTIFACT_PROPERTY, COMPOSITE_ARTIFACT_PREFIX, noCompression);
 			p2index.set(P2_METADATA_PROPERTY, COMPOSITE_METADATA_PREFIX, noCompression);
 			p2index.write(root);
