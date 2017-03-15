@@ -44,6 +44,7 @@ import com.github.pms1.tppt.p2.DataCompression;
 import com.github.pms1.tppt.p2.P2CompositeRepository;
 import com.github.pms1.tppt.p2.P2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
+import com.github.pms1.tppt.p2.P2RepositoryFactory.P2IndexType;
 import com.github.pms1.tppt.p2.P2RepositoryVisitor;
 import com.github.pms1.tppt.p2.PathByteSource;
 import com.github.pms1.tppt.p2.RepositoryFacade;
@@ -292,10 +293,10 @@ public class DeploymentHelper {
 			@Override
 			public Void visit(P2CompositeRepository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
-					files.add(P2RepositoryFactory.COMPOSITE_ARTIFACT_PREFIX + "." + dc.getFileSuffix());
+					files.add(P2IndexType.compositeArtifacts.getFilePrefix() + "." + dc.getFileSuffix());
 
 				for (DataCompression dc : repo.getMetadataDataCompressions())
-					files.add(P2RepositoryFactory.COMPOSITE_METADATA_PREFIX + "." + dc.getFileSuffix());
+					files.add(P2IndexType.compositeMetadata.getFilePrefix() + "." + dc.getFileSuffix());
 				
 				return null;
 			}
@@ -303,11 +304,10 @@ public class DeploymentHelper {
 			@Override
 			public Void visit(P2Repository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
-					files.add(P2RepositoryFactory.ARTIFACT_PREFIX + "." + dc.getFileSuffix());
+					files.add(P2IndexType.artifacts.getFilePrefix()  + "." + dc.getFileSuffix());
 
 				for (DataCompression dc : repo.getMetadataDataCompressions())
-					files.add(P2RepositoryFactory.METADATA_PREFIX + "." + dc.getFileSuffix());
-
+					files.add(P2IndexType.metadata.getFilePrefix() + "." + dc.getFileSuffix());
 
 				try {
 					ArtifactRepositoryFacade facade;
