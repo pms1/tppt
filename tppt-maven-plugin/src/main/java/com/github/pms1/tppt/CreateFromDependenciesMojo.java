@@ -419,15 +419,21 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			Path noVersionPath = sourceDir.toPath().resolve(a.getGroupId()).resolve(a.getArtifactId());
 			Path versionPath = noVersionPath.resolve(a.getVersion());
 
+			Path receipe = null;
 			for (Path path : new Path[] { versionPath, noVersionPath }) {
 				Path bndFile = path.resolve("bnd.bnd");
 
 				if (Files.isReadable(bndFile)) {
-					getLog().info("Using " + sourceDir.toPath().relativize(bndFile) + " to create an OSGi bundle");
 					builder.setProperties(path.toFile(), builder.loadProperties(bndFile.toFile()));
+					receipe = sourceDir.toPath().relativize(bndFile);
 					break;
 				}
 			}
+
+			if (receipe != null)
+				getLog().info(a + ": Creating an OSGi bundle using '" + receipe + "'");
+			else
+				getLog().info(a + ": Creating an OSGi bundle");
 
 			if (builder.getProperty(Constants.BUNDLE_SYMBOLICNAME) == null)
 				builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
