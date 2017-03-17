@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -268,13 +269,11 @@ public class P2RepositoryFactory {
 
 	static abstract class AbstractRepository<A extends RepositoryFacade, M extends RepositoryFacade>
 			implements CommonP2Repository {
-		protected DataCompression preferredArtifactCompression;
-		protected DataCompression preferredMetadataCompression;
-		protected final Path root;
-		protected final P2Index p2index;
-		protected final P2IndexType artifact;
-		protected final P2IndexType metadata;
-		private final Map<P2Kind, List<DataCompression>> availableCompressions;
+		final Path root;
+		final P2Index p2index;
+		final P2IndexType artifact;
+		final P2IndexType metadata;
+		final Map<P2Kind, List<DataCompression>> availableCompressions;
 
 		private final BiFunction<Path, DataCompression, A> artifactLoader;
 
@@ -350,8 +349,10 @@ public class P2RepositoryFactory {
 		public void setCompression(DataCompression... compressions) throws IOException {
 			Preconditions.checkNotNull(compressions);
 			Preconditions.checkArgument(compressions.length > 0);
-			Preconditions.checkState(preferredArtifactCompression != null);
-			Preconditions.checkState(preferredMetadataCompression != null);
+			Preconditions.checkState(!availableCompressions.get(P2Kind.artifact).isEmpty());
+			Preconditions.checkState(!availableCompressions.get(P2Kind.metadata).isEmpty());
+			DataCompression preferredArtifactCompression = availableCompressions.get(P2Kind.artifact).get(0);
+			DataCompression preferredMetadataCompression = availableCompressions.get(P2Kind.metadata).get(0);
 
 			boolean deleteOldArtifact = true;
 			boolean deleteOldMetadata = true;
@@ -389,8 +390,8 @@ public class P2RepositoryFactory {
 			p2index.set(P2Kind.metadata.getProperty(), metadata.getFilePrefix(), compressions);
 			p2index.write(root);
 
-			preferredArtifactCompression = compressions[0];
-			preferredMetadataCompression = compressions[0];
+			availableCompressions.put(P2Kind.artifact, Arrays.asList(compressions));
+			availableCompressions.put(P2Kind.metadata, Arrays.asList(compressions));
 		}
 
 		@Override
@@ -428,8 +429,8 @@ public class P2RepositoryFactory {
 			try (OutputStream outputStream = noCompression.openOutputStream(root, metadata.getFilePrefix())) {
 				compositeMetadataRepositoryFactory.write(getMetadataRepositoryFacade().getRepository(), outputStream);
 			}
-			preferredArtifactCompression = noCompression;
-			preferredMetadataCompression = noCompression;
+			availableCompressions.put(P2Kind.artifact, Arrays.asList(noCompression));
+			availableCompressions.put(P2Kind.metadata, Arrays.asList(noCompression));
 		}
 
 		@Override
