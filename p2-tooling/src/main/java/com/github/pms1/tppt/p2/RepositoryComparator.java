@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -345,18 +346,24 @@ public class RepositoryComparator {
 		}
 	}
 
-	private void compare(FileId root1, Set<DataCompression> s1, FileId root2, Set<DataCompression> s2, String prefix,
+	private void compare(FileId root1, List<DataCompression> s1, FileId root2, List<DataCompression> s2, String prefix,
 			Consumer<FileDelta> dest) {
-		for (DataCompression s : Sets.union(s1, s2)) {
-			boolean has1 = s1.contains(s);
-			boolean has2 = s2.contains(s);
 
-			if (has1 && !has2) {
-				dest.accept(new RepositoryDataCompressionRemoved(root1, root2, s));
-			} else if (!has1 && has2) {
-				dest.accept(new RepositoryDataCompressionAdded(root1, root2, s));
-			}
+		// FIXME: better messages
+		Iterator<DataCompression> i1 = s1.iterator();
+		Iterator<DataCompression> i2 = s2.iterator();
+
+		while (i1.hasNext() && i2.hasNext()) {
+			DataCompression c1 = i1.next();
+			DataCompression c2 = i2.next();
+
+			if (c1 != c2)
+				dest.accept(new RepositoryDataCompressionChanged(root1, root2, c1, c2));
 		}
+		while (i1.hasNext())
+			dest.accept(new RepositoryDataCompressionRemoved(root1, root2, i1.next()));
+		while (i2.hasNext())
+			dest.accept(new RepositoryDataCompressionAdded(root1, root2, i2.next()));
 	}
 
 	@SuppressWarnings("unchecked")

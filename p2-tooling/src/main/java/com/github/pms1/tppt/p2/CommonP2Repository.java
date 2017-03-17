@@ -2,7 +2,7 @@ package com.github.pms1.tppt.p2;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Set;
+import java.util.List;
 
 public interface CommonP2Repository {
 
@@ -10,9 +10,9 @@ public interface CommonP2Repository {
 
 	<T> T accept(P2RepositoryVisitor<T> visitor);
 
-	Set<DataCompression> getMetadataDataCompressions();
+	List<DataCompression> getMetadataDataCompressions();
 
-	Set<DataCompression> getArtifactDataCompressions();
+	List<DataCompression> getArtifactDataCompressions();
 
 	RepositoryFacade getArtifactRepositoryFacade() throws IOException;
 

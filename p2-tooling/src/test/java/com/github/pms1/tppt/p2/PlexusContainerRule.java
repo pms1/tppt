@@ -1,5 +1,7 @@
 package com.github.pms1.tppt.p2;
 
+import java.util.Map;
+
 import org.codehaus.plexus.DefaultPlexusContainer;
 import org.codehaus.plexus.PlexusContainer;
 import org.junit.rules.TestRule;
@@ -70,5 +72,11 @@ public class PlexusContainerRule implements TestRule {
 		if (container == null)
 			throw new IllegalStateException();
 		return container.lookup(componentClass, roleHint);
+	}
+
+	public <T> Map<String, T> lookupMap(Class<T> componentClass) throws Exception {
+		if (container == null)
+			throw new IllegalStateException();
+		return container.lookupMap(componentClass);
 	}
 }

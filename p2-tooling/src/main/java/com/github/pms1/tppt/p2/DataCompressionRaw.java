@@ -31,4 +31,9 @@ public class DataCompressionRaw implements DataCompression {
 		return Files.newOutputStream(repository.resolve(prefix + ".xml"));
 	}
 
+	@Override
+	public int getPriority() {
+		return 0;
+	}
+
 }

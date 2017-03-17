@@ -81,4 +81,9 @@ public class DataCompressionJar implements DataCompression {
 
 	}
 
+	@Override
+	public int getPriority() {
+		return 100;
+	}
+
 }
