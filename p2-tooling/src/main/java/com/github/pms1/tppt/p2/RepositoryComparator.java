@@ -9,7 +9,6 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +43,7 @@ import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.github.pms1.ocomp.ObjectComparatorBuilder;
 import com.github.pms1.ocomp.ObjectDelta;
+import com.github.pms1.tppt.p2.P2RepositoryFactory.P2Kind;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
@@ -346,24 +346,11 @@ public class RepositoryComparator {
 		}
 	}
 
-	private void compare(FileId root1, List<DataCompression> s1, FileId root2, List<DataCompression> s2, String prefix,
+	private void compare(FileId root1, List<DataCompression> s1, FileId root2, List<DataCompression> s2, P2Kind prefix,
 			Consumer<FileDelta> dest) {
 
-		// FIXME: better messages
-		Iterator<DataCompression> i1 = s1.iterator();
-		Iterator<DataCompression> i2 = s2.iterator();
-
-		while (i1.hasNext() && i2.hasNext()) {
-			DataCompression c1 = i1.next();
-			DataCompression c2 = i2.next();
-
-			if (c1 != c2)
-				dest.accept(new RepositoryDataCompressionChanged(root1, root2, c1, c2));
-		}
-		while (i1.hasNext())
-			dest.accept(new RepositoryDataCompressionRemoved(root1, root2, i1.next()));
-		while (i2.hasNext())
-			dest.accept(new RepositoryDataCompressionAdded(root1, root2, i2.next()));
+		if (!Objects.equals(s1, s2))
+			dest.accept(new RepositoryDataCompressionChanged(root1, root2, prefix, s1, s2));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -409,10 +396,10 @@ public class RepositoryComparator {
 		FileId root1 = FileId.newRoot(pr1.getPath());
 		FileId root2 = FileId.newRoot(pr2.getPath());
 
-		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(),
-				P2RepositoryFactory.ARTIFACT_PREFIX, dest::add);
-		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(),
-				P2RepositoryFactory.METADATA_PREFIX, dest::add);
+		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(), P2Kind.artifact,
+				dest::add);
+		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(), P2Kind.metadata,
+				dest::add);
 
 		CompositeRepositoryFacade arf1 = pr1.getArtifactRepositoryFacade();
 		FileId arf1id = FileId.newRoot(arf1.getPath());
@@ -531,10 +518,10 @@ public class RepositoryComparator {
 		FileId root1 = FileId.newRoot(pr1.getPath());
 		FileId root2 = FileId.newRoot(pr2.getPath());
 
-		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(),
-				P2RepositoryFactory.ARTIFACT_PREFIX, dest::add);
-		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(),
-				P2RepositoryFactory.METADATA_PREFIX, dest::add);
+		compare(root1, pr1.getArtifactDataCompressions(), root2, pr2.getArtifactDataCompressions(), P2Kind.artifact,
+				dest::add);
+		compare(root1, pr1.getMetadataDataCompressions(), root2, pr2.getMetadataDataCompressions(), P2Kind.metadata,
+				dest::add);
 
 		MetadataRepositoryFacade mdf1 = pr1.getMetadataRepositoryFacade();
 		FileId mdf1id = FileId.newRoot(mdf1.getPath());

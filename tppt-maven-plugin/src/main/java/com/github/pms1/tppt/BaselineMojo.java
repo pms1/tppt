@@ -22,7 +22,6 @@ import com.github.pms1.tppt.core.RepositoryPathPattern;
 import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.RepositoryComparator;
-import com.github.pms1.tppt.p2.RepositoryDataCompressionChange;
 
 /**
  * A maven mojo to replace a p2 repository by it's baseline
@@ -91,7 +90,7 @@ public class BaselineMojo extends AbstractMojo {
 
 				CommonP2Repository r1 = repositoryFactory.loadAny(dt.getPath().resolve(previous));
 				CommonP2Repository r2 = repositoryFactory.loadAny(target.toPath().resolve("repository"));
-				boolean eq = repositoryComparator.run(r1, r2, RepositoryDataCompressionChange::new);
+				boolean eq = repositoryComparator.run(r1, r2);
 
 				if (eq) {
 					getLog().info("Repository is equal to baseline, replacing it");
