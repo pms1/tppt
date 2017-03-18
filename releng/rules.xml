@@ -7,14 +7,14 @@
   			<ignoreVersion type="regex">.*</ignoreVersion>
   		</ignoreVersions>
   	</rule>
-  	<rule groupId="org.slf4j" artifactId="slf4j-api">
+  	<rule groupId="org.slf4j">
   		<ignoreVersions>
   			<ignoreVersion type="regex">.*</ignoreVersion>
   		</ignoreVersions>
   	</rule>
-  	<rule groupId="org.slf4j" artifactId="slf4j-simple" >
+  	<rule groupId="org.apache.maven" >
   		<ignoreVersions>
-  			<ignoreVersion type="regex">.*</ignoreVersion>
+  			<ignoreVersion type="regex">.*alpha.*</ignoreVersion>
   		</ignoreVersions>
   	</rule>
   </rules>
