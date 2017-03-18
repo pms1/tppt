@@ -33,10 +33,10 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 
+import com.github.pms1.tppt.mirror.MirrorSpec;
+import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
+import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
-
-import application.MirrorSpec.OfflineType;
-import application.MirrorSpec.StatsType;
 
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
@@ -105,7 +105,7 @@ public class MirrorMojo extends AbstractMojo {
 			final Path repoOut = target.toPath().resolve("repository");
 
 			for (Mirror m : mirrors) {
-				application.MirrorSpec ms = new application.MirrorSpec();
+				MirrorSpec ms = new MirrorSpec();
 
 				ms.ius = m.ius.toArray(new String[m.ius.size()]);
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);

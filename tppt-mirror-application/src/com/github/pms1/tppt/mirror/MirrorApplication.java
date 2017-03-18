@@ -1,4 +1,4 @@
-package application;
+package com.github.pms1.tppt.mirror;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -48,7 +48,9 @@ import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
 import org.osgi.framework.ServiceReference;
 
 @SuppressWarnings("restriction")
-public class Application1 implements IApplication {
+public class MirrorApplication implements IApplication {
+
+	private static boolean debug = false;
 
 	@SuppressWarnings("unchecked")
 	private static final Map<String, String>[] emptyFilters = new Map[] { Collections.emptyMap() };
@@ -56,7 +58,9 @@ public class Application1 implements IApplication {
 	@Override
 	public Object start(IApplicationContext context) throws Exception {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
-		System.out.println("Application1.commandLine        = " + Arrays.asList((String[]) args));
+
+		if (debug)
+			System.out.println("MirrorApplication.commandLine        = " + Arrays.asList((String[]) args));
 
 		for (String s : Arrays.asList((String[]) args)) {
 			MirrorSpec ms;
@@ -67,13 +71,16 @@ public class Application1 implements IApplication {
 					ms = JAXB.unmarshal(is, MirrorSpec.class);
 				}
 			}
-			System.out.println("Application1.mirrorRepository   = " + ms.mirrorRepository);
-			System.out.println("Application1.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
-			System.out.println("Application1.targetRepository   = " + ms.targetRepository);
-			System.out.println("Application1.installableUnit    = " + Arrays.toString(ms.ius));
-			System.out.println("Application1.offline            = " + ms.offline);
-			System.out.println("Application1.stats              = " + ms.stats);
-			System.out.println("Application1.filter             = " + Arrays.toString(ms.filters));
+
+			if (debug) {
+				System.out.println("MirrorApplication.mirrorRepository   = " + ms.mirrorRepository);
+				System.out.println("MirrorApplication.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
+				System.out.println("MirrorApplication.targetRepository   = " + ms.targetRepository);
+				System.out.println("MirrorApplication.installableUnit    = " + Arrays.toString(ms.ius));
+				System.out.println("MirrorApplication.offline            = " + ms.offline);
+				System.out.println("MirrorApplication.stats              = " + ms.stats);
+				System.out.println("MirrorApplication.filter             = " + Arrays.toString(ms.filters));
+			}
 
 			IProgressMonitor monitor = new IProgressMonitor() {
 
@@ -179,8 +186,10 @@ public class Application1 implements IApplication {
 						case bundle:
 							for (IInstallableUnit iu1 : sourceMetadataRepo
 									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), monitor))
-								if (getType(iu1) == Type.source_bundle)
-									todo.add(iu1);
+								if (getType(iu1) == Type.source_bundle) {
+									if (!finalIus.contains(iu1) && todo.add(iu1))
+										System.out.println("Adding " + iu1 + " as source of " + iu);
+								}
 							break;
 						case feature:
 							if (!iu.getId().endsWith(".feature.jar"))
@@ -228,7 +237,10 @@ public class Application1 implements IApplication {
 					finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
 
 			MultiStatus multiStatus = mirroring.run(true, false);
-			System.err.println("STATUS=" + multiStatus);
+			if (!multiStatus.isOK()) {
+				System.err.println("STATUS=" + multiStatus);
+				return 1;
+			}
 		}
 
 		return null;
@@ -333,7 +345,6 @@ public class Application1 implements IApplication {
 
 	@Override
 	public void stop() {
-		System.err.println("Application1.stop");
 	}
 
 }

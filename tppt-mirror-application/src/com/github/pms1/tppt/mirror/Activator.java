@@ -1,4 +1,4 @@
-package application;
+package com.github.pms1.tppt.mirror;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -11,7 +11,7 @@ public class Activator implements BundleActivator {
 		return context;
 	}
 
-	final static String PLUGIN_ID = "foo";
+	final static String PLUGIN_ID = "tppt-mirror-application";
 
 	/*
 	 * (non-Javadoc)
@@ -20,7 +20,6 @@ public class Activator implements BundleActivator {
 	 * BundleContext)
 	 */
 	public void start(BundleContext bundleContext) throws Exception {
-		System.err.println("BC= " + bundleContext);
 		Activator.context = bundleContext;
 	}
 

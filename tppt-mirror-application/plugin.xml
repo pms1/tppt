@@ -9,7 +9,7 @@
             thread="main"
             visible="true">
          <run
-               class="application.Application1">
+               class="com.github.pms1.tppt.mirror.MirrorApplication">
          </run>
       </application>
    </extension>

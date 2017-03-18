@@ -1,4 +1,4 @@
-package application;
+package com.github.pms1.tppt.mirror;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,10 +45,10 @@ import org.eclipse.equinox.p2.core.ProvisionException;
 import org.eclipse.equinox.p2.repository.IRepository;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
 
-import application.MirrorSpec.OfflineType;
-import application.MirrorSpec.StatsType;
-import application.jaxb.Mirror;
-import application.jaxb.Mirrors;
+import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
+import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
+import com.github.pms1.tppt.mirror.jaxb.Mirror;
+import com.github.pms1.tppt.mirror.jaxb.Mirrors;
 
 @SuppressWarnings("restriction")
 public class MyTransport extends Transport {

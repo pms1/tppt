@@ -1,4 +1,4 @@
-package application;
+package com.github.pms1.tppt.mirror;
 
 import java.net.URI;
 import java.nio.file.Path;

@@ -1,4 +1,4 @@
-package application.jaxb;
+package com.github.pms1.tppt.mirror.jaxb;
 
 import java.net.URI;
 
