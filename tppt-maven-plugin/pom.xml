@@ -94,7 +94,7 @@
 			<artifactId>maven-scm-provider-jgit</artifactId>
 			<version>1.9.5</version>
 		</dependency>
-
+ 
 		<dependency>
 			<groupId>biz.aQute.bnd</groupId>
 			<artifactId>biz.aQute.bndlib</artifactId>
@@ -106,13 +106,6 @@
 			<artifactId>maven-dependency-tree</artifactId>
 			<version>3.0</version>
 		</dependency>
-		
-		<dependency>
-    		<groupId>org.apache.maven.shared</groupId>
-    		<artifactId>maven-artifact-resolver</artifactId>
-    		<version>1.0</version>
-		</dependency>
-
 	</dependencies>
 
 	<build>
