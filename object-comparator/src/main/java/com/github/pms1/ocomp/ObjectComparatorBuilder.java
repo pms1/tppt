@@ -13,14 +13,16 @@ public class ObjectComparatorBuilder<T> {
 	private LinkedHashMap<DecomposerMatcher, DecomposerFactory> locationDecomposers = new LinkedHashMap<>();
 	private LinkedHashMap<Function<Type, Boolean>, BiFunction<Object, Object, Boolean>> comparators = new LinkedHashMap<>();
 
-	private DeltaCreator<T> deltaCreator = (DeltaCreator<T>) ObjectComparator.defaultDeltaCreator;
+	private DeltaCreator<T> deltaCreator;
 
 	private ObjectComparatorBuilder() {
 
 	}
 
 	public static ObjectComparatorBuilder<ObjectDelta> newBuilder() {
-		return new ObjectComparatorBuilder<>();
+		ObjectComparatorBuilder<ObjectDelta> builder = new ObjectComparatorBuilder<>();
+		builder.deltaCreator = ObjectComparator.defaultDeltaCreator;
+		return builder;
 	}
 
 	public ObjectComparator<T> build() {
@@ -40,9 +42,10 @@ public class ObjectComparatorBuilder<T> {
 	public <S> ObjectComparatorBuilder<T> addDecomposer(DecomposerMatcher matcher, Decomposer<S> listToMapDecomposer) {
 		locationDecomposers.put(matcher, new DecomposerFactory() {
 
+			@SuppressWarnings("unchecked")
 			@Override
-			public <T> Decomposer<T> generate(Type t) {
-				return (Decomposer<T>) listToMapDecomposer;
+			public <T1> Decomposer<T1> generate(Type t) {
+				return (Decomposer<T1>) listToMapDecomposer;
 			}
 		});
 		return this;
@@ -54,8 +57,10 @@ public class ObjectComparatorBuilder<T> {
 	}
 
 	public <S> ObjectComparatorBuilder<S> setDeltaCreator(DeltaCreator<S> deltaCreator) {
-		this.deltaCreator = (DeltaCreator<T>) deltaCreator;
-		return (ObjectComparatorBuilder<S>) this;
+		@SuppressWarnings("unchecked")
+		ObjectComparatorBuilder<S> t = (ObjectComparatorBuilder<S>) this;
+		t.deltaCreator = deltaCreator;
+		return t;
 	}
 
 }

@@ -185,12 +185,12 @@ public class ObjectComparator<T> {
 	}
 
 	interface CompararerFactory {
-		Comparator generate(ObjectComparator oc, Type t);
+		Comparator generate(ObjectComparator<?> oc, Type t);
 	}
 
 	private List<DecomposerFactory> decomposerFactories = Arrays.asList(list, jaxb);
 
-	private List<CompararerFactory> factories = Arrays.asList(fac, bas, naturalEquals);
+	private List<CompararerFactory> factories = Arrays.asList(classIdentity, primitiveTypes, naturalEquals);
 
 	static DecomposerFactory jaxb = new DecomposerFactory() {
 		@Override
@@ -271,9 +271,9 @@ public class ObjectComparator<T> {
 		}
 	}
 
-	static CompararerFactory bas = new CompararerFactory() {
+	static CompararerFactory primitiveTypes = new CompararerFactory() {
 		@Override
-		public Comparator generate(ObjectComparator oc, Type t) {
+		public Comparator generate(ObjectComparator<?> oc, Type t) {
 			if (!(t instanceof Class))
 				return null;
 			Class<?> c = (Class<?>) t;
@@ -285,9 +285,9 @@ public class ObjectComparator<T> {
 		}
 	};
 
-	static CompararerFactory fac = new CompararerFactory() {
+	static CompararerFactory classIdentity = new CompararerFactory() {
 		@Override
-		public Comparator generate(ObjectComparator oc, Type t) {
+		public Comparator generate(ObjectComparator<?> oc, Type t) {
 			if (asClass(t) != Class.class)
 				return null;
 
@@ -334,7 +334,7 @@ public class ObjectComparator<T> {
 	static CompararerFactory naturalEquals = new CompararerFactory() {
 
 		@Override
-		public Comparator generate(ObjectComparator oc, Type t) {
+		public Comparator generate(ObjectComparator<?> oc, Type t) {
 			if (!(t instanceof Class))
 				return null;
 			Class<?> c = (Class<?>) t;
