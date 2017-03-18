@@ -1,13 +1,16 @@
 package com.github.pms1.tppt;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -109,87 +112,92 @@ public class EquinoxRunner {
 	}
 
 	public int run(InputStream is, String... args) throws IOException, InterruptedException {
-
 		Path temp = Files.createTempDirectory("com.github.pms1.tppt");
 
-		Path configuration = temp.resolve("configuration");
+		try {
+			Path configuration = temp.resolve("configuration");
 
-		Files.createDirectory(configuration);
+			Files.createDirectory(configuration);
 
-		// p.put("","
-		// reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.core.runtime_3.12.0.v20160222-1238.jar@4\:start");
-		Properties p = new Properties();
-		p.put("osgi.configuration.cascaded", "false");
-		p.put("osgi.install.area", toUri(temp));
-		p.put("osgi.bundles.defaultStartLevel", "4");
-		p.put("osgi.bundles", plugins.stream().map(p1 -> {
+			Properties p = new Properties();
+			p.put("osgi.configuration.cascaded", "false");
+			p.put("osgi.install.area", toUri(temp));
+			p.put("osgi.bundles.defaultStartLevel", "4");
+			p.put("osgi.bundles", plugins.stream().map(p1 -> {
 
-			Integer level;
+				Integer level;
 
-			switch (p1.id) {
-			case "org.eclipse.equinox.common":
-				level = 2;
-				break;
-			case "org.eclipse.core.runtime":
-				level = 4;
-				break;
-			case "org.eclipse.equinox.simpleconfigurator":
-				level = 1;
-				break;
-			case "org.eclipse.update.configurator":
-				level = 3;
-				break;
-			case "org.eclipse.osgi":
-				level = -1;
-				break;
-			case "org.eclipse.equinox.ds":
-				level = 1;
-				break;
-			default:
-				level = null;
-				break;
+				switch (p1.id) {
+				case "org.eclipse.equinox.common":
+					level = 2;
+					break;
+				case "org.eclipse.core.runtime":
+					level = 4;
+					break;
+				case "org.eclipse.equinox.simpleconfigurator":
+					level = 1;
+					break;
+				case "org.eclipse.update.configurator":
+					level = 3;
+					break;
+				case "org.eclipse.osgi":
+					level = -1;
+					break;
+				case "org.eclipse.equinox.ds":
+					level = 1;
+					break;
+				default:
+					level = null;
+					break;
+				}
+				return "reference:" + toUri(p1.p) + (level != null ? "@" + level + ":start" : "");
+			}).collect(Collectors.joining(",")));
+			p.put("osgi.framework", toUri(getPlugin(plugins, "org.eclipse.osgi").p));
+			Path configIni = configuration.resolve("config.ini");
+			try (OutputStream out = Files.newOutputStream(configIni)) {
+				p.store(out, null);
 			}
-			return "reference:" + toUri(p1.p) + (level != null ? "@" + level + ":start" : "");
-		}).collect(Collectors.joining(",")));
-		p.put("osgi.framework", toUri(getPlugin(plugins, "org.eclipse.osgi").p));
-		Path configIni = configuration.resolve("config.ini");
-		try (OutputStream out = Files.newOutputStream(configIni)) {
-			p.store(out, null);
+
+			List<String> command = new ArrayList<>();
+			command.add(Paths.get(System.getProperty("java.home")).resolve("bin/java").toString());
+			command.add("-jar");
+			command.add(getPlugin(plugins, "org.eclipse.equinox.launcher").p.toString());
+			command.add("-configuration");
+			command.add(configuration.toString());
+			// command.add("-debug");
+			// command.add("-consoleLog");
+			command.add("-nosplash");
+			Collections.addAll(command, args);
+			System.err.println(command);
+			Process pr = new ProcessBuilder(command).directory(temp.toFile()).start();
+
+			CopyThread stdin = null;
+			if (is != null) {
+				stdin = new CopyThread(is, pr.getOutputStream());
+				stdin.start();
+			} else {
+				stdin = null;
+				pr.getOutputStream().close();
+			}
+
+			CopyThread stdout = new CopyThread(pr.getInputStream(), System.out);
+			stdout.start();
+			CopyThread stderr = new CopyThread(pr.getErrorStream(), System.err);
+			stderr.start();
+			int exitCode = pr.waitFor();
+			if (stdin != null)
+				stdin.join();
+			stdout.join();
+			stderr.join();
+
+			return exitCode;
+		} finally {
+			// remove temp
+			Files.walk(temp, FileVisitOption.FOLLOW_LINKS) //
+					.sorted(Comparator.reverseOrder()) //
+					.map(Path::toFile) //
+					.forEach(File::delete);
 		}
-
-		List<String> command = new ArrayList<>();
-		command.add(Paths.get(System.getProperty("java.home")).resolve("bin/java").toString());
-		command.add("-jar");
-		command.add(getPlugin(plugins, "org.eclipse.equinox.launcher").p.toString());
-		command.add("-configuration");
-		command.add(configuration.toString());
-		// command.add("-debug");
-		// command.add("-consoleLog");
-		command.add("-nosplash");
-		Collections.addAll(command, args);
-		System.err.println(command);
-		Process pr = new ProcessBuilder(command).directory(temp.toFile()).start();
-
-		CopyThread stdin = null;
-		if (is != null) {
-			stdin = new CopyThread(is, pr.getOutputStream());
-			stdin.start();
-		} else {
-			stdin = null;
-			pr.getOutputStream().close();
-		}
-
-		CopyThread stdout = new CopyThread(pr.getInputStream(), System.out);
-		stdout.start();
-		CopyThread stderr = new CopyThread(pr.getErrorStream(), System.err);
-		stderr.start();
-		int exitCode = pr.waitFor();
-		if (stdin != null)
-			stdin.join();
-		stdout.join();
-		stderr.join();
-
-		return exitCode;
 		// ,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.filetransfer_5.0.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.identity_3.7.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.provider.filetransfer.httpclient4.ssl_1.1.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.provider.filetransfer.httpclient4_1.1.100.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.provider.filetransfer.ssl_1.0.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.provider.filetransfer_3.2.200.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf.ssl_1.2.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.ecf_3.8.0.v20160312-0656.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.app_1.3.400.v20150715-1528.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.common_3.8.0.v20160315-1450.jar@2\:start,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.concurrent_1.1.0.v20130327-1442.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.ds_1.4.400.v20160226-2036.jar@1\:start,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.frameworkadmin.equinox_1.0.700.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.frameworkadmin_2.0.200.v20150423-1455.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.launcher_1.3.200.v20151021-1308.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.artifact.repository_1.1.500.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.core_2.4.100.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.director.app_1.0.500.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.director_2.3.200.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.engine_2.4.100.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.garbagecollector_1.0.200.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.jarprocessor_1.0.400.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.metadata.repository_1.2.300.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.metadata_2.3.100.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.publisher.eclipse_1.2.0.v20151011-0147.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.publisher_1.4.0.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.repository.tools_2.1.300.v20151116-0825.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.repository_2.3.200.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.touchpoint.eclipse_2.1.400.v20160102-2223.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.touchpoint.natives_1.2.100.v20160104-2129.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.transport.ecf_1.1.100.v20150521-1342.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.p2.updatesite_1.0.500.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.preferences_3.6.0.v20160120-1756.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.registry_3.6.100.v20160223-2218.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.security_1.2.200.v20150715-1528.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.simpleconfigurator.manipulator_2.0.100.v20150907-2149.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.simpleconfigurator_1.1.100.v20150907-2149.jar@1\:start,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.equinox.util_1.0.500.v20130404-1337.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.osgi.compatibility.state_1.0.100.v20150709-1617.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.osgi.services_3.5.0.v20150714-1510.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.eclipse.tycho.noopsecurity_0.25.0.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.sat4j.core_2.3.5.v201308161310.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.sat4j.pb_2.3.5.v201404071733.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.tukaani.xz_1.3.0.v201308270617.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/org.eclipse.tycho.p2.resolver.impl/0.25.0/org.eclipse.tycho.p2.resolver.impl-0.25.0.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/org.eclipse.tycho.p2.maven.repository/0.25.0/org.eclipse.tycho.p2.maven.repository-0.25.0.jar,reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/org.eclipse.tycho.p2.tools.impl/0.25.0/org.eclipse.tycho.p2.tools.impl-0.25.0.jar
 		// #Sat Jul 09 08:58:59 CEST 2016
 		// osgi.bundles=reference\:file\:W\:/work/workspaces/i3/workspace-luna/zzz-p2i/target/local-repo/org/eclipse/tycho/tycho-bundles-external/0.25.0/eclipse/plugins/org.apache.commons.codec_1.6.0.v201305230611.jar,
