@@ -66,12 +66,10 @@ public class P2RepositoryFactory {
 
 	static class P2Index {
 		final private Properties properties;
-		private boolean dirty;
 
 		P2Index() {
 			properties = new Properties();
 			properties.put(P2_VERSION_PROPERTY, P2_VERSION);
-			dirty = true;
 		}
 
 		P2Index(Path root) throws IOException {
@@ -84,8 +82,6 @@ public class P2RepositoryFactory {
 			if (!Objects.equals(version, P2_VERSION))
 				throw new UnsupportedOperationException(
 						"p2.index does not have a supported version: " + version + " at " + root);
-
-			dirty = false;
 		}
 
 		@Deprecated
@@ -98,7 +94,6 @@ public class P2RepositoryFactory {
 
 			String newEntry = entries.stream().collect(Collectors.joining(","));
 
-			dirty |= !Objects.equals(properties.getProperty(property), newEntry);
 			properties.setProperty(property, newEntry);
 		}
 

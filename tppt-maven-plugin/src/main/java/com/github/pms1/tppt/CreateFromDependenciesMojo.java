@@ -305,27 +305,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		}
 	}
 
-	private Artifact resolve(Artifact artifact) {
-		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-		request.setArtifact(artifact);
-		request.setRemoteRepositories(remoteRepositories);
-		request.setLocalRepository(localRepository);
-		ArtifactResolutionResult resolution = repositorySystem.resolve(request);
-
-		for (ArtifactResolutionException e : resolution.getErrorArtifactExceptions()) {
-			System.err.println("ERR " + e);
-		}
-
-		switch (resolution.getArtifacts().size()) {
-		case 0:
-			return null;
-		case 1:
-			return Iterables.getOnlyElement(resolution.getArtifacts());
-		default:
-			throw new Error();
-		}
-	}
-
 	private void createSourceBundle(Plugin plugin, Path bundle, Path out1) throws Exception {
 
 		Manifest mf = null;
@@ -457,7 +436,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		}
 	}
 
-	protected List<ArtifactRepository> getPluginRepositories(MavenSession session) {
+	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {
 		List<ArtifactRepository> repositories = new ArrayList<>();
 		for (MavenProject project : session.getProjects()) {
 			repositories.addAll(project.getPluginArtifactRepositories());
@@ -465,14 +444,14 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		return repositorySystem.getEffectiveRepositories(repositories);
 	}
 
-	public Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
+	private Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
 
 		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 		request.setArtifact(artifact);
-		request.setResolveRoot(true).setResolveTransitively(false);
+		request.setResolveRoot(true);
+		request.setResolveTransitively(false);
 		request.setLocalRepository(session.getLocalRepository());
 		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setCache(session.getRepositoryCache());
 		request.setOffline(session.isOffline());
 		request.setProxies(session.getSettings().getProxies());
 		request.setForceUpdate(session.getRequest().isUpdateSnapshots());

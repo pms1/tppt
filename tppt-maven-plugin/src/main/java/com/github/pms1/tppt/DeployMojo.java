@@ -57,9 +57,6 @@ public class DeployMojo extends AbstractMojo {
 	@Parameter(property = "tppt.scmWorkingDirectory", defaultValue = "${project.build.directory}/install-working-directory")
 	private File scmWorkingDirectory;
 
-	// @Parameter(property = "invoker.skip", defaultValue = "false")
-	// private boolean skipInvocation;
-
 	@Component
 	private DeploymentHelper deployHelp;
 
@@ -92,6 +89,7 @@ public class DeployMojo extends AbstractMojo {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
 

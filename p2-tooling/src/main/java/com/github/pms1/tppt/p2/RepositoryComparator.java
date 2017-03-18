@@ -100,7 +100,9 @@ public class RepositoryComparator {
 			return o -> {
 				DecomposedObject r = new DecomposedObject();
 
-				for (Object r1 : (List) o) {
+				List<?> l = (List<?>) o;
+
+				for (Object r1 : l) {
 					r.put(null, et, r1);
 				}
 
@@ -325,24 +327,18 @@ public class RepositoryComparator {
 	}
 
 	static class MetadataDelta extends FileDelta {
-		private final OPath2 path;
-		private final ChangeType change;
-
 		public MetadataDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
 			super(id1, id2, "Metadata change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
-			this.path = p;
-			this.change = change;
+			Preconditions.checkNotNull(p);
+			Preconditions.checkNotNull(change);
 		}
 	}
 
 	static class ArtifactsDelta extends FileDelta {
-		private final OPath2 path;
-		private final ChangeType change;
-
 		public ArtifactsDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
 			super(id1, id2, "Artifacts change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
-			this.path = p;
-			this.change = change;
+			Preconditions.checkNotNull(p);
+			Preconditions.checkNotNull(change);
 		}
 	}
 
@@ -1377,15 +1373,9 @@ public class RepositoryComparator {
 
 	private String render(Object o) {
 		if (o instanceof List) {
-			StringBuilder b = new StringBuilder();
-			b.append("[");
+			@SuppressWarnings("unchecked")
 			List<Object> l = (List<Object>) (List<?>) o;
 			return "[" + l.stream().map(this::render).collect(Collectors.joining(", ")) + "]";
-		}
-
-		if (o instanceof Provided) {
-			Provided p = (Provided) o;
-			return "Provided(" + p.getNamespace() + "," + p.getName() + "," + p.getVersion() + ")";
 		}
 
 		if (o instanceof Child) {

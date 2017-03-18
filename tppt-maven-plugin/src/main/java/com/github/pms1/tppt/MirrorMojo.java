@@ -92,6 +92,7 @@ public class MirrorMojo extends AbstractMojo {
 		@Parameter
 		public List<URI> sources;
 
+		@SuppressWarnings("unchecked")
 		@Parameter
 		public Map<String, String>[] filters = new Map[0];
 	}
@@ -151,7 +152,6 @@ public class MirrorMojo extends AbstractMojo {
 		request.setResolveRoot(true).setResolveTransitively(false);
 		request.setLocalRepository(session.getLocalRepository());
 		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setCache(session.getRepositoryCache());
 		request.setOffline(session.isOffline());
 		request.setProxies(session.getSettings().getProxies());
 		request.setForceUpdate(session.getRequest().isUpdateSnapshots());

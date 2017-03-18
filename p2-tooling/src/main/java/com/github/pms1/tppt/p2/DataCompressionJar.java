@@ -29,12 +29,14 @@ public class DataCompressionJar implements DataCompression {
 	public InputStream openInputStream(Path repository, String prefix) throws IOException {
 		JarInputStream jar = new JarInputStream(Files.newInputStream(repository.resolve(prefix + ".jar")));
 
+		String file = prefix + ".xml";
+
 		for (ZipEntry e = jar.getNextEntry(); e != null; e = jar.getNextEntry()) {
-			if (e.getName().equals(prefix + ".xml"))
+			if (e.getName().equals(file))
 				return jar;
 		}
 
-		throw new IllegalArgumentException("did not contain xml");
+		throw new IllegalArgumentException("Did not contain '" + file + "'");
 	}
 
 	@Override
@@ -46,39 +48,8 @@ public class DataCompressionJar implements DataCompression {
 
 		jar.putNextEntry(je);
 
-		if (true)
-			return jar;
-
-		return new OutputStream() {
-
-			@Override
-			public void write(int b) throws IOException {
-				jar.write(b);
-			}
-
-			@Override
-			public void write(byte[] b, int off, int len) throws IOException {
-				jar.write(b, off, len);
-			}
-
-			@Override
-			public void write(byte[] b) throws IOException {
-				jar.write(b);
-			}
-
-			@Override
-			public void flush() throws IOException {
-				jar.flush();
-			}
-
-			@Override
-			public void close() throws IOException {
-				jar.close();
-				os.close();
-			}
-
-		};
-
+		// jar.close() will close "os" too.
+		return jar;
 	}
 
 	@Override

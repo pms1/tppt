@@ -6,20 +6,12 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -46,9 +38,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
-import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 
 import com.github.pms1.tppt.jaxb.Feature;
 import com.github.pms1.tppt.jaxb.Plugin;
@@ -60,7 +50,6 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
-import com.google.common.io.ByteStreams;
 
 import aQute.bnd.version.MavenVersion;
 import aQute.bnd.version.Version;
@@ -123,7 +112,8 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		this.exclusions = new ExclusionSetFilter(exclusions);
 	}
 
-	static Plugin scanPlugin(Path path, Plugin plugin) throws IOException, BundleException, MojoExecutionException {
+	private static Plugin scanPlugin(Path path, Plugin plugin)
+			throws IOException, BundleException, MojoExecutionException {
 		long uncompressedSize = 0;
 
 		// Cannot use ZipInputStream since that leaves getCompressedSize() and
@@ -143,28 +133,6 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 		return plugin;
 	}
-
-	private final static List<Name> binaryHeaders = Arrays
-			.asList(Constants.IMPORT_PACKAGE, //
-					Constants.REQUIRE_BUNDLE, //
-					Constants.REQUIRE_CAPABILITY, //
-					Constants.PROVIDE_CAPABILITY, //
-					Constants.EXPORT_PACKAGE, //
-					"Main-Class") // FIXME: use Name.xxx constant
-			.stream() //
-			.map(p -> new Name(p)) //
-			.collect(Collectors.toList());
-
-	// Implementation-Title: hibernate-core
-	// Implementation-Version: 5.2.3.Final
-	// Specification-Vendor: Hibernate.org
-	// Specification-Title: hibernate-core
-	// Implementation-Vendor-Id: org.hibernate
-	// Implementation-Vendor: Hibernate.org
-	// Bundle-Name: hibernate-core
-	// Bundle-Version: 5.2.3.Final
-	// Specification-Version: 5.2.3.Final
-	// Implementation-Url: http://hibernate.org
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -252,112 +220,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	}
 
-	private Artifact resolve(Artifact artifact) {
-		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-		request.setArtifact(artifact);
-		request.setRemoteRepositories(remoteRepositories);
-		request.setLocalRepository(localRepository);
-		ArtifactResolutionResult resolution = repositorySystem.resolve(request);
-
-		for (ArtifactResolutionException e : resolution.getErrorArtifactExceptions()) {
-			System.err.println("ERR " + e);
-		}
-
-		switch (resolution.getArtifacts().size()) {
-		case 0:
-			return null;
-		case 1:
-			return Iterables.getOnlyElement(resolution.getArtifacts());
-		default:
-			throw new Error();
-		}
-	}
-
-	private void createSourceBundle(Plugin plugin, Path bundle, Path out1) throws Exception {
-
-		Manifest mf = null;
-
-		try (ZipFile zf = new ZipFile(bundle.toFile())) {
-			ZipEntry e = zf.getEntry("META-INF/MANIFEST.MF");
-			if (e != null)
-				mf = new Manifest(zf.getInputStream(e));
-		}
-
-		boolean sourceHasHeaders = false;
-
-		if (mf != null) {
-			String sourceBundle = mf.getMainAttributes().getValue("Eclipse-SourceBundle");
-
-			if (sourceBundle != null) {
-				ManifestElement[] elements = ManifestElement.parseHeader("Eclipse-SourceBundle", sourceBundle);
-				if (elements.length != 1)
-					throw new MojoExecutionException("FIXME");
-				String sbundle = elements[0].getValue();
-				String sversion = elements[0].getAttribute("version");
-				if (!Objects.equals(plugin.id, sbundle))
-					throw new MojoExecutionException("FIXME " + plugin.id + " " + sbundle);
-				if (!Objects.equals(plugin.version, sversion))
-					throw new MojoExecutionException("FIXME " + plugin.version + " " + sversion);
-
-				sourceHasHeaders = true;
-			}
-		}
-
-		boolean requireCleanup = false;
-
-		if (mf != null) {
-
-			Manifest fmf = mf;
-			requireCleanup = binaryHeaders.stream().anyMatch(p -> fmf.getMainAttributes().getValue(p) != null);
-
-		}
-		if (sourceHasHeaders && !requireCleanup) {
-			Files.copy(bundle, out1);
-		} else {
-			if (mf == null) {
-				mf = new Manifest();
-				// This is a required header
-				mf.getMainAttributes().put(Name.MANIFEST_VERSION, "1.0");
-			}
-			for (Name h : binaryHeaders)
-				mf.getMainAttributes().remove(h);
-			mf.getMainAttributes().putValue(Constants.BUNDLE_MANIFESTVERSION, "2");
-			mf.getMainAttributes().putValue(Constants.BUNDLE_SYMBOLICNAME, plugin.id + ".source");
-			mf.getMainAttributes().putValue(Constants.BUNDLE_VERSION, plugin.version);
-			mf.getMainAttributes().putValue("Eclipse-SourceBundle", plugin.id + ";version=\"" + plugin.version + "\"");
-
-			try (JarFile zf = new JarFile(bundle.toFile());
-					OutputStream os = Files.newOutputStream(out1);
-					JarOutputStream jar = new JarOutputStream(os, mf)) {
-
-				Set<String> names = new HashSet<>();
-
-				for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
-					ZipEntry e1 = e.nextElement();
-					if (e1.getName().equals("META-INF/MANIFEST.MF"))
-						continue;
-
-					if (names.add(e1.getName())) {
-						jar.putNextEntry(new JarEntry(e1.getName()));
-
-						long copied = ByteStreams.copy(zf.getInputStream(e1), jar);
-
-						if (e1.getSize() != -1 && copied != e1.getSize())
-							throw new MojoExecutionException("Error while copying entry '" + e1 + "': size should be "
-									+ e1.getSize() + ", but copied " + copied);
-					} else {
-						getLog().warn(bundle + " contains multiple entries for '" + e1.getName()
-								+ "'. Keeping the first and ignoring subsequent entries with the same name.");
-					}
-				}
-			} catch (IOException e) {
-				throw new MojoExecutionException("Failed creating source bundle '" + out1 + "' from '" + bundle + "'",
-						e);
-			}
-		}
-	}
-
-	protected List<ArtifactRepository> getPluginRepositories(MavenSession session) {
+	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {
 		List<ArtifactRepository> repositories = new ArrayList<>();
 		for (MavenProject project : session.getProjects()) {
 			repositories.addAll(project.getPluginArtifactRepositories());
@@ -365,14 +228,13 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		return repositorySystem.getEffectiveRepositories(repositories);
 	}
 
-	public Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
+	private Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
 
 		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 		request.setArtifact(artifact);
 		request.setResolveRoot(true).setResolveTransitively(false);
 		request.setLocalRepository(session.getLocalRepository());
 		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setCache(session.getRepositoryCache());
 		request.setOffline(session.isOffline());
 		request.setProxies(session.getSettings().getProxies());
 		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
