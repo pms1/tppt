@@ -9,7 +9,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.Token;
 
 import com.github.pms1.ldap.Rfc4515Parser.AndContext;
 import com.github.pms1.ldap.Rfc4515Parser.AttrContext;
@@ -49,18 +48,6 @@ public class SearchFilterParser {
 						"expression '" + searchFilter + "':" + line + ":" + charPositionInLine + ": " + msg, e);
 			};
 		};
-
-		if (false) {
-			Lexer lexer = new Rfc4515Lexer(new ANTLRInputStream(searchFilter));
-			lexer.removeErrorListeners();
-			lexer.addErrorListener(errorListener);
-
-			for (Token t : lexer.getAllTokens()) {
-				System.err.println(t + " " + Rfc4515Lexer.VOCABULARY.getDisplayName(t.getType()) + " "
-						+ Rfc4515Lexer.VOCABULARY.getLiteralName(t.getType()) + " "
-						+ Rfc4515Lexer.VOCABULARY.getSymbolicName(t.getType()));
-			}
-		}
 
 		Lexer lexer = new Rfc4515Lexer(new ANTLRInputStream(searchFilter));
 		lexer.removeErrorListeners();
