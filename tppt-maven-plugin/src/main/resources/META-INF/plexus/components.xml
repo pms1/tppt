@@ -72,6 +72,7 @@
  -->							
 							<package>
 								${project.groupId}:${project.artifactId}:${project.version}:create-composite-repository,
+								${project.groupId}:${project.artifactId}:${project.version}:compress-metadata,
 								${project.groupId}:${project.artifactId}:${project.version}:replace-by-baseline,
 								org.eclipse.tycho:tycho-p2-repository-plugin:${tycho.version}:archive-repository
 							</package>
