@@ -172,7 +172,7 @@ public class MirrorMojo extends AbstractMojo {
 	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
 			Artifact platform = resolveDependency(session,
-					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "0.26.0", "zip"));
+					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "1.0.0", "zip"));
 
 			Artifact extra = resolveDependency(session, repositorySystem.createArtifact("com.github.pms1.tppt",
 					"tppt-mirror-application", mojoExecution.getVersion(), "jar"));
