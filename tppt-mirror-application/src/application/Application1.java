@@ -50,6 +50,9 @@ import org.osgi.framework.ServiceReference;
 @SuppressWarnings("restriction")
 public class Application1 implements IApplication {
 
+	@SuppressWarnings("unchecked")
+	private static final Map<String, String>[] emptyFilters = new Map[] { Collections.emptyMap() };
+
 	@Override
 	public Object start(IApplicationContext context) throws Exception {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
@@ -137,8 +140,7 @@ public class Application1 implements IApplication {
 
 			Set<IInstallableUnit> finalIus = new HashSet<>();
 
-			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters
-					: new Map[] { Collections.emptyMap() }) {
+			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters : emptyFilters) {
 				SlicingOptions slicingOptions = new SlicingOptions();
 				Map<String, String> filter = new HashMap<String, String>(basicFilter);
 				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");

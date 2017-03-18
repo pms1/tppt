@@ -50,6 +50,7 @@ import application.MirrorSpec.StatsType;
 import application.jaxb.Mirror;
 import application.jaxb.Mirrors;
 
+@SuppressWarnings("restriction")
 public class MyTransport extends Transport {
 	private final static int BUFFER_SIZE = 4096;
 
