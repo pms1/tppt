@@ -34,6 +34,7 @@ import org.apache.maven.shared.dependency.graph.DependencyNode;
 import org.apache.maven.shared.dependency.graph.traversal.DependencyNodeVisitor;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.p2.DataCompression;
 import com.github.pms1.tppt.p2.P2CompositeRepository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
@@ -89,6 +90,9 @@ public class CreateCompositeRepository extends AbstractMojo {
 
 	@Parameter
 	private ArtifactFilter exclusions = new ExclusionSetFilter(Collections.emptySet());
+
+	@Component(hint = "xml")
+	private DataCompression raw;
 
 	public void setExclusions(String[] exclusions) {
 		this.exclusions = new ExclusionSetFilter(exclusions);
@@ -171,7 +175,7 @@ public class CreateCompositeRepository extends AbstractMojo {
 			p.setValue(Long.toString(ts));
 			metadataRepository.getProperties().getProperty().add(p);
 
-			composite.save();
+			composite.save(raw);
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (Exception e) {

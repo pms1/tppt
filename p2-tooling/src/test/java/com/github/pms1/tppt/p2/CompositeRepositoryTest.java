@@ -39,7 +39,7 @@ public class CompositeRepositoryTest {
 		c.setLocation("foo2");
 		repository.getChildren().getChild().add(c);
 
-		composite.save();
+		composite.save(plexusContainer.lookup(DataCompression.class, "xml"));
 
 		assertThat(Files.exists(folder.getRoot().toPath().resolve("compositeArtifacts.xml"))).isTrue();
 		assertThat(Files.exists(folder.getRoot().toPath().resolve("compositeContent.xml"))).isTrue();

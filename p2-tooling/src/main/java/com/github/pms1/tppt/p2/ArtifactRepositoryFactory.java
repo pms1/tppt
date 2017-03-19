@@ -12,7 +12,7 @@ import com.google.common.base.Throwables;
 public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<ArtifactRepository> {
 
 	protected ArtifactRepositoryFactory() {
-		super(getJaxbContext(), ArtifactRepository.class, "artifact", "artifactRepository.xsd");
+		super(getJaxbContext(), ArtifactRepository.class, "artifact", "1.1.0", "artifactRepository.xsd");
 	}
 
 	private static class Holder {
@@ -28,6 +28,11 @@ public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<Artifac
 
 	public static JAXBContext getJaxbContext() {
 		return Holder.context;
+	}
+
+	@Override
+	protected void normalize(ArtifactRepository t) {
+		throw new UnsupportedOperationException();
 	}
 
 }

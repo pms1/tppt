@@ -7,6 +7,4 @@ public interface P2CompositeRepository extends CommonP2Repository {
 
 	CompositeRepositoryFacade getMetadataRepositoryFacade() throws IOException;
 
-	void save() throws IOException;
-
 }

@@ -14,9 +14,12 @@ public interface CommonP2Repository {
 
 	List<DataCompression> getArtifactDataCompressions();
 
-	RepositoryFacade getArtifactRepositoryFacade() throws IOException;
+	RepositoryFacade<?> getArtifactRepositoryFacade() throws IOException;
 
-	RepositoryFacade getMetadataRepositoryFacade() throws IOException;
+	RepositoryFacade<?> getMetadataRepositoryFacade() throws IOException;
 
 	Path getPath();
+
+	void save(DataCompression... compressions) throws IOException;
+
 }

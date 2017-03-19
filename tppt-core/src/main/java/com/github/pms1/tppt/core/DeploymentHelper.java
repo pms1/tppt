@@ -92,7 +92,7 @@ public class DeploymentHelper {
 			
 			CommonP2Repository repo = factory.loadAny(fs.getPath("/"));
 
-			RepositoryFacade artifactRepositoryFacade = repo.getArtifactRepositoryFacade();
+			RepositoryFacade<?> artifactRepositoryFacade = repo.getArtifactRepositoryFacade();
 			
 			Optional<? extends Property> prop = artifactRepositoryFacade.getRepository().getProperties().getProperty().stream().filter(
 					p -> p.getName().equals("p2.timestamp")
