@@ -1,7 +1,9 @@
 package com.github.pms1.tppt.p2;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -32,16 +34,43 @@ public class DomRenderer {
 	}
 
 	public String render(Node item, Options... options) {
+		return render(item, createOptions(options));
+	}
+
+	public String render(Node item, DomRendererOptions options) {
 		StringBuilder b = new StringBuilder();
-		render(item, b, Arrays.asList(options));
+		render(item, b, options, "");
 		return b.toString();
+	}
+
+	private DomRendererOptions createOptions(Options[] options) {
+		DomRendererOptions o = new DomRendererOptions();
+		for (Options o2 : options) {
+			switch (o2) {
+			case TOP_LEVEL:
+				o.recurse = false;
+				break;
+			}
+		}
+
+		return o;
+	}
+
+	static public class DomRendererOptions {
+		public boolean recurse = true;
+		public String indent = null;
+		public char quote = '"';
+
+		public List<Function<Element, List<String>>> attributeSorters = new LinkedList<>();
 	}
 
 	private static String getReplacement(char c, boolean attr) {
 		if (attr) {
 			switch (c) {
+			case (char) 9: // \t
+				return "#x9";
 			case (char) 10: // \r
-				return "#x0A";
+				return "#xA";
 			case '"':
 				return "quot"; //$NON-NLS-1$
 			}
@@ -53,8 +82,14 @@ public class DomRenderer {
 		// references.
 		// These five are defined by default for all XML documents.
 		switch (c) {
+		case (char) 9: // \t
+			return "#x9";
 		case (char) 13: // \n
 			return "#x0D";
+		case (char) 10: // \r
+			return "#xA";
+		case '"':
+			return "quot"; //$NON-NLS-1$
 		case '<':
 			return "lt"; //$NON-NLS-1$
 		case '>':
@@ -83,38 +118,67 @@ public class DomRenderer {
 
 	}
 
-	private static String quoteAttribute(String nodeValue) {
-		return '\"' + quote(nodeValue, true) + '\"';
+	private static String quoteAttribute(String nodeValue, DomRendererOptions options) {
+		return options.quote + quote(nodeValue, true) + options.quote;
 	}
 
-	private void render(Node node, StringBuilder b, List<Options> options) {
-		boolean children;
+	private void render(Node node, StringBuilder b, DomRendererOptions options, String indent) {
+		boolean children = options.recurse;
+
 		switch (node.getNodeType()) {
 		case Node.TEXT_NODE:
 			Text t = (Text) node;
-			b.append(quote(t.getTextContent(), false));
+			String txt = t.getTextContent();
+			if (options.indent != null) {
+				txt = txt.trim();
+				if (!txt.isEmpty())
+					b.append(indent);
+			}
+			b.append(quote(txt, false));
+			if (options.indent != null)
+				b.append("\n");
 			children = false;
 			break;
 		case Node.ELEMENT_NODE:
 			Element e = (Element) node;
 			children = true;
+			b.append(indent);
 			b.append("<" + e.getNodeName());
+
+			List<String> sort = Collections.emptyList();
+			for (Function<Element, List<String>> e1 : options.attributeSorters) {
+				List<String> s = e1.apply(e);
+				if (s != null) {
+					sort = s;
+					break;
+				}
+			}
 			NamedNodeMap attributes = e.getAttributes();
+			for (String name : sort) {
+				Attr a = (Attr) attributes.getNamedItem(name);
+				if (a != null)
+					b.append(" ").append(a.getNodeName()).append("=").append(quoteAttribute(a.getNodeValue(), options));
+			}
 			for (int i = 0; i != attributes.getLength(); ++i) {
 				Attr a = (Attr) attributes.item(i);
-				b.append(" ").append(a.getNodeName()).append("=").append(quoteAttribute(a.getNodeValue()));
+				if (!sort.contains(a.getNodeName()))
+					b.append(" ").append(a.getNodeName()).append("=").append(quoteAttribute(a.getNodeValue(), options));
 			}
 			if (e.getChildNodes().getLength() == 0) {
 				b.append("/>");
-				return;
+				children = false;
 			} else {
 				b.append(">");
 			}
+			if (options.indent != null)
+				b.append("\n");
 			break;
 		case Node.PROCESSING_INSTRUCTION_NODE:
 			children = false;
 			ProcessingInstruction pi = (ProcessingInstruction) node;
 			b.append("<?" + pi.getTarget() + " " + pi.getData() + "?>");
+			if (options.indent != null)
+				b.append("\n");
 			break;
 		case Node.COMMENT_NODE:
 			children = false;
@@ -125,7 +189,7 @@ public class DomRenderer {
 			children = true;
 			Document d = (Document) node;
 
-			String standalone = d.getXmlStandalone() ? " standalone=\"yes\"" : "";
+			String standalone = d.getXmlStandalone() ? " standalone=" + options.quote + "yes" + options.quote : "";
 
 			if (d.getXmlVersion() == null)
 				throw new UnsupportedOperationException();
@@ -135,25 +199,32 @@ public class DomRenderer {
 			// !Objects.equals(d.getXmlEncoding().toUpperCase(), "UTF-8"))
 			// throw new UnsupportedOperationException();
 
-			b.append("<?xml version=\"" + d.getXmlVersion() + "\" encoding=\"UTF-8\"" + standalone + "?>");
+			b.append("<?xml version=" + options.quote + d.getXmlVersion() + options.quote + " encoding=" + options.quote
+					+ "UTF-8" + options.quote + standalone + "?>");
+			if (options.indent != null)
+				b.append("\n");
 			break;
 		default:
 			throw new Error("Unhandled node " + node.getNodeType() + " " + node);
 		}
 
-		if (options.contains(Options.TOP_LEVEL))
-			return;
-
 		if (children) {
 			for (int i = 0; i != node.getChildNodes().getLength(); ++i)
-				render(node.getChildNodes().item(i), b, options);
+				render(node.getChildNodes().item(i), b, options,
+						options.indent != null && !(node instanceof Document) ? indent + options.indent : indent);
 		} else if (node.getChildNodes().getLength() != 0) {
 			throw new IllegalStateException("No children expected for nodeType=" + node.getNodeType() + " " + node);
 		}
 
 		switch (node.getNodeType()) {
 		case Node.ELEMENT_NODE:
-			b.append("</" + node.getNodeName() + ">");
+			Element e = (Element) node;
+			if (e.getChildNodes().getLength() != 0) {
+				b.append(indent);
+				b.append("</" + node.getNodeName() + ">");
+				if (options.indent != null)
+					b.append("\n");
+			}
 		}
 	}
 

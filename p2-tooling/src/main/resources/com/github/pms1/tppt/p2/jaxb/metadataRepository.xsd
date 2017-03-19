@@ -10,7 +10,7 @@
 
 		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="type" type="xsd:string" use="required"></xsd:attribute>
-		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
+		<xsd:attribute name="version" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="description" type="xsd:string"></xsd:attribute>
 	</xsd:complexType>
 
@@ -71,15 +71,15 @@
 	<xsd:complexType name="unit">
 		<xsd:all>
 			<xsd:element name="patchScope" type="patchScope" minOccurs="0"></xsd:element>
-			<xsd:element name="update" type="update" minOccurs="0"></xsd:element>
 			<xsd:element name="changes" type="changes" minOccurs="0"></xsd:element>
 			<xsd:element name="lifeCycle" type="changeFromTo" minOccurs="0"></xsd:element>
+			<xsd:element name="update" type="update" minOccurs="0"></xsd:element>
 			<xsd:element name="hostRequirements" type="requires" minOccurs="0"></xsd:element>
 			<xsd:element name="metaRequirements" type="requires" minOccurs="0"></xsd:element>
 			<xsd:element name="properties" type="properties" minOccurs="0"></xsd:element>
 			<xsd:element name="provides" type="provides" minOccurs="0"></xsd:element>
-			<xsd:element name="filter" type="filter" minOccurs="0"></xsd:element>
 			<xsd:element name="requires" type="requires" minOccurs="0"></xsd:element>
+			<xsd:element name="filter" type="filter" minOccurs="0"></xsd:element>
 			<xsd:element name="artifacts" type="metadataArtifacts" minOccurs="0"></xsd:element>
 			<xsd:element name="touchpoint" type="touchpoint" minOccurs="0"></xsd:element>
 			<xsd:element name="touchpointData" type="touchpointData" minOccurs="0"></xsd:element>

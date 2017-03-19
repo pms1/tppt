@@ -2,6 +2,8 @@ package com.github.pms1.tppt.p2;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.util.Arrays;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -26,6 +28,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.ProcessingInstruction;
 
+import com.github.pms1.tppt.p2.DomRenderer.DomRendererOptions;
 import com.github.pms1.tppt.p2.jaxb.VersionAdapter;
 import com.google.common.base.Preconditions;
 
@@ -93,15 +96,40 @@ public abstract class AbstractRepositoryFactory<T> {
 
 			node.insertBefore(instruction, node.getFirstChild());
 
-			// write the content into xml file
-			// FIXME: use a formatter that looks like eclipse generated
-			// repositories
-			TransformerFactory transformerFactory = TransformerFactory.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(r.getNode());
-			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-			transformer.transform(source, new StreamResult(os));
+			if (false) {
+				// write the content into xml file
+				// FIXME: use a formatter that looks like eclipse generated
+				// repositories
+				TransformerFactory transformerFactory = TransformerFactory.newInstance();
+				Transformer transformer = transformerFactory.newTransformer();
+				DOMSource source = new DOMSource(r.getNode());
+				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+				transformer.transform(source, new StreamResult(os));
+			}
+
+			DomRendererOptions options = new DomRendererOptions();
+			options.quote = '\'';
+			options.indent = "  ";
+			options.attributeSorters.add(e -> {
+				switch (e.getNodeName()) {
+				case "unit":
+					return Arrays.asList("id", "version", "singleton");
+				case "update":
+					return Arrays.asList("id", "match", "range", "severity", "description");
+				case "provided":
+					return Arrays.asList("namespace", "name", "version");
+				case "required":
+					return Arrays.asList("namespace", "name", "version", "range", "optional", "multiple", "greedy",
+							"match", "matchParameters", "min", "max");
+				default:
+					return null;
+				}
+			});
+			try (PrintWriter pw = new PrintWriter(os)) {
+				String render = renderer.render(node, options);
+				pw.print(render);
+			}
 
 		} catch (JAXBException | TransformerException e) {
 			throw new RuntimeException(e);

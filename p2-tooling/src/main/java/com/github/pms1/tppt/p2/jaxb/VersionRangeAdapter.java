@@ -15,7 +15,10 @@ public class VersionRangeAdapter extends XmlAdapter<String, VersionRange> {
 
 	@Override
 	public String marshal(VersionRange v) throws Exception {
-		return v.toString();
+		if (v == null)
+			return null;
+		else
+			return v.toString();
 	}
 
 }

@@ -4,7 +4,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.codehaus.plexus.component.annotations.Component;
-import org.osgi.framework.Version;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
@@ -62,7 +61,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 	protected MetadataRepository createEmpty() {
 		MetadataRepository repository = new MetadataRepository();
 		repository.setType("org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository");
-		repository.setVersion(Version.parseVersion("1"));
+		repository.setVersion("1");
 		repository.setProperties(new Properties());
 		repository.setUnits(new Units());
 		return repository;
