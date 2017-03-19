@@ -1,8 +1,9 @@
 package com.github.pms1.tppt.p2;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
 import java.util.Arrays;
 
 import javax.xml.bind.JAXBContext;
@@ -30,6 +31,7 @@ import org.w3c.dom.ProcessingInstruction;
 
 import com.github.pms1.tppt.p2.DomRenderer.DomRendererOptions;
 import com.github.pms1.tppt.p2.jaxb.VersionAdapter;
+import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 
 public abstract class AbstractRepositoryFactory<T> {
@@ -126,12 +128,13 @@ public abstract class AbstractRepositoryFactory<T> {
 					return null;
 				}
 			});
-			try (PrintWriter pw = new PrintWriter(os)) {
+
+			try (OutputStreamWriter pw = new OutputStreamWriter(os, Charsets.UTF_8)) {
 				String render = renderer.render(node, options);
-				pw.print(render);
+				pw.append(render);
 			}
 
-		} catch (JAXBException | TransformerException e) {
+		} catch (JAXBException | TransformerException | IOException e) {
 			throw new RuntimeException(e);
 		}
 
