@@ -130,8 +130,7 @@ public abstract class AbstractRepositoryFactory<T> {
 			});
 
 			try (OutputStreamWriter pw = new OutputStreamWriter(os, Charsets.UTF_8)) {
-				String render = renderer.render(node, options);
-				pw.append(render);
+				renderer.render(pw, node, options);
 			}
 
 		} catch (JAXBException | TransformerException | IOException e) {

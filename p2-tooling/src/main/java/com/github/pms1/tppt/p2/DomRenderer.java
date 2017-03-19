@@ -1,5 +1,6 @@
 package com.github.pms1.tppt.p2;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,8 +40,16 @@ public class DomRenderer {
 
 	public String render(Node item, DomRendererOptions options) {
 		StringBuilder b = new StringBuilder();
-		render(item, b, options, "");
+		try {
+			render(item, b, options, "");
+		} catch (IOException e) {
+			throw new RuntimeException();
+		}
 		return b.toString();
+	}
+
+	public void render(Appendable b, Node item, DomRendererOptions options) throws IOException {
+		render(item, b, options, "");
 	}
 
 	private DomRendererOptions createOptions(Options[] options) {
@@ -122,7 +131,7 @@ public class DomRenderer {
 		return options.quote + quote(nodeValue, true) + options.quote;
 	}
 
-	private void render(Node node, StringBuilder b, DomRendererOptions options, String indent) {
+	private void render(Node node, Appendable b, DomRendererOptions options, String indent) throws IOException {
 		boolean children = options.recurse;
 
 		switch (node.getNodeType()) {
