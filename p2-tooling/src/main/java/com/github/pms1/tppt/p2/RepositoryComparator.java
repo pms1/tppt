@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -598,6 +599,36 @@ public class RepositoryComparator {
 
 		dest.addAll(oc.compare(md1, md2));
 
+		{
+			Map<ArtifactId, Unit> c1 = getCategories(md1);
+			Map<ArtifactId, Unit> c2 = getCategories(md2);
+			Multimap<String, ArtifactId> id1 = HashMultimap.create();
+			Multimap<String, ArtifactId> id2 = HashMultimap.create();
+
+			c1.keySet().forEach(a -> id1.put(a.getId(), a));
+			c2.keySet().forEach(a -> id2.put(a.getId(), a));
+
+			for (String a : Sets.union(id1.keySet(), id2.keySet())) {
+				Set<ArtifactId> i1 = new HashSet<>(id1.get(a));
+				Set<ArtifactId> i2 = new HashSet<>(id2.get(a));
+
+				Set<ArtifactId> intersection = new HashSet<>(i1);
+				intersection.retainAll(i2);
+
+				for (ArtifactId id : intersection) {
+					i1.remove(id);
+					i2.remove(id);
+				}
+
+				if (i1.size() == 1 && i2.size() == 1) {
+
+					changes.add(new CategoryVersionChange(c1.get(Iterables.getOnlyElement(i1)),
+							c2.get(Iterables.getOnlyElement(i2))));
+				}
+			}
+
+		}
+
 		ObjectComparator<FileDelta> oc2 = createArtifactComparator().setDeltaCreator(new DeltaCreator<FileDelta>() {
 
 			@Override
@@ -687,6 +718,20 @@ public class RepositoryComparator {
 		return incompatibleChanges.isEmpty();
 	}
 
+	private static Predicate<Unit> isCategory = p -> p.getProperties() != null
+			&& p.getProperties().getProperty().stream().anyMatch(
+					p1 -> p1.getName().equals("org.eclipse.equinox.p2.type.category") && p1.getValue().equals("true"));
+
+	private static Map<ArtifactId, Unit> getCategories(MetadataRepository md1) {
+
+		if (md1.getUnits() == null)
+			return Collections.emptyMap();
+
+		return md1.getUnits().getUnit().stream().filter(isCategory)
+				.collect(Collectors.toMap(u -> new ArtifactId(u.getId(), u.getVersion()), Function.identity()));
+
+	}
+
 	private String render(FileDelta d1) {
 		MessageFormat messageFormat = new MessageFormat(d1.getDescription());
 
@@ -705,12 +750,82 @@ public class RepositoryComparator {
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
 			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
 
+	class CategoryVersionChange extends Change {
+		final Unit left;
+		final Unit right;
+
+		public CategoryVersionChange(Unit left, Unit right) {
+			Preconditions.checkNotNull(left);
+			Preconditions.checkNotNull(right);
+			this.left = left;
+			this.right = right;
+		}
+
+		@Override
+		boolean accept(FileDelta delta) {
+			if (!(delta instanceof AbstractUnitDelta))
+				return false;
+
+			AbstractUnitDelta d1 = (AbstractUnitDelta) delta;
+			if (d1.left != left || d1.right != right)
+				return false;
+
+			if (delta instanceof ProvidedRemoved) {
+				ProvidedRemoved d = (ProvidedRemoved) delta;
+
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.left.getId(), d.left.getVersion()))
+					return true;
+			} else if (delta instanceof ProvidedAdded) {
+				ProvidedAdded d = (ProvidedAdded) delta;
+
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.right.getId(), d.right.getVersion()))
+					return true;
+			} else if (delta instanceof UnitDelta) {
+				UnitDelta d = (UnitDelta) delta;
+
+				switch (d.path.getPath()) {
+				case "/version":
+					return d.path.getLeft().equals(d.left.getVersion())
+							&& d.path.getRight().equals(d.right.getVersion());
+				default:
+					return false;
+				}
+			}
+
+			return false;
+		}
+
+		@Override
+		void check(Consumer<String> change) {
+		}
+	}
+
 	class FeatureVersionChange extends ArtifactVersionChange {
 		private final String featureId;
 		private final FileId file1;
 		private final FileId file2;
 		private final Version v1;
 		private final Version v2;
+
+		private Set<Unit> addedUnit = new HashSet<>();
+		private Set<Unit> removedUnit = new HashSet<>();
+
+		@Override
+		void check(Consumer<String> incompatibleChanges) {
+			super.check(incompatibleChanges);
+
+			for (Unit u : Sets.union(addedUnit, removedUnit)) {
+				boolean a = addedUnit.contains(u);
+				boolean r = removedUnit.contains(u);
+
+				if (!a)
+					incompatibleChanges.accept("Only removed: " + u + " " + featureId);
+				if (!r)
+					incompatibleChanges.accept("Only added: " + u + " " + featureId);
+			}
+
+			return;
+		}
 
 		public FeatureVersionChange(String featureId, FileId file1, Version v1, FileId file2, Version v2) {
 			Preconditions.checkNotNull(featureId);
@@ -777,31 +892,49 @@ public class RepositoryComparator {
 				RequiredAdded d = (RequiredAdded) delta;
 
 				if (isFeatureGroup(d)) {
-					// if (is(d.right, featureId + ".feature.group", v2)) {
 					if (new RequiredMatcher() //
-							.withNamespace("org.eclipse.equinox.p2.iu"::equals)
-							.withName(p -> p.equals(featureId + ".feature.jar")) //
-							.withRange(p -> Objects.equals(p,
-									new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED))) //
+							.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+							.withName((featureId + ".feature.jar")::equals) //
+							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2,
+									VersionRange.RIGHT_CLOSED)::equals) //
 							.withFilter(featureFilter) //
 							.test(d.required))
 						return true;
 				}
+
+				if (new RequiredMatcher() //
+						.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName((featureId + ".feature.group")::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)::equals) //
+						.test(d.required)) {
+					addedUnit.add(d.right);
+					return true;
+				}
+				System.err.println("FEATURE REQ ADD2 " + render(d));
 
 				return false;
 			} else if (delta instanceof RequiredRemoved) {
 				RequiredRemoved d = (RequiredRemoved) delta;
 
 				if (isFeatureGroup(d)) {
-					// if (is(d.left, featureId + ".feature.group", v1)) {
 					if (new RequiredMatcher() //
-							.withNamespace("org.eclipse.equinox.p2.iu"::equals)
-							.withName(p -> p.equals(featureId + ".feature.jar")) //
-							.withRange(p -> Objects.equals(p,
-									new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED))) //
+							.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+							.withName((featureId + ".feature.jar")::equals) //
+							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1,
+									VersionRange.RIGHT_CLOSED)::equals) //
 							.withFilter(featureFilter) //
 							.test(d.required))
 						return true;
+				}
+
+				if (new RequiredMatcher().withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName((featureId + ".feature.group")::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
+						.test(d.required)) {
+					removedUnit.add(d.right);
+					return true;
 				}
 
 				return false;
@@ -1075,7 +1208,7 @@ public class RepositoryComparator {
 	 * associated artifacts.
 	 * 
 	 */
-	abstract class ArtifactVersionChange extends Change {
+	static abstract class ArtifactVersionChange extends Change {
 
 		Set<ArtifactKey> removedArtifactsMetadata = new HashSet<>();
 		Set<ArtifactKey> addedArtifactsMetadata = new HashSet<>();
@@ -1106,7 +1239,7 @@ public class RepositoryComparator {
 		}
 	}
 
-	class BundleVersionChange extends ArtifactVersionChange {
+	static class BundleVersionChange extends ArtifactVersionChange {
 		private final String bundleId;
 		private final FileId file1;
 		private final FileId file2;
@@ -1127,11 +1260,11 @@ public class RepositoryComparator {
 			this.v2 = v2;
 		}
 
-		Set<Unit> addedUnit = new HashSet<>();
-		Set<Unit> removedUnit = new HashSet<>();
+		private Set<Unit> addedUnit = new HashSet<>();
+		private Set<Unit> removedUnit = new HashSet<>();
 
-		Set<String> addedProvidedPackage = new HashSet<>();
-		Set<String> removedProvidedPackage = new HashSet<>();
+		private Set<String> addedProvidedPackage = new HashSet<>();
+		private Set<String> removedProvidedPackage = new HashSet<>();
 
 		@Override
 		void check(Consumer<String> incompatibleChanges) {
@@ -1255,10 +1388,11 @@ public class RepositoryComparator {
 			} else if (delta instanceof RequiredAdded) {
 				RequiredAdded d = (RequiredAdded) delta;
 
-				if (new RequiredMatcher().withNamespace("org.eclipse.equinox.p2.iu"::equals)
-						.withName(p -> p.equals(bundleId))
-						.withRange(p -> p
-								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)))
+				if (new RequiredMatcher().//
+						withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName(bundleId::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)::equals) //
 						.test(d.required)) {
 					addedUnit.add(d.right);
 					return true;
@@ -1268,10 +1402,11 @@ public class RepositoryComparator {
 			} else if (delta instanceof RequiredRemoved) {
 				RequiredRemoved d = (RequiredRemoved) delta;
 
-				if (new RequiredMatcher().withNamespace("org.eclipse.equinox.p2.iu"::equals)
-						.withName(p -> p.equals(bundleId))
-						.withRange(p -> p
-								.equals(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)))
+				if (new RequiredMatcher() //
+						.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName(bundleId::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
 						.test(d.required)) {
 					removedUnit.add(d.right);
 					return true;
