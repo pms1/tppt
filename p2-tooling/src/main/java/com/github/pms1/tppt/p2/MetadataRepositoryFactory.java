@@ -4,8 +4,12 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
 import org.codehaus.plexus.component.annotations.Component;
+import org.osgi.framework.Version;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
+import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
+import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
+import com.github.pms1.tppt.p2.jaxb.metadata.Units;
 import com.google.common.base.Throwables;
 
 @Component(role = MetadataRepositoryFactory.class)
@@ -32,7 +36,36 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 
 	@Override
 	protected void normalize(MetadataRepository t) {
-		throw new UnsupportedOperationException();
+		Properties properties = t.getProperties();
+		if (properties != null)
+			properties.setSize(properties.getProperty().size());
+
+		Units units = t.getUnits();
+		if (units != null) {
+			units.setSize(units.getUnit().size());
+			for (Unit u : units.getUnit())
+				normalize(u);
+		}
+
+	}
+
+	private void normalize(Unit u) {
+		if (u.getRequires() != null)
+			u.getRequires().setSize(u.getRequires().getRequired().size());
+		if (u.getProperties() != null)
+			u.getProperties().setSize(u.getProperties().getProperty().size());
+		if (u.getProvides() != null)
+			u.getProvides().setSize(u.getProvides().getProvided().size());
+	}
+
+	@Override
+	protected MetadataRepository createEmpty() {
+		MetadataRepository repository = new MetadataRepository();
+		repository.setType("org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository");
+		repository.setVersion(Version.parseVersion("1"));
+		repository.setProperties(new Properties());
+		repository.setUnits(new Units());
+		return repository;
 	}
 
 }

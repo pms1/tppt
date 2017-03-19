@@ -11,7 +11,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +59,6 @@ public class P2RepositoryFactory {
 	}
 
 	public static final String P2INDEX = "p2.index";
-	@Deprecated
-	public static final String ARTIFACT_PREFIX = P2IndexType.artifacts.getFilePrefix();
-	@Deprecated
-	public static final String METADATA_PREFIX = P2IndexType.metadata.getFilePrefix();
 
 	private static final String P2_VERSION = "1";
 	private static final String P2_VERSION_PROPERTY = "version";
@@ -157,10 +155,10 @@ public class P2RepositoryFactory {
 			return result;
 		}
 
-		public P2Type identifyType() {
+		public P2Type identifyType(Set<P2Kind> kinds) {
 			P2Type type = null;
 
-			for (P2Kind t : P2Kind.values()) {
+			for (P2Kind t : kinds) {
 				P2IndexType entry = getIndexEntry(t);
 				if (entry.getKind() != t)
 					throw new IllegalArgumentException();
@@ -225,19 +223,25 @@ public class P2RepositoryFactory {
 		}
 	}
 
-	public P2Repository loadContent(Path path) throws IOException {
-		return (P2Repository) loadInternal(path, P2Type.content);
+	public P2Repository loadContent(Path path, P2Kind... kinds) throws IOException {
+		return (P2Repository) loadInternal(path, P2Type.content, parseKinds(kinds));
 	}
 
 	class P2RepositoryImpl extends
 			AbstractRepository<ArtifactRepository, ArtifactRepositoryFacade, MetadataRepository, MetadataRepositoryFacade>
 			implements P2Repository {
 
-		public P2RepositoryImpl(Path path, P2Index p2index, Map<P2Kind, List<DataCompression>> availableCompressions,
-				BiFunction<Path, DataCompression, ArtifactRepositoryFacade> artifactLoader,
-				BiFunction<Path, DataCompression, MetadataRepositoryFacade> metadataLoader) {
+		public P2RepositoryImpl(Path path, P2Index p2index, Map<P2Kind, List<DataCompression>> availableCompressions) {
 			super(P2Type.content, path, p2index, availableCompressions, artifactRepositoryFactory,
-					metadataRepositoryFactory, artifactLoader, metadataLoader, null, null);
+					metadataRepositoryFactory, ArtifactRepositoryFacadeImpl::new, MetadataRepositoryFacadeImpl::new,
+					null, null);
+		}
+
+		public P2RepositoryImpl(Path path, P2Index p2index, Map<P2Kind, List<DataCompression>> availableCompressions,
+				ArtifactRepositoryFacade a, MetadataRepositoryFacade m) {
+			super(P2Type.content, path, p2index, availableCompressions, artifactRepositoryFactory,
+					metadataRepositoryFactory, ArtifactRepositoryFacadeImpl::new, MetadataRepositoryFacadeImpl::new, a,
+					m);
 		}
 
 		@Override
@@ -249,41 +253,30 @@ public class P2RepositoryFactory {
 	private P2Repository loadContent(Path root, P2Index p2index,
 			Map<P2Kind, List<DataCompression>> availableCompressions) throws IOException {
 
-		return new P2RepositoryImpl(root, p2index, availableCompressions, (path, dc) -> {
-			try (InputStream is = dc.openInputStream(path, P2IndexType.artifacts.getFilePrefix())) {
-				return new ArtifactRepositoryFacadeImpl(
-						path.resolve(P2IndexType.artifacts.getFilePrefix() + "." + dc.getFileSuffix()),
-						artifactRepositoryFactory.read(is));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}, (path, dc) -> {
-			try (InputStream is = dc.openInputStream(path, P2IndexType.metadata.getFilePrefix())) {
-				return new MetadataRepositoryFacadeImpl(
-						path.resolve(P2IndexType.metadata.getFilePrefix() + "." + dc.getFileSuffix()),
-						metadataRepositoryFactory.read(is));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		});
+		return new P2RepositoryImpl(root, p2index, availableCompressions);
 	}
 
 	static abstract class AbstractRepository<A1 extends Repository, A extends RepositoryFacade<A1>, M1 extends Repository, M extends RepositoryFacade<M1>>
 			implements CommonP2Repository {
-		final Path root;
-		final P2Index p2index;
-		final P2IndexType artifact;
-		final P2IndexType metadata;
-		final Map<P2Kind, List<DataCompression>> availableCompressions;
+		private final Path root;
+		private final P2Index p2index;
+		private final P2IndexType artifact;
+		private final P2IndexType metadata;
+		private final Map<P2Kind, List<DataCompression>> availableCompressions;
 
-		private final BiFunction<Path, DataCompression, A> artifactLoader;
+		private final AbstractRepositoryFactory<A1> artifactFactory;
+		private final AbstractRepositoryFactory<M1> metadataFactory;
 
-		private final BiFunction<Path, DataCompression, M> metadataLoader;
+		private final BiFunction<Path, A1, A> artifactCreator;
+		private final BiFunction<Path, M1, M> metadataCreator;
+
+		private A a;
+		private M m;
 
 		protected AbstractRepository(P2Type type, Path root, P2Index p2index,
 				Map<P2Kind, List<DataCompression>> availableCompressions, AbstractRepositoryFactory<A1> aFactory,
-				AbstractRepositoryFactory<M1> mFactory, BiFunction<Path, DataCompression, A> artifactLoader,
-				BiFunction<Path, DataCompression, M> metadataLoader, A a, M m) {
+				AbstractRepositoryFactory<M1> mFactory, BiFunction<Path, A1, A> aCreator,
+				BiFunction<Path, M1, M> mCreator, A a, M m) {
 			Objects.requireNonNull(type);
 			this.artifact = type.getIndexEntry(P2Kind.artifact);
 			this.metadata = type.getIndexEntry(P2Kind.metadata);
@@ -294,33 +287,39 @@ public class P2RepositoryFactory {
 			Objects.requireNonNull(availableCompressions);
 			Preconditions.checkArgument(!availableCompressions.isEmpty());
 			this.availableCompressions = availableCompressions;
-			Objects.requireNonNull(artifactLoader);
-			this.artifactLoader = artifactLoader;
-			Objects.requireNonNull(metadataLoader);
-			this.metadataLoader = metadataLoader;
 			Objects.requireNonNull(aFactory);
-			this.aFactory = aFactory;
+			this.artifactFactory = aFactory;
 			Objects.requireNonNull(mFactory);
-			this.mFactory = mFactory;
+			this.metadataFactory = mFactory;
+			Objects.requireNonNull(aCreator);
+			this.artifactCreator = aCreator;
+			Objects.requireNonNull(mCreator);
+			this.metadataCreator = mCreator;
 			this.a = a;
 			this.m = m;
 		}
 
-		A a;
-
 		@Override
 		final public A getArtifactRepositoryFacade() throws IOException {
-			if (a == null)
-				a = artifactLoader.apply(root, availableCompressions.get(P2Kind.artifact).get(0));
+			if (a == null) {
+				DataCompression dc = availableCompressions.get(P2Kind.artifact).get(0);
+				try (InputStream is = dc.openInputStream(root, artifact.getFilePrefix())) {
+					a = artifactCreator.apply(root.resolve(artifact.getFilePrefix() + "." + dc.getFileSuffix()),
+							artifactFactory.read(is));
+				}
+			}
 			return a;
 		}
 
-		M m;
-
 		@Override
 		final public M getMetadataRepositoryFacade() throws IOException {
-			if (m == null)
-				m = metadataLoader.apply(root, availableCompressions.get(P2Kind.metadata).get(0));
+			if (m == null) {
+				DataCompression dc = availableCompressions.get(P2Kind.metadata).get(0);
+				try (InputStream is = dc.openInputStream(root, metadata.getFilePrefix())) {
+					m = metadataCreator.apply(root.resolve(metadata.getFilePrefix() + "." + dc.getFileSuffix()),
+							metadataFactory.read(is));
+				}
+			}
 			return m;
 		}
 
@@ -338,49 +337,53 @@ public class P2RepositoryFactory {
 		public void setCompression(DataCompression... compressions) throws IOException {
 			Preconditions.checkNotNull(compressions);
 			Preconditions.checkArgument(compressions.length > 0);
-			Preconditions.checkState(!availableCompressions.get(P2Kind.artifact).isEmpty());
-			Preconditions.checkState(!availableCompressions.get(P2Kind.metadata).isEmpty());
-			DataCompression preferredArtifactCompression = availableCompressions.get(P2Kind.artifact).get(0);
-			DataCompression preferredMetadataCompression = availableCompressions.get(P2Kind.metadata).get(0);
-
-			boolean deleteOldArtifact = true;
-			boolean deleteOldMetadata = true;
+			if (kinds().contains(P2Kind.artifact))
+				Preconditions.checkState(!availableCompressions.get(P2Kind.artifact).isEmpty());
+			if (kinds().contains(P2Kind.metadata))
+				Preconditions.checkState(!availableCompressions.get(P2Kind.metadata).isEmpty());
+			boolean deleteOldArtifact = kinds().contains(P2Kind.artifact);
+			boolean deleteOldMetadata = kinds().contains(P2Kind.metadata);
 
 			for (DataCompression c : compressions) {
-				if (c == preferredArtifactCompression)
-					deleteOldArtifact = false;
-				else
-					try (InputStream is = preferredArtifactCompression.openInputStream(root,
-							artifact.getFilePrefix())) {
-						try (OutputStream os = c.openOutputStream(root, artifact.getFilePrefix())) {
-							IOUtil.copy(is, os);
+				if (kinds().contains(P2Kind.artifact))
+					if (c == availableCompressions.get(P2Kind.artifact).get(0))
+						deleteOldArtifact = false;
+					else
+						try (InputStream is = availableCompressions.get(P2Kind.artifact).get(0).openInputStream(root,
+								artifact.getFilePrefix())) {
+							try (OutputStream os = c.openOutputStream(root, artifact.getFilePrefix())) {
+								IOUtil.copy(is, os);
+							}
 						}
-					}
-				if (c == preferredMetadataCompression)
-					deleteOldMetadata = false;
-				else
-					try (InputStream is = preferredMetadataCompression.openInputStream(root,
-							metadata.getFilePrefix())) {
-						try (OutputStream os = c.openOutputStream(root, metadata.getFilePrefix())) {
-							IOUtil.copy(is, os);
+
+				if (kinds().contains(P2Kind.metadata))
+					if (c == availableCompressions.get(P2Kind.metadata).get(0))
+						deleteOldMetadata = false;
+					else
+						try (InputStream is = availableCompressions.get(P2Kind.metadata).get(0).openInputStream(root,
+								metadata.getFilePrefix())) {
+							try (OutputStream os = c.openOutputStream(root, metadata.getFilePrefix())) {
+								IOUtil.copy(is, os);
+							}
 						}
-					}
 			}
 
 			if (deleteOldArtifact)
-				Files.delete(
-						root.resolve(artifact.getFilePrefix() + "." + preferredArtifactCompression.getFileSuffix()));
+				Files.delete(root.resolve(artifact.getFilePrefix() + "."
+						+ availableCompressions.get(P2Kind.artifact).get(0).getFileSuffix()));
 
 			if (deleteOldMetadata)
-				Files.delete(
-						root.resolve(metadata.getFilePrefix() + "." + preferredMetadataCompression.getFileSuffix()));
+				Files.delete(root.resolve(metadata.getFilePrefix() + "."
+						+ availableCompressions.get(P2Kind.metadata).get(0).getFileSuffix()));
 
-			p2index.set(P2Kind.artifact.getProperty(), artifact.getFilePrefix(), compressions);
-			p2index.set(P2Kind.metadata.getProperty(), metadata.getFilePrefix(), compressions);
+			if (kinds().contains(P2Kind.artifact))
+				p2index.set(P2Kind.artifact.getProperty(), artifact.getFilePrefix(), compressions);
+			if (kinds().contains(P2Kind.metadata))
+				p2index.set(P2Kind.metadata.getProperty(), metadata.getFilePrefix(), compressions);
 			p2index.write(root);
 
-			availableCompressions.put(P2Kind.artifact, Arrays.asList(compressions));
-			availableCompressions.put(P2Kind.metadata, Arrays.asList(compressions));
+			for (P2Kind kind : kinds())
+				availableCompressions.put(kind, Arrays.asList(compressions));
 		}
 
 		@Override
@@ -388,36 +391,36 @@ public class P2RepositoryFactory {
 			return root;
 		}
 
-		final AbstractRepositoryFactory<A1> aFactory;
-		final AbstractRepositoryFactory<M1> mFactory;
+		private Set<P2Kind> kinds() {
+			return availableCompressions.keySet();
+		}
 
 		public final void save(DataCompression... compressions) throws IOException {
-			if (compressions.length == 0 && availableCompressions.get(P2Kind.artifact).isEmpty())
-				throw new IllegalStateException();
-			if (compressions.length == 0 && availableCompressions.get(P2Kind.metadata).isEmpty())
-				throw new IllegalStateException();
-			if (compressions.length != 0 && !availableCompressions.get(P2Kind.artifact).isEmpty())
-				throw new IllegalStateException();
-			if (compressions.length != 0 && !availableCompressions.get(P2Kind.metadata).isEmpty())
-				throw new IllegalStateException();
+			for (P2Kind kind : kinds()) {
+				if (compressions.length != 0 && !availableCompressions.get(kind).isEmpty())
+					throw new IllegalStateException();
+				if (compressions.length == 0 && availableCompressions.get(kind).isEmpty())
+					throw new IllegalStateException();
 
-			if (compressions.length != 0) {
-				availableCompressions.put(P2Kind.artifact, Arrays.asList(compressions));
-				availableCompressions.put(P2Kind.metadata, Arrays.asList(compressions));
+				availableCompressions.put(kind, Arrays.asList(compressions));
 			}
 
-			for (DataCompression c : availableCompressions.get(P2Kind.artifact)) {
-				p2index.set(P2RepositoryFactory.P2Kind.artifact.getProperty(), artifact.getFilePrefix(), c);
-				try (OutputStream outputStream = c.openOutputStream(root, artifact.getFilePrefix())) {
-					aFactory.write(a.getRepository(), outputStream);
+			if (kinds().contains(P2Kind.artifact))
+				for (DataCompression c : availableCompressions.get(P2Kind.artifact)) {
+					p2index.set(P2RepositoryFactory.P2Kind.artifact.getProperty(), artifact.getFilePrefix(), c);
+					try (OutputStream outputStream = c.openOutputStream(root, artifact.getFilePrefix())) {
+						artifactFactory.write(a.getRepository(), outputStream);
+					}
 				}
-			}
-			for (DataCompression c : availableCompressions.get(P2Kind.metadata)) {
-				p2index.set(P2RepositoryFactory.P2Kind.metadata.getProperty(), metadata.getFilePrefix(), c);
-				try (OutputStream outputStream = c.openOutputStream(root, metadata.getFilePrefix())) {
-					mFactory.write(m.getRepository(), outputStream);
+
+			if (kinds().contains(P2Kind.metadata))
+				for (DataCompression c : availableCompressions.get(P2Kind.metadata)) {
+					p2index.set(P2RepositoryFactory.P2Kind.metadata.getProperty(), metadata.getFilePrefix(), c);
+					try (OutputStream outputStream = c.openOutputStream(root, metadata.getFilePrefix())) {
+						metadataFactory.write(m.getRepository(), outputStream);
+					}
 				}
-			}
+
 			p2index.write(root);
 		}
 
@@ -428,20 +431,18 @@ public class P2RepositoryFactory {
 			implements P2CompositeRepository {
 
 		public P2CompositeRepositoryImpl(Path root, P2Index p2index,
-				Map<P2Kind, List<DataCompression>> availableCompressions,
-				BiFunction<Path, DataCompression, CompositeRepositoryFacade> artifactLoader,
-				BiFunction<Path, DataCompression, CompositeRepositoryFacade> metadataLoader) {
+				Map<P2Kind, List<DataCompression>> availableCompressions) {
 			super(P2Type.composite, root, p2index, availableCompressions, compositeArtifactRepositoryFactory,
-					compositeMetadataRepositoryFactory, artifactLoader, metadataLoader, null, null);
+					compositeMetadataRepositoryFactory, CompositeRepositoryFacadeImpl::new,
+					CompositeRepositoryFacadeImpl::new, null, null);
 		}
 
 		public P2CompositeRepositoryImpl(Path root, P2Index p2index,
-				Map<P2Kind, List<DataCompression>> availableCompressions,
-				BiFunction<Path, DataCompression, CompositeRepositoryFacade> artifactLoader,
-				BiFunction<Path, DataCompression, CompositeRepositoryFacade> metadataLoader,
-				CompositeRepositoryFacade a, CompositeRepositoryFacade m) {
+				Map<P2Kind, List<DataCompression>> availableCompressions, CompositeRepositoryFacade a,
+				CompositeRepositoryFacade m) {
 			super(P2Type.composite, root, p2index, availableCompressions, compositeArtifactRepositoryFactory,
-					compositeMetadataRepositoryFactory, artifactLoader, metadataLoader, a, m);
+					compositeMetadataRepositoryFactory, CompositeRepositoryFacadeImpl::new,
+					CompositeRepositoryFacadeImpl::new, a, m);
 		}
 
 		@Override
@@ -457,43 +458,47 @@ public class P2RepositoryFactory {
 		availableCompressions.put(P2Kind.artifact, Collections.emptyList());
 		availableCompressions.put(P2Kind.metadata, Collections.emptyList());
 
-		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions, compositeArtifactRepositoryLoader,
-				compositeMetadataRepositoryLoader,
+		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions,
 				new CompositeRepositoryFacadeImpl(path, compositeArtifactRepositoryFactory.createEmpty()),
 				new CompositeRepositoryFacadeImpl(path, compositeMetadataRepositoryFactory.createEmpty()));
 	}
 
-	public P2CompositeRepository loadComposite(Path path) throws IOException {
-		return (P2CompositeRepository) loadInternal(path, P2Type.composite);
+	static Set<P2Kind> parseKinds(P2Kind... kind) {
+		Preconditions.checkNotNull(kind);
+		if (kind.length == 0) {
+			return EnumSet.allOf(P2Kind.class);
+		} else {
+			Set<P2Kind> result = new HashSet<P2Kind>();
+			Collections.addAll(result, kind);
+			if (kind.length != result.size())
+				throw new IllegalArgumentException();
+			return result;
+		}
 	}
 
-	private final BiFunction<Path, DataCompression, CompositeRepositoryFacade> compositeArtifactRepositoryLoader = (
-			path, dc) -> {
-		try (InputStream is = dc.openInputStream(path, P2IndexType.compositeArtifacts.getFilePrefix())) {
-			return new CompositeRepositoryFacadeImpl(
-					path.resolve(P2IndexType.compositeArtifacts.getFilePrefix() + "." + dc.getFileSuffix()),
-					compositeArtifactRepositoryFactory.read(is));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	};
+	public P2Repository createContent(Path path, P2Kind... kind) throws IOException {
+		Set<P2Kind> kinds = parseKinds(kind);
+		P2Index p2index = new P2Index();
 
-	private final BiFunction<Path, DataCompression, CompositeRepositoryFacade> compositeMetadataRepositoryLoader = (
-			path, dc) -> {
-		try (InputStream is = dc.openInputStream(path, P2IndexType.compositeMetadata.getFilePrefix())) {
-			return new CompositeRepositoryFacadeImpl(
-					path.resolve(P2IndexType.compositeMetadata.getFilePrefix() + "." + dc.getFileSuffix()),
-					compositeMetadataRepositoryFactory.read(is));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	};
+		Map<P2Kind, List<DataCompression>> availableCompressions = new HashMap<>();
+		for (P2Kind k : kinds)
+			availableCompressions.put(k, Collections.emptyList());
+
+		return new P2RepositoryImpl(path, p2index, availableCompressions,
+				kinds.contains(P2Kind.artifact)
+						? new ArtifactRepositoryFacadeImpl(path, artifactRepositoryFactory.createEmpty()) : null,
+				kinds.contains(P2Kind.metadata)
+						? new MetadataRepositoryFacadeImpl(path, metadataRepositoryFactory.createEmpty()) : null);
+	}
+
+	public P2CompositeRepository loadComposite(Path path, P2Kind... kinds) throws IOException {
+		return (P2CompositeRepository) loadInternal(path, P2Type.composite, parseKinds(kinds));
+	}
 
 	private P2CompositeRepository loadComposite(Path path, P2Index p2index,
 			Map<P2Kind, List<DataCompression>> availableCompressions) throws IOException {
 
-		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions, compositeArtifactRepositoryLoader,
-				compositeMetadataRepositoryLoader);
+		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions);
 	}
 
 	public enum P2IndexType {
@@ -549,7 +554,7 @@ public class P2RepositoryFactory {
 		}
 	}
 
-	enum P2Kind {
+	public enum P2Kind {
 		artifact, metadata;
 
 		public String getProperty() {
@@ -557,11 +562,11 @@ public class P2RepositoryFactory {
 		}
 	}
 
-	public CommonP2Repository loadAny(Path path) throws IOException {
-		return loadInternal(path, null);
+	public CommonP2Repository loadAny(Path path, P2Kind... kinds) throws IOException {
+		return loadInternal(path, null, parseKinds(kinds));
 	}
 
-	private CommonP2Repository loadInternal(Path path, P2Type expectedType) throws IOException {
+	private CommonP2Repository loadInternal(Path path, P2Type expectedType, Set<P2Kind> kinds) throws IOException {
 		P2Index p2index;
 		try {
 			p2index = new P2Index(path);
@@ -569,13 +574,13 @@ public class P2RepositoryFactory {
 			throw new NoRepositoryFoundException("No repository with p2.index found at " + path, e);
 		}
 
-		P2Type type = p2index.identifyType();
+		P2Type type = p2index.identifyType(kinds);
 		if (expectedType != null && type != expectedType)
 			throw new IllegalArgumentException(
 					"Wrong repository type found at " + path + ". Expected " + expectedType + ", got " + type);
 
 		Map<P2Kind, List<DataCompression>> availableCompressions = new HashMap<>();
-		for (P2Kind kind : P2Kind.values()) {
+		for (P2Kind kind : kinds) {
 			List<DataCompression> compr = new ArrayList<>();
 			for (String suffix : p2index.getSuffixes(kind)) {
 				DataCompression[] all = compressions.values().stream().filter(p -> p.getP2IndexSuffix().equals(suffix))

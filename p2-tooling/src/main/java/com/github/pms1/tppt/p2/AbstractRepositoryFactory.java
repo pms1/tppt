@@ -69,6 +69,8 @@ public abstract class AbstractRepositoryFactory<T> {
 
 	abstract protected void normalize(T t);
 
+	abstract protected T createEmpty();
+
 	final protected void write(T t, OutputStream os) {
 
 		normalize(t);

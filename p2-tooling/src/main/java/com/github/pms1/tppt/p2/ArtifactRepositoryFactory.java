@@ -6,6 +6,9 @@ import javax.xml.bind.JAXBException;
 import org.codehaus.plexus.component.annotations.Component;
 
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
+import com.github.pms1.tppt.p2.jaxb.artifact.Artifacts;
+import com.github.pms1.tppt.p2.jaxb.artifact.Mappings;
+import com.github.pms1.tppt.p2.jaxb.artifact.Properties;
 import com.google.common.base.Throwables;
 
 @Component(role = ArtifactRepositoryFactory.class)
@@ -32,6 +35,21 @@ public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<Artifac
 
 	@Override
 	protected void normalize(ArtifactRepository t) {
+		Properties properties = t.getProperties();
+		if (properties != null)
+			properties.setSize(properties.getProperty().size());
+
+		Artifacts artifacts = t.getArtifacts();
+		if (artifacts != null)
+			artifacts.setSize(artifacts.getArtifact().size());
+
+		Mappings mappings = t.getMappings();
+		if (mappings != null)
+			mappings.setSize(mappings.getRule().size());
+	}
+
+	@Override
+	protected ArtifactRepository createEmpty() {
 		throw new UnsupportedOperationException();
 	}
 
