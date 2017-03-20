@@ -34,12 +34,12 @@ import org.apache.maven.shared.dependency.graph.DependencyNode;
 import org.apache.maven.shared.dependency.graph.traversal.DependencyNodeVisitor;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.p2.CompositeRepositoryFacade;
 import com.github.pms1.tppt.p2.DataCompression;
 import com.github.pms1.tppt.p2.P2CompositeRepository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
-import com.github.pms1.tppt.p2.jaxb.composite.Property;
 
 /**
  * A maven mojo for creating a p2 composite repository from maven dependencies
@@ -140,8 +140,10 @@ public class CreateCompositeRepository extends AbstractMojo {
 
 			P2CompositeRepository composite = factory.createComposite(repoOut);
 
-			CompositeRepository artifactRepository = composite.getArtifactRepositoryFacade().getRepository();
-			CompositeRepository metadataRepository = composite.getMetadataRepositoryFacade().getRepository();
+			CompositeRepositoryFacade artifactRepositoryFacade = composite.getArtifactRepositoryFacade();
+			CompositeRepositoryFacade metadataRepositoryFacade = composite.getMetadataRepositoryFacade();
+			CompositeRepository artifactRepository = artifactRepositoryFacade.getRepository();
+			CompositeRepository metadataRepository = metadataRepositoryFacade.getRepository();
 
 			artifactRepository.setName("name1");
 			metadataRepository.setName("name2");
@@ -166,14 +168,8 @@ public class CreateCompositeRepository extends AbstractMojo {
 			LocalDateTime now = LocalDateTime.now();
 			long ts = now.toEpochSecond(ZoneOffset.UTC) * 1000 + now.getNano() / 1_000_000;
 
-			Property p = new Property();
-			p.setName("p2.timestamp");
-			p.setValue(Long.toString(ts));
-			artifactRepository.getProperties().getProperty().add(p);
-			p = new Property();
-			p.setName("p2.timestamp");
-			p.setValue(Long.toString(ts));
-			metadataRepository.getProperties().getProperty().add(p);
+			artifactRepositoryFacade.setTimestamp(ts);
+			metadataRepositoryFacade.setTimestamp(ts);
 
 			composite.save(raw);
 		} catch (MojoExecutionException e) {

@@ -65,28 +65,6 @@ public class DeploymentHelper {
 	@Requirement
 	private P2RepositoryFactory factory;
 
-	private Attribute findTimestamp(Document d) {
-
-		Attribute ts = null;
-
-		for (Element e : d.getRootElement().getChild("properties").getChildren("property")) {
-			Attribute attribute = e.getAttribute("name");
-			if (!attribute.getValue().equals("p2.timestamp"))
-				continue;
-
-			if (ts != null)
-				throw new IllegalStateException();
-			ts = e.getAttribute("value");
-			if (ts == null)
-				throw new IllegalArgumentException();
-		}
-
-		if (ts == null)
-			throw new IllegalArgumentException();
-
-		return ts;
-	}
-
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
 			
@@ -94,29 +72,7 @@ public class DeploymentHelper {
 
 			RepositoryFacade<?> artifactRepositoryFacade = repo.getArtifactRepositoryFacade();
 			
-			Optional<? extends Property> prop = artifactRepositoryFacade.getRepository().getProperties().getProperty().stream().filter(
-					p -> p.getName().equals("p2.timestamp")
-					).findAny();
-			
-			if(!prop.isPresent())
-				throw new Error();
-			
-			
-//			Path path = fs.getPath("artifacts.xml");
-//
-//			XMLParser parser = new XMLParser();
-//
-//			de.pdark.decentxml.Document d;
-//
-//			try (InputStream is = Files.newInputStream(path)) {
-//				d = parser.parse(new XMLIOSource(is));
-//			}
-//
-//			String ts = findTimestamp(d).getValue();
-
-			String ts = prop.get().getValue();
-			
-			long ts_ms = Long.parseLong(ts);
+			long ts_ms =artifactRepositoryFacade.getTimestamp();
 
 			return LocalDateTime.ofEpochSecond(ts_ms / 1000, (int) (ts_ms % 1000) * 1000000, ZoneOffset.UTC);
 		}
