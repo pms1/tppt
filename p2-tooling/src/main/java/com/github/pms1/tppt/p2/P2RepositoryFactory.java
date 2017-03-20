@@ -402,7 +402,8 @@ public class P2RepositoryFactory {
 				if (compressions.length == 0 && availableCompressions.get(kind).isEmpty())
 					throw new IllegalStateException();
 
-				availableCompressions.put(kind, Arrays.asList(compressions));
+				if (compressions.length != 0)
+					availableCompressions.put(kind, Arrays.asList(compressions));
 			}
 
 			if (kinds().contains(P2Kind.artifact))
