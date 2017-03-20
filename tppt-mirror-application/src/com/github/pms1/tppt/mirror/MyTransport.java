@@ -95,7 +95,8 @@ public class MyTransport extends Transport {
 
 					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));
 
-					// FIXME
+					// #9 should be able to specify somehow if validation is to
+					// be done
 					return Status.OK_STATUS;
 				} catch (NoSuchFileException e) {
 
@@ -104,7 +105,7 @@ public class MyTransport extends Transport {
 				if (offline == OfflineType.offline)
 					return OFFLINE_STATUS;
 
-				System.err.println(uri + " -> " + path);
+				System.err.println("Mirroring: " + uri + " -> " + path);
 
 				try (CloseableHttpResponse response = httpClient.execute(get)) {
 
