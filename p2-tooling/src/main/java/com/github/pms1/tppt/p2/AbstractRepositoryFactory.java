@@ -14,13 +14,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
 import javax.xml.bind.ValidationEventHandler;
 import javax.xml.namespace.QName;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
@@ -98,18 +92,6 @@ public abstract class AbstractRepositoryFactory<T> {
 
 			node.insertBefore(instruction, node.getFirstChild());
 
-			if (false) {
-				// write the content into xml file
-				// FIXME: use a formatter that looks like eclipse generated
-				// repositories
-				TransformerFactory transformerFactory = TransformerFactory.newInstance();
-				Transformer transformer = transformerFactory.newTransformer();
-				DOMSource source = new DOMSource(r.getNode());
-				transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-				transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-				transformer.transform(source, new StreamResult(os));
-			}
-
 			DomRendererOptions options = new DomRendererOptions();
 			options.quote = '\'';
 			options.indent = "  ";
@@ -133,7 +115,7 @@ public abstract class AbstractRepositoryFactory<T> {
 				renderer.render(pw, node, options);
 			}
 
-		} catch (JAXBException | TransformerException | IOException e) {
+		} catch (JAXBException | IOException e) {
 			throw new RuntimeException(e);
 		}
 
