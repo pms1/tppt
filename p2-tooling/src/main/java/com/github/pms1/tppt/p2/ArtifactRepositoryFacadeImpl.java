@@ -17,7 +17,8 @@ import com.github.pms1.tppt.p2.jaxb.artifact.Property;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
-class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
+class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade<ArtifactRepository>
+		implements ArtifactRepositoryFacade {
 	private final ArtifactRepository data;
 
 	private Map<ArtifactId, ArtifactFacade> asMap;
@@ -25,6 +26,7 @@ class ArtifactRepositoryFacadeImpl implements ArtifactRepositoryFacade {
 	private final Path path;
 
 	public ArtifactRepositoryFacadeImpl(Path path, ArtifactRepository foo) {
+		super(Property::new);
 		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;

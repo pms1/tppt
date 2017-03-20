@@ -4,4 +4,8 @@ public interface Property {
 	String getName();
 
 	String getValue();
+
+	void setValue(String value);
+
+	void setName(String string);
 }

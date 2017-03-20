@@ -8,4 +8,8 @@ public interface RepositoryFacade<T extends Repository> {
 	T getRepository();
 
 	Path getPath();
+
+	void setTimestamp(long time);
+
+	Long getTimestamp();
 }
