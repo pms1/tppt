@@ -180,17 +180,21 @@ public class CreateFeaturesMojo extends AbstractMojo {
 				if (!provided.isPresent())
 					continue;
 
+				Optional<Provided> fragment = u.getProvides().getProvided().stream()
+						.filter(p -> p.getNamespace().equals("osgi.fragment")).findAny();
+
 				if (u.getArtifacts().getArtifact().size() != 1)
 					throw new Error();
 
 				MetadataArtifact a = Iterables.getOnlyElement(u.getArtifacts().getArtifact());
 				Path path = p2.getArtifactRepositoryFacade().getArtifactUri(new ArtifactId(a.getId(), a.getVersion()));
 
-				// FIXME: fragments
 				Plugin p = new Plugin();
 				p.id = provided.get().getName();
 				p.version = provided.get().getVersion().toString();
 				scanPlugin(path, p);
+				if (fragment.isPresent())
+					p.fragment = true;
 				p.unpack = false;
 				plugins.add(p);
 			}

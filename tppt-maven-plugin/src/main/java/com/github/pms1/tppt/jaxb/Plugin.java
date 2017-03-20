@@ -17,5 +17,9 @@ public class Plugin {
 	public String version;
 
 	@XmlAttribute
+	public Boolean fragment;
+
+	@XmlAttribute
 	public Boolean unpack;
+
 }
