@@ -203,6 +203,13 @@ public class RepositoryComparator {
 		}
 	}
 
+	static class RepositoryTimestampDelta extends FileDelta {
+		RepositoryTimestampDelta(FileId id1, long left, FileId id2, long right) {
+			super(id1, id2, "Repository timestamp changed: {0} -> {1}", left, right);
+		}
+
+	}
+
 	static class RepositoryAdded extends FileDelta {
 		RepositoryAdded(FileId id1, Child left, FileId id2, Child right) {
 			super(id1, id2, "Repository added: {0}", right);
@@ -440,10 +447,10 @@ public class RepositoryComparator {
 								}
 							}
 						}
-						// FIXME: here?
 						switch (p.getPath()) {
 						case "//properties/property[p2.timestamp]/value":
-							return null;
+							return new RepositoryTimestampDelta(arf1id, Long.parseLong((String) m1), arf2id,
+									Long.parseLong((String) m2));
 						}
 
 						throw new Error(p + " " + change + " " + m1 + " " + m2);
@@ -455,13 +462,15 @@ public class RepositoryComparator {
 
 		List<String> incompatibleChanges = new ArrayList<>();
 
-		for (FileDelta d : dest) {
-			// if (!changes.stream().anyMatch(c -> c.accept(d)))
-			incompatibleChanges.add(render(d));
-		}
+		List<Change> changes = new ArrayList<>();
+		changes.add(new RepositoryTimestampChange());
 
-		// for (Change c : changes)
-		// c.check(incompatibleChanges::add);
+		for (FileDelta d : dest)
+			if (!changes.stream().anyMatch(c -> c.accept(d)))
+				incompatibleChanges.add(render(d));
+
+		for (Change c : changes)
+			c.check(incompatibleChanges::add);
 
 		incompatibleChanges.forEach(p -> logger.info("Incompatible change: " + p));
 
@@ -534,6 +543,7 @@ public class RepositoryComparator {
 		FileId r2id = FileId.newRoot(r2.getPath());
 
 		List<Change> changes = new LinkedList<>();
+		changes.add(new RepositoryTimestampChange());
 		for (Supplier<Change> a : acceptedChanges)
 			changes.add(a.get());
 
@@ -586,10 +596,10 @@ public class RepositoryComparator {
 					}
 				}
 
-				// FIXME: here?
 				switch (p.getPath()) {
 				case "//properties/property[p2.timestamp]/value":
-					return null;
+					return new RepositoryTimestampDelta(mdf1id, Long.parseLong((String) m1), mdf2id,
+							Long.parseLong((String) m2));
 				}
 
 				return new MetadataDelta(mdf1id, mdf2id, p, change);
@@ -640,7 +650,7 @@ public class RepositoryComparator {
 
 						OPath2 rel = p.subPath(4);
 						if (rel == null) {
-							return new ArtifactsDelta(mdf1id, mdf2id, p, change);
+							return new ArtifactsDelta(r1id, r2id, p, change);
 						} else {
 							Artifact uleft = (Artifact) p.subPath(3, 4).getLeft();
 							Artifact uright = (Artifact) p.subPath(3, 4).getRight();
@@ -649,7 +659,7 @@ public class RepositoryComparator {
 							case ADDED:
 							case REMOVED:
 							case CHANGED:
-								return new ArtifactDelta(mdf1id, uleft, mdf2id, uright, rel);
+								return new ArtifactDelta(r1id, uleft, r2id, uright, rel);
 							default:
 								throw new Error(change + " " + rel.getPath());
 							}
@@ -658,13 +668,13 @@ public class RepositoryComparator {
 					}
 				}
 
-				// FIXME: here?
 				switch (p.getPath()) {
 				case "//properties/property[p2.timestamp]/value":
-					return null;
+					return new RepositoryTimestampDelta(r1id, Long.parseLong((String) m1), r2id,
+							Long.parseLong((String) m2));
 				}
 
-				return new ArtifactsDelta(mdf1id, mdf2id, p, change);
+				return new ArtifactsDelta(r1id, r2id, p, change);
 			}
 
 		}).build();
@@ -800,7 +810,7 @@ public class RepositoryComparator {
 		}
 	}
 
-	class FeatureVersionChange extends ArtifactVersionChange {
+	static class FeatureVersionChange extends ArtifactVersionChange {
 		private final String featureId;
 		private final FileId file1;
 		private final FileId file2;
@@ -911,7 +921,6 @@ public class RepositoryComparator {
 					addedUnit.add(d.right);
 					return true;
 				}
-				System.err.println("FEATURE REQ ADD2 " + render(d));
 
 				return false;
 			} else if (delta instanceof RequiredRemoved) {
@@ -1237,6 +1246,19 @@ public class RepositoryComparator {
 					incompatibleChanges.accept("Only added in artifacts: " + u);
 			}
 		}
+	}
+
+	static class RepositoryTimestampChange extends Change {
+
+		@Override
+		boolean accept(FileDelta delta) {
+			return delta instanceof RepositoryTimestampDelta;
+		}
+
+		@Override
+		void check(Consumer<String> change) {
+		}
+
 	}
 
 	static class BundleVersionChange extends ArtifactVersionChange {
