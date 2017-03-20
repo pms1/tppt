@@ -148,13 +148,13 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		if (project.getName() == null)
-			throw new Error("not supposed to happen");
-
 		try {
+			if (project.getName() == null)
+				throw new MojoExecutionException("Not supposed to happen: ${project.name} is null");
+
 			final String buildQualifier = project.getProperties().getProperty("buildQualifier");
 			if (Strings.isNullOrEmpty(buildQualifier))
-				throw new MojoExecutionException("FIXME");
+				throw new MojoExecutionException("Project does not have build qualifier set");
 
 			Version unqualifiedVersion = MavenVersion.parseString(project.getVersion()).getOSGiVersion();
 
