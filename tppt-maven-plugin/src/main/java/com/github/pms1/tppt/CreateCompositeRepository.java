@@ -145,8 +145,8 @@ public class CreateCompositeRepository extends AbstractMojo {
 			CompositeRepository artifactRepository = artifactRepositoryFacade.getRepository();
 			CompositeRepository metadataRepository = metadataRepositoryFacade.getRepository();
 
-			artifactRepository.setName("name1");
-			metadataRepository.setName("name2");
+			artifactRepository.setName(project.getName());
+			metadataRepository.setName(project.getName());
 
 			Path localPath = deployHelp.getPath(project, LocalDateTime.now());
 

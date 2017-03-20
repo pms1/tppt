@@ -289,8 +289,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-publishArtifacts", //
 					"-append", "true", //
-					"-metadataRepositoryName", "tppt", //
-					"-artifactRepositoryName", "tppt");
+					"-metadataRepositoryName", project.getName(), //
+					"-artifactRepositoryName", project.getName());
 			if (exitCode != 0)
 				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
 

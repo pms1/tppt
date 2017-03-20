@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>r2</artifactId>
 	<packaging>tppt-repository</packaging>
+	<name>Project R2</name>
 
 	<dependencies>
 		<dependency>

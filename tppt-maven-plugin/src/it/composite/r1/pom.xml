@@ -8,7 +8,8 @@
 	</parent>
 	<artifactId>r1</artifactId>
 	<packaging>tppt-repository</packaging>
-
+	<name>Project R1</name>
+	
 	<dependencies>
 		<dependency>
 			<groupId>net.sf.jopt-simple</groupId>

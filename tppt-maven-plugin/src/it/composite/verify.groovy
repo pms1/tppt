@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 def l = new File(basedir, 'rcomp/target/repository').list();
 Arrays.sort(l);
 assert l == [
@@ -5,6 +7,50 @@ assert l == [
 	'compositeContent.jar',
 	'p2.index'
 ]
+
+def text
+def zf;
+
+text = null
+zf = new ZipFile(new File(basedir,"r1/target/repository/artifacts.jar"));
+zf.entries().each {
+	switch(it.name) {
+		case "artifacts.xml":
+			text=new XmlSlurper().parseText(zf.getInputStream(it).text);
+	}
+}
+assert text.'@name' == 'Project R1'
+
+text = null
+zf = new ZipFile(new File(basedir,"r1/target/repository/content.jar"));
+zf.entries().each {
+	switch(it.name) {
+		case "content.xml":
+			text=new XmlSlurper().parseText(zf.getInputStream(it).text);
+	}
+}
+assert text.'@name' == 'Project R1'
+
+
+text = null
+zf = new ZipFile(new File(basedir,"rcomp/target/repository/compositeArtifacts.jar"));
+zf.entries().each {
+	switch(it.name) {
+		case "compositeArtifacts.xml":
+			text=new XmlSlurper().parseText(zf.getInputStream(it).text);
+	}
+}
+assert text.'@name' == 'Project Composite'
+
+text = null
+zf = new ZipFile(new File(basedir,"rcomp/target/repository/compositeContent.jar"));
+zf.entries().each {
+	switch(it.name) {
+		case "compositeContent.xml":
+			text=new XmlSlurper().parseText(zf.getInputStream(it).text);
+	}
+}
+assert text.'@name' == 'Project Composite'
 
 def f = new File(basedir ,'../../deploymentTarget');
 

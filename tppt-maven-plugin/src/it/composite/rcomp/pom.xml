@@ -8,6 +8,7 @@
 	</parent>
 	<artifactId>rcomp</artifactId>
 	<packaging>tppt-composite-repository</packaging>
+	<name>Project Composite</name>
 
 	<dependencies>
 		<dependency>
