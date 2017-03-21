@@ -237,6 +237,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 			P2Repository repository = p2repositoryFactory.createContent(repoCategories, P2Kind.metadata);
 
 			MetadataRepository repo = repository.getMetadataRepositoryFacade().getRepository();
+			repo.setName("Categories for " + project.getName());
 
 			Unit u = new Unit();
 
