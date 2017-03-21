@@ -2,8 +2,6 @@ package com.github.pms1.tppt.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -17,10 +15,8 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
@@ -33,9 +29,6 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-import com.github.pms1.tppt.core.InterpolatedString;
-import com.github.pms1.tppt.core.RepositoryPathMatcher;
-import com.github.pms1.tppt.core.RepositoryPathPattern;
 import com.github.pms1.tppt.core.InterpolatedString.Visitor;
 import com.github.pms1.tppt.p2.ArtifactId;
 import com.github.pms1.tppt.p2.ArtifactRepositoryFacade;
@@ -48,17 +41,10 @@ import com.github.pms1.tppt.p2.P2RepositoryFactory.P2IndexType;
 import com.github.pms1.tppt.p2.P2RepositoryVisitor;
 import com.github.pms1.tppt.p2.PathByteSource;
 import com.github.pms1.tppt.p2.RepositoryFacade;
-import com.github.pms1.tppt.p2.jaxb.Property;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteSource;
-
-import de.pdark.decentxml.Attribute;
-import de.pdark.decentxml.Document;
-import de.pdark.decentxml.Element;
-import de.pdark.decentxml.XMLIOSource;
-import de.pdark.decentxml.XMLParser;
 
 @Component(role = DeploymentHelper.class)
 public class DeploymentHelper {
@@ -67,12 +53,12 @@ public class DeploymentHelper {
 
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
-			
+
 			CommonP2Repository repo = factory.loadAny(fs.getPath("/"));
 
 			RepositoryFacade<?> artifactRepositoryFacade = repo.getArtifactRepositoryFacade();
-			
-			long ts_ms =artifactRepositoryFacade.getTimestamp();
+
+			long ts_ms = artifactRepositoryFacade.getTimestamp();
 
 			return LocalDateTime.ofEpochSecond(ts_ms / 1000, (int) (ts_ms % 1000) * 1000000, ZoneOffset.UTC);
 		}
@@ -96,7 +82,7 @@ public class DeploymentHelper {
 			throw new MojoExecutionException("foo", e1);
 		}
 	}
-	
+
 	public Path getPath(MavenProject p, LocalDateTime timestamp) throws MojoExecutionException {
 		Preconditions.checkNotNull(p);
 
@@ -245,7 +231,7 @@ public class DeploymentHelper {
 		files.add(P2RepositoryFactory.P2INDEX);
 
 		repo.accept(new P2RepositoryVisitor<Void>() {
-			
+
 			@Override
 			public Void visit(P2CompositeRepository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
@@ -253,14 +239,14 @@ public class DeploymentHelper {
 
 				for (DataCompression dc : repo.getMetadataDataCompressions())
 					files.add(P2IndexType.compositeMetadata.getFilePrefix() + "." + dc.getFileSuffix());
-				
+
 				return null;
 			}
-			
+
 			@Override
 			public Void visit(P2Repository repo) {
 				for (DataCompression dc : repo.getArtifactDataCompressions())
-					files.add(P2IndexType.artifacts.getFilePrefix()  + "." + dc.getFileSuffix());
+					files.add(P2IndexType.artifacts.getFilePrefix() + "." + dc.getFileSuffix());
 
 				for (DataCompression dc : repo.getMetadataDataCompressions())
 					files.add(P2IndexType.metadata.getFilePrefix() + "." + dc.getFileSuffix());
@@ -269,28 +255,30 @@ public class DeploymentHelper {
 					ArtifactRepositoryFacade facade;
 					facade = repo.getArtifactRepositoryFacade();
 					for (ArtifactId e : facade.getArtifacts().keySet())
-						files.add(repo.getPath().relativize(facade.getArtifactUri(e)).toString().replace(File.separatorChar, '/'));
+						files.add(repo.getPath().relativize(facade.getArtifactUri(e)).toString()
+								.replace(File.separatorChar, '/'));
 				} catch (IOException e1) {
-					throw new RuntimeException(e1); 
+					throw new RuntimeException(e1);
 				}
 
 				return null;
 			}
 		});
-	
+
 		return files;
 	}
 
-	private void doInstall(Path sourcePath, Set<String> sourceFiles, Path targetPath, Set<String> targetFiles) throws IOException {
+	private void doInstall(Path sourcePath, Set<String> sourceFiles, Path targetPath, Set<String> targetFiles)
+			throws IOException {
 
 		TreeSet<Path> toRemove = new TreeSet<>();
-		
+
 		for (String p : Sets.union(sourceFiles, targetFiles)) {
 			Path p1 = sourcePath.resolve(p);
 			Path p2 = targetPath.resolve(p);
 
 			Files.createDirectories(p2.getParent());
-			
+
 			if (sourceFiles.contains(p) && targetFiles.contains(p)) {
 				ByteSource bs1 = new PathByteSource(p1);
 				ByteSource bs2 = new PathByteSource(p2);
@@ -307,18 +295,18 @@ public class DeploymentHelper {
 				toRemove.add(p2.getParent());
 			}
 		}
-		
+
 		// TODO: remove directories that got empty // toRemove
 	}
-	
+
 	public void replace(CommonP2Repository source, CommonP2Repository target) throws IOException {
 		Preconditions.checkNotNull(source);
 		Preconditions.checkNotNull(target);
-		
+
 		Set<String> f1 = getFiles(source);
 		Set<String> f2 = getFiles(target);
 
-		doInstall(source.getPath(),f1,target.getPath(),f2);
+		doInstall(source.getPath(), f1, target.getPath(), f2);
 	}
 
 	public void install(CommonP2Repository source, Path target) throws IOException {
@@ -327,7 +315,7 @@ public class DeploymentHelper {
 
 		Set<String> f1 = getFiles(source);
 
-		doInstall(source.getPath(),f1,target,Collections.emptySet());
-		
+		doInstall(source.getPath(), f1, target, Collections.emptySet());
+
 	}
 }
