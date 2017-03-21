@@ -124,9 +124,10 @@ public class MirrorMojo extends AbstractMojo {
 
 				int exitCode;
 				try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-					exitCode = createRunner().run(bais, "-application", "tppt-mirror-application.id1", "-");
+					exitCode = createRunner().run(bais, "-application", "tppt-mirror-application.id1", "-consoleLog",
+							"-");
 					if (exitCode != 0)
-						throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+						throw new MojoExecutionException("mirror failed: exitCode=" + exitCode);
 				}
 			}
 

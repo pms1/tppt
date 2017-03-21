@@ -19,11 +19,15 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.codehaus.plexus.logging.Logger;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
+import com.google.common.base.Preconditions;
+
 public class EquinoxRunner {
+	private final Logger logger;
 
 	static class CopyThread extends Thread {
 		private final InputStream is;
@@ -97,13 +101,16 @@ public class EquinoxRunner {
 	}
 
 	static String toUri(Path p) {
-		// return "file:" + p.toString().replace('\\', '/');
 		return p.toUri().toString();
 	}
 
 	private final Set<Plugin> plugins;
 
-	EquinoxRunner(Set<Plugin> plugins) {
+	EquinoxRunner(Logger logger, Set<Plugin> plugins) {
+		Preconditions.checkNotNull(logger);
+		this.logger = logger;
+		Preconditions.checkNotNull(plugins);
+		Preconditions.checkArgument(!plugins.isEmpty());
 		this.plugins = plugins;
 	}
 
@@ -164,8 +171,9 @@ public class EquinoxRunner {
 			command.add(getPlugin(plugins, "org.eclipse.equinox.launcher").p.toString());
 			command.add("-configuration");
 			command.add(configuration.toString());
-			// command.add("-debug");
-			// command.add("-consoleLog");
+			if (logger.isDebugEnabled())
+				command.add("-debug");
+			command.add("-consoleLog");
 			command.add("-nosplash");
 			Collections.addAll(command, args);
 			System.err.println(command);

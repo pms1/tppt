@@ -7,12 +7,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.Logger;
 import org.osgi.framework.BundleException;
 
 import com.github.pms1.tppt.EquinoxRunner.Plugin;
 
 @Component(role = EquinoxRunnerFactory.class)
 public class EquinoxRunnerFactory {
+
+	@Requirement
+	private Logger logger;
 
 	class EquinoxRunnerBuilderImpl implements EquinoxRunnerBuilder {
 
@@ -44,7 +49,7 @@ public class EquinoxRunnerFactory {
 
 			plugins.addAll(bundles);
 
-			return new EquinoxRunner(plugins);
+			return new EquinoxRunner(logger, plugins);
 		}
 
 		@Override
