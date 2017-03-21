@@ -1,6 +1,6 @@
 import java.util.zip.ZipFile
 
-def zf = new ZipFile(new File(basedir,"target/mavenrepo-nonbundle-dependency-0.0.0-SNAPSHOT.zip"));
+def zf = new ZipFile(new File(basedir,"target/bnd-for-artifact-0.0.0-SNAPSHOT.zip"));
 try {
 	assert zf.getEntry("plugins/bar_3.0.0.jar")
 } finally {
