@@ -184,7 +184,9 @@ project.properties.setProperty('deploymentTarget',java.nio.file.Paths.get(projec
 
 					<postBuildHookScript>verify.groovy</postBuildHookScript>
 					
-					<mavenOpts>-Dtppt.deploymentTarget=${deploymentTarget}</mavenOpts>
+					<properties>
+						<tppt.deploymentTarget>${deploymentTarget}</tppt.deploymentTarget>
+					</properties>
 				</configuration>
 				<executions>
 					<execution>
