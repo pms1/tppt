@@ -21,7 +21,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -122,7 +121,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	}
 
 	static Plugin scanPlugin(Path p) throws IOException, BundleException, MojoExecutionException {
-		long compressedSize = 0;
 		long uncompressedSize = 0;
 		Map<String, String> manifest = null;
 
@@ -131,10 +129,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		try (ZipFile zf = new ZipFile(p.toFile())) {
 			for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
 				ZipEntry entry = e.nextElement();
-
-				if (entry.getCompressedSize() == -1)
-					throw new Error();
-				compressedSize += entry.getCompressedSize();
 
 				if (entry.getSize() == -1)
 					throw new Error();
@@ -160,31 +154,42 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			return null;
 
 		if (elements.length != 1)
-			throw new MojoExecutionException("FIXME");
+			throw new MojoExecutionException(
+					"Unhandled: malformed " + Constants.BUNDLE_SYMBOLICNAME + " header: " + Arrays.toString(elements));
 		Plugin result = new Plugin();
 		result.id = elements[0].getValue();
 
 		elements = ManifestElement.parseHeader(Constants.BUNDLE_VERSION, manifest.get(Constants.BUNDLE_VERSION));
 		if (elements.length != 1)
-			throw new MojoExecutionException("FIXME");
+			throw new MojoExecutionException(
+					"Unhandled: malformed " + Constants.BUNDLE_VERSION + " header: " + Arrays.toString(elements));
 		result.version = elements[0].getValue();
-		result.download_size = compressedSize / 1024;
+		result.download_size = Files.size(p) / 1024;
 		result.install_size = uncompressedSize / 1024;
-		result.unpack = true;
 
 		return result;
 	}
 
-	private final static List<Name> binaryHeaders = Arrays
-			.asList(Constants.IMPORT_PACKAGE, //
-					Constants.REQUIRE_BUNDLE, //
-					Constants.REQUIRE_CAPABILITY, //
-					Constants.PROVIDE_CAPABILITY, //
-					Constants.EXPORT_PACKAGE, //
-					"Main-Class") // FIXME: use Name.xxx constant
-			.stream() //
-			.map(p -> new Name(p)) //
-			.collect(Collectors.toList());
+	/**
+	 * Headers that are in regular bundles, but must not be in source bundles.
+	 */
+	private final static List<Name> binaryHeaders;
+	static {
+		List<Name> names = new LinkedList<>();
+
+		names.add(Name.MAIN_CLASS);
+
+		Arrays.asList(Constants.IMPORT_PACKAGE, //
+				Constants.REQUIRE_BUNDLE, //
+				Constants.REQUIRE_CAPABILITY, //
+				Constants.PROVIDE_CAPABILITY, //
+				Constants.EXPORT_PACKAGE) //
+				.stream() //
+				.map(p -> new Name(p)) //
+				.forEach(names::add);
+
+		binaryHeaders = Collections.unmodifiableList(names);
+	}
 
 	// Implementation-Title: hibernate-core
 	// Implementation-Version: 5.2.3.Final
@@ -275,10 +280,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 					break;
 				default:
-					for (Artifact a2 : resolution.getArtifacts()) {
-						System.err.println("SOURCE " + a2 + " " + a2.isResolved() + " " + a2.getFile());
-					}
-					throw new Error("FIXME");
+					throw new MojoExecutionException(
+							"Unhandled: multiple source artifacts: " + resolution.getArtifacts());
 				}
 			}
 
@@ -323,13 +326,16 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			if (sourceBundle != null) {
 				ManifestElement[] elements = ManifestElement.parseHeader("Eclipse-SourceBundle", sourceBundle);
 				if (elements.length != 1)
-					throw new MojoExecutionException("FIXME");
+					throw new MojoExecutionException(
+							"Unhandled: malformed Eclipse-SourceBundle header: " + sourceBundle);
 				String sbundle = elements[0].getValue();
 				String sversion = elements[0].getAttribute("version");
 				if (!Objects.equals(plugin.id, sbundle))
-					throw new MojoExecutionException("FIXME " + plugin.id + " " + sbundle);
+					throw new MojoExecutionException(
+							"Unhandled: different bundle in Eclipse-SourceBundle header: " + plugin.id + " " + sbundle);
 				if (!Objects.equals(plugin.version, sversion))
-					throw new MojoExecutionException("FIXME " + plugin.version + " " + sversion);
+					throw new MojoExecutionException("Unhandled: different version in Eclipse-SourceBundle header: "
+							+ plugin.version + " " + sversion);
 
 				sourceHasHeaders = true;
 			}

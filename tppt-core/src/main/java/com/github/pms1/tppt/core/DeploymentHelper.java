@@ -308,11 +308,7 @@ public class DeploymentHelper {
 			}
 		}
 		
-		// FIXME: remove directories that got empty
-		if(false)
-		for(Path p : toRemove) {
-			throw new Error("p=" + p);
-		}
+		// TODO: remove directories that got empty // toRemove
 	}
 	
 	public void replace(CommonP2Repository source, CommonP2Repository target) throws IOException {
