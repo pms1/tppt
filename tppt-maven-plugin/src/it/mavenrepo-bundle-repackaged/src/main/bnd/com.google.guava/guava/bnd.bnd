@@ -1,0 +1,3 @@
+Import-Package: !javax.annotation,sun.misc;resolution:=optional,*
+Bundle-Version: 18.0.0
+Bundle-SymbolicName: guava.repackaged

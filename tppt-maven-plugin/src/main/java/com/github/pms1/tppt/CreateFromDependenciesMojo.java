@@ -244,8 +244,11 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			for (Artifact a : artifacts) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
-				if (plugin == null) {
-					plugin = createPlugin(a, repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
+				Path receipe = findReceipe(a);
+
+				if (plugin == null || receipe != null) {
+					plugin = createPlugin(a, receipe,
+							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 				} else {
 					Files.copy(a.getFile().toPath(),
 							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
@@ -395,28 +398,31 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		}
 	}
 
-	private Plugin createPlugin(Artifact a, Path resolve) throws Exception {
+	private Path findReceipe(Artifact a) {
+		Path noVersionPath = sourceDir.toPath().resolve(a.getGroupId()).resolve(a.getArtifactId());
+		Path versionPath = noVersionPath.resolve(a.getVersion());
+
+		for (Path path : new Path[] { versionPath, noVersionPath }) {
+			Path bndFile = path.resolve("bnd.bnd");
+
+			if (Files.isReadable(bndFile))
+				return bndFile;
+		}
+
+		return null;
+	}
+
+	private Plugin createPlugin(Artifact a, Path receipe, Path target) throws Exception {
 		try (Builder builder = new Builder()) {
 			builder.setTrace(getLog().isDebugEnabled());
 
 			Jar classesDirJar = new Jar(a.getFile());
 
-			Path noVersionPath = sourceDir.toPath().resolve(a.getGroupId()).resolve(a.getArtifactId());
-			Path versionPath = noVersionPath.resolve(a.getVersion());
-
-			Path receipe = null;
-			for (Path path : new Path[] { versionPath, noVersionPath }) {
-				Path bndFile = path.resolve("bnd.bnd");
-
-				if (Files.isReadable(bndFile)) {
-					builder.setProperties(path.toFile(), builder.loadProperties(bndFile.toFile()));
-					receipe = sourceDir.toPath().relativize(bndFile);
-					break;
-				}
-			}
+			if (receipe != null)
+				builder.setProperties(receipe.getParent().toFile(), builder.loadProperties(receipe.toFile()));
 
 			if (receipe != null)
-				getLog().info(a + ": Creating an OSGi bundle using '" + receipe + "'");
+				getLog().info(a + ": Creating an OSGi bundle using '" + sourceDir.toPath().relativize(receipe) + "'");
 			else
 				getLog().info(a + ": Creating an OSGi bundle");
 
@@ -436,9 +442,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			Jar j = builder.build();
 
-			j.write(resolve.toFile());
+			j.write(target.toFile());
 
-			return scanPlugin(resolve);
+			return scanPlugin(target);
 		}
 	}
 
