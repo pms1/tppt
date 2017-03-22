@@ -11,8 +11,14 @@ install:
     - mvn -Prelease -s .travis/settings.xml install -DskipTests=true -Dmaven.javadoc.skip=true -B
 
 deploy:
-    provider: script
+    - provider: script
     script: .travis/deploy.sh
+    on:
+        branch: master
+    - provider: script
+    script: .travis/deploy.sh
+    on:
+        branch: releases/*
 
 after_success:
     - mvn clean test jacoco:report coveralls:report
