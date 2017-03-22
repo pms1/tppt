@@ -12,13 +12,13 @@ install:
 
 deploy:
     - provider: script
-    script: .travis/deploy.sh
-    on:
-        branch: master
+      script: .travis/deploy.sh
+      on:
+          branch: master
     - provider: script
-    script: .travis/deploy.sh
-    on:
-        branch: releases/*
+      script: .travis/deploy.sh
+      on:
+          branch: releases/*
 
 after_success:
     - mvn clean test jacoco:report coveralls:report
