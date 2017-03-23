@@ -8,7 +8,8 @@ before_install:
     - echo "$GPG_OWNERTRUST" | base64 --decode | "$GPG_EXECUTABLE" --import-ownertrust
 
 install:
-    - mvn -Prelease -s .travis/settings.xml install -DskipTests=true -Dmaven.javadoc.skip=true -B
+    - gpg -q --passphrase "$GPG_PASSPHRASE" -d .travis/deploy-ssh-keys.tar.gpg | tar xf - -C $HOME/.ssh
+    - mvn -B -Prelease -s .travis/settings.xml install -DskipTests=true -Dmaven.javadoc.skip=true
 
 deploy:
     - provider: script
@@ -21,4 +22,4 @@ deploy:
           branch: releases/*
 
 after_success:
-    - mvn clean test jacoco:report coveralls:report
+    - mvn -B clean test site jacoco:report coveralls:report
