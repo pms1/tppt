@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DecomposedObject.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">p2-tooling</a> &gt; <a href="../index.html" class="el_bundle">object-comparator</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.ocomp</a> &gt; <span class="el_source">DecomposedObject.java</span></div><h1>DecomposedObject.java</h1><pre class="source lang-java linenums">package com.github.pms1.ocomp;
+
+import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
+
+import com.github.pms1.ocomp.ObjectComparator.OPath;
+import com.google.common.collect.LinkedListMultimap;
+
+<span class="nc" id="L11">public class DecomposedObject {</span>
+<span class="nc" id="L12">	LinkedListMultimap&lt;OPath, TypedObject&gt; decomposition = LinkedListMultimap.create();</span>
+
+	public boolean put(OPath content, Object value) {
+<span class="nc" id="L15">		return decomposition.put(content, new TypedObject(value));</span>
+	}
+
+	public boolean put(OPath content, Type type, Object value) {
+<span class="nc" id="L19">		Objects.requireNonNull(type);</span>
+<span class="nc" id="L20">		return decomposition.put(content, new TypedObject(type, value));</span>
+	}
+
+	public Set&lt;OPath&gt; keySet() {
+<span class="nc" id="L24">		return decomposition.keySet();</span>
+	}
+
+	public Collection&lt;TypedObject&gt; get(OPath key) {
+<span class="nc" id="L28">		return decomposition.get(key);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

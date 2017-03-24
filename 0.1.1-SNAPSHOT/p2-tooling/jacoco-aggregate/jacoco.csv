@@ -1,0 +1,71 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.NormalContext,46,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.FiltercompContext,59,0,6,0,13,0,12,0,9,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.ValueencodingContext,45,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Lexer,314,0,8,0,30,0,13,0,9,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.LeadkeycharContext,40,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.FiltertypeContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.OptionsContext,59,0,6,0,14,0,12,0,9,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.Utf1subsetContext,75,0,6,0,17,0,16,0,13,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.SimpleContext,53,0,6,0,12,0,11,0,8,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser,2212,0,71,0,486,0,76,0,36,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SimpleSearchFilter,25,0,0,0,9,0,5,0,5,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterParseException,5,0,0,0,2,0,1,0,1,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.ItemContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515BaseListener,57,0,0,0,55,0,55,0,55,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.FilterContext,51,0,6,0,12,0,11,0,8,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.AttributedescriptionContext,47,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.KeycharContext,55,0,6,0,13,0,12,0,9,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.NotContext,46,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.AttributetypeContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,AttributeDescription,13,0,0,0,5,0,3,0,3,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterEvaluator,13,0,0,0,3,0,2,0,2,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterParser,244,0,20,0,52,0,26,0,16,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,OrSearchFilter,13,0,0,0,5,0,3,0,3,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,NotSearchFilter,13,0,0,0,5,0,3,0,3,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.KeystringContext,51,0,6,0,12,0,11,0,8,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterEvaluator.new Object() {...},12,0,0,0,1,0,1,0,1,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterEvaluator.new SearchFilterVisitor() {...},92,0,12,0,14,0,11,0,5,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.FilterlistContext,54,0,6,0,13,0,12,0,9,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.FilterEOFContext,46,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.EqualContext,40,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterParser.new BaseErrorListener() {...},35,0,0,0,2,0,2,0,2,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterPrinter.new SearchFilterVisitor() {...},26,0,0,0,5,0,5,0,5,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.OptionContext,45,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterPrinter.new AttributeVisitor() {...},11,0,0,0,2,0,2,0,2,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,AndSearchFilter,13,0,0,0,5,0,3,0,3,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.OidContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterPrinter.new Object() {...},12,0,0,0,1,0,1,0,1,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,SearchFilterPrinter,160,0,6,0,33,0,11,0,8,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.AndContext,46,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515BaseVisitor,103,0,0,0,26,0,26,0,26,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.AttrContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.OrContext,46,0,6,0,11,0,10,0,7,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.DescrContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,FilterType,28,0,0,0,2,0,4,0,4,0
+p2-tooling/minimal-ldap-parser,com.github.pms1.ldap,Rfc4515Parser.AssertionvalueContext,41,0,6,0,10,0,9,0,6,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,TypedObject,27,0,0,0,11,0,4,0,4,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,TypedObjectComparator,3,0,0,0,1,0,1,0,1,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher.new Object() {...},40,0,0,0,1,0,1,0,1,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator,512,0,64,0,96,0,42,0,10,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,DecomposedObject,37,0,0,0,7,0,5,0,5,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectDelta,54,0,2,0,11,0,4,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,DecomposerMatchers,22,0,0,0,4,0,5,0,5,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher,231,0,33,0,52,0,22,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparatorBuilder,79,0,0,0,18,0,9,0,9,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher.ParseState,68,0,0,0,2,0,4,0,4,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher.AnyIndexMatcher,15,0,4,0,2,0,4,0,2,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ComparatorMatchers,11,0,0,0,2,0,3,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.OPath,113,0,14,0,26,0,16,0,9,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.DeltaCreator,14,0,0,0,2,0,2,0,2,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.OPath2,208,0,18,0,42,0,20,0,11,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher.IndexMatcher,13,0,0,0,2,0,1,0,1,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,OPathMatcher.NameMatcher,21,0,2,0,6,0,3,0,2,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparatorBuilder.new ObjectComparator.DecomposerFactory() {...},12,0,0,0,2,0,2,0,2,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new ObjectComparator.CompararerFactory() {...},48,0,6,0,15,0,6,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new ObjectComparator.CompararerFactory() {...},18,0,4,0,5,0,5,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.ChangeType,48,0,0,0,2,0,4,0,4,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new Decomposer() {...},34,0,2,0,7,0,3,0,2,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new ObjectComparator.DecomposerFactory() {...},97,0,12,0,20,0,9,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new ObjectComparator.CompararerFactory() {...},22,0,4,0,8,0,5,0,3,0
+p2-tooling/object-comparator,com.github.pms1.ocomp,ObjectComparator.new ObjectComparator.DecomposerFactory() {...},45,0,4,0,9,0,5,0,3,0
