@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MyTransport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">tppt-mirror-application</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.mirror</a> &gt; <span class="el_source">MyTransport.java</span></div><h1>MyTransport.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.mirror;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ConnectException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import javax.xml.bind.JAXB;
+
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHeaders;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.utils.DateUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.equinox.internal.p2.repository.AuthenticationFailedException;
+import org.eclipse.equinox.internal.p2.repository.DownloadStatus;
+import org.eclipse.equinox.internal.p2.repository.Transport;
+import org.eclipse.equinox.p2.core.ProvisionException;
+import org.eclipse.equinox.p2.repository.IRepository;
+import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
+
+import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
+import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
+import com.github.pms1.tppt.mirror.jaxb.Mirror;
+import com.github.pms1.tppt.mirror.jaxb.Mirrors;
+
+@SuppressWarnings(&quot;restriction&quot;)
+public class MyTransport extends Transport {
+	private final static int BUFFER_SIZE = 4096;
+
+	private final Path root;
+
+	private final OfflineType offline;
+
+	private final StatsType stats;
+
+	// see p2's OfflineTransport
+<span class="nc" id="L64">	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, &quot;offline&quot;);</span>
+
+<span class="nc" id="L66">	public MyTransport(Path root, OfflineType offline, StatsType stats) {</span>
+<span class="nc" id="L67">		Objects.requireNonNull(root);</span>
+<span class="nc" id="L68">		this.root = root;</span>
+<span class="nc" id="L69">		this.offline = offline;</span>
+<span class="nc" id="L70">		this.stats = stats;</span>
+<span class="nc" id="L71">	}</span>
+
+	@Override
+	public IStatus download(URI toDownload, OutputStream target, long startPos, IProgressMonitor monitor) {
+		// does not seem to be used by p2 at all
+<span class="nc" id="L76">		throw new UnsupportedOperationException();</span>
+	}
+
+	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
+		try {
+<span class="nc" id="L81">			Files.createDirectories(path.getParent());</span>
+<span class="nc" id="L82">		} catch (IOException e) {</span>
+<span class="nc" id="L83">			throw new Error(&quot;Could not create directories: &quot; + path.getParent() + &quot;: &quot; + e, e);</span>
+		}
+
+		IStatus result;
+
+		try {
+<span class="nc" id="L89">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
+
+<span class="nc" id="L91">				HttpGet get = new HttpGet(uri);</span>
+
+				try {
+<span class="nc" id="L94">					FileTime ft = Files.getLastModifiedTime(path);</span>
+
+<span class="nc" id="L96">					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));</span>
+
+					// #9 should be able to specify somehow if validation is to
+					// be done
+<span class="nc" id="L100">					return Status.OK_STATUS;</span>
+<span class="nc" id="L101">				} catch (NoSuchFileException e) {</span>
+
+				}
+
+<span class="nc bnc" id="L105" title="All 2 branches missed.">				if (offline == OfflineType.offline)</span>
+<span class="nc" id="L106">					return OFFLINE_STATUS;</span>
+
+<span class="nc" id="L108">				System.err.println(&quot;Mirroring: &quot; + uri + &quot; -&gt; &quot; + path);</span>
+
+<span class="nc" id="L110">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
+
+<span class="nc" id="L112">					HttpEntity entity = response.getEntity();</span>
+<span class="nc bnc" id="L113" title="All 5 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
+					case HttpStatus.SC_UNAUTHORIZED:
+<span class="nc" id="L115">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
+<span class="nc" id="L116">								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, &quot;authentication failed &quot; + uri,</span>
+<span class="nc" id="L117">								null);</span>
+<span class="nc" id="L118">						break;</span>
+					case HttpStatus.SC_OK:
+<span class="nc" id="L120">						try (OutputStream out = Files.newOutputStream(path)) {</span>
+
+<span class="nc" id="L122">							InputStream is = entity.getContent();</span>
+
+<span class="nc" id="L124">							long total = entity.getContentLength();</span>
+<span class="nc" id="L125">							String totalc = convert(total);</span>
+<span class="nc" id="L126">							monitor.beginTask(null,</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">									(total &lt; 0 || total &gt; Integer.MAX_VALUE) ? IProgressMonitor.UNKNOWN : (int) total);</span>
+
+<span class="nc" id="L129">							byte[] buf = new byte[BUFFER_SIZE];</span>
+<span class="nc" id="L130">							long done = 0;</span>
+<span class="nc" id="L131">							long start = System.currentTimeMillis();</span>
+							for (;;) {
+<span class="nc" id="L133">								int r = is.read(buf);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">								if (r == -1)</span>
+<span class="nc" id="L135">									break;</span>
+<span class="nc" id="L136">								out.write(buf, 0, r);</span>
+<span class="nc" id="L137">								done += r;</span>
+
+								// monitor handling as seen in
+								// org.eclipse.equinox.internal.p2.transport.ecf.FileReader
+<span class="nc" id="L141">								monitor.worked(r);</span>
+
+<span class="nc" id="L143">								long now = System.currentTimeMillis();</span>
+
+<span class="nc" id="L145">								int ms = (int) (now - start);</span>
+
+								int rate;
+
+<span class="nc bnc" id="L149" title="All 2 branches missed.">								if (ms == 0)</span>
+<span class="nc" id="L150">									rate = 0;</span>
+								else
+<span class="nc" id="L152">									rate = (int) (1000L * total / ms);</span>
+
+<span class="nc" id="L154">								monitor.subTask(&quot;loading &quot; + uri + &quot; (&quot; + convert(done) + &quot;/&quot; + totalc + &quot; &quot;</span>
+<span class="nc" id="L155">										+ convert(rate) + &quot;/s)&quot;);</span>
+
+<span class="nc bnc" id="L157" title="All 2 branches missed.">								if (monitor.isCanceled()) {</span>
+<span class="nc" id="L158">									get.abort();</span>
+<span class="nc" id="L159">									throw new OperationCanceledException();</span>
+								}
+							}
+
+<span class="nc" id="L163">							monitor.done();</span>
+<span class="nc bnc" id="L164" title="All 8 branches missed.">						}</span>
+
+<span class="nc" id="L166">						Date date = parseLastModified(response);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">						if (date != null)</span>
+<span class="nc" id="L168">							Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));</span>
+
+<span class="nc" id="L170">						result = Status.OK_STATUS;</span>
+<span class="nc" id="L171">						break;</span>
+					case HttpStatus.SC_NOT_MODIFIED:
+<span class="nc" id="L173">						result = Status.OK_STATUS;</span>
+<span class="nc" id="L174">						break;</span>
+					case HttpStatus.SC_NOT_FOUND:
+<span class="nc" id="L176">						EntityUtils.consume(entity);</span>
+<span class="nc" id="L177">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
+<span class="nc" id="L178">								ProvisionException.ARTIFACT_NOT_FOUND, &quot;not found: &quot; + uri, null);</span>
+<span class="nc" id="L179">						break;</span>
+					default:
+<span class="nc" id="L181">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
+					}
+<span class="nc bnc" id="L183" title="All 8 branches missed.">				}</span>
+<span class="nc bnc" id="L184" title="All 12 branches missed.">			}</span>
+<span class="nc" id="L185">		} catch (ConnectException e) {</span>
+<span class="nc" id="L186">			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,</span>
+<span class="nc" id="L187">					&quot;foo&quot;, e);</span>
+<span class="nc" id="L188">		} catch (IOException e) {</span>
+<span class="nc" id="L189">			throw new RuntimeException(e);</span>
+		}
+
+<span class="nc" id="L192">		return result;</span>
+	}
+
+	@Override
+	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
+<span class="nc" id="L197">		List&lt;String&gt; collect = mirrorFiles.values().stream().flatMap(p -&gt; Arrays.stream(p.mirrors).map(p1 -&gt; {</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">			if (toDownload.toString().startsWith(p1.url.toString()))</span>
+<span class="nc" id="L199">				return p.base + toDownload.toString().substring(p1.url.toString().length());</span>
+			else
+<span class="nc" id="L201">				return null;</span>
+<span class="nc bnc" id="L202" title="All 2 branches missed.">		}).filter(p1 -&gt; p1 != null)).collect(Collectors.toList());</span>
+
+		Path p;
+<span class="nc bnc" id="L205" title="All 3 branches missed.">		switch (collect.size()) {</span>
+		case 0:
+<span class="nc" id="L207">			p = toPath(toDownload);</span>
+<span class="nc" id="L208">			break;</span>
+		case 1:
+<span class="nc" id="L210">			p = toPath(URI.create(collect.iterator().next()));</span>
+<span class="nc" id="L211">			break;</span>
+		default:
+<span class="nc" id="L213">			throw new Error(&quot;collect=&quot; + collect);</span>
+		}
+
+<span class="nc" id="L216">		IStatus result = mirror(toDownload, p, monitor);</span>
+
+<span class="nc bnc" id="L218" title="All 2 branches missed.">		if (result.isOK()) {</span>
+<span class="nc" id="L219">			try (InputStream is = Files.newInputStream(p)) {</span>
+<span class="nc" id="L220">				byte[] buf = new byte[BUFFER_SIZE];</span>
+<span class="nc" id="L221">				for (;;) {</span>
+<span class="nc" id="L222">					int r = is.read(buf);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">					if (r == -1)</span>
+<span class="nc" id="L224">						break;</span>
+<span class="nc" id="L225">					target.write(buf, 0, r);</span>
+				}
+<span class="nc bnc" id="L227" title="All 8 branches missed.">			} catch (IOException e) {</span>
+<span class="nc" id="L228">				throw new RuntimeException(e);</span>
+			}
+		}
+
+<span class="nc" id="L232">		return result;</span>
+	}
+
+	private Path toPath(URI toDownload) {
+<span class="nc" id="L236">		Path path = root;</span>
+
+<span class="nc" id="L238">		path = path.resolve(toDownload.getScheme());</span>
+<span class="nc" id="L239">		path = path.resolve(toDownload.getHost());</span>
+
+<span class="nc" id="L241">		String p = toDownload.getPath();</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">		if (!p.startsWith(&quot;/&quot;))</span>
+<span class="nc" id="L243">			throw new Error();</span>
+<span class="nc" id="L244">		p = p.substring(1);</span>
+
+<span class="nc" id="L246">		String q = toDownload.getQuery();</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">		if (q != null)</span>
+<span class="nc" id="L248">			p += &quot;_&quot; + q;</span>
+
+<span class="nc" id="L250">		path = path.resolve(p);</span>
+
+<span class="nc" id="L252">		return path;</span>
+	}
+
+	@Override
+	public InputStream stream(URI toDownload, IProgressMonitor monitor)
+			throws FileNotFoundException, CoreException, AuthenticationFailedException {
+
+<span class="nc" id="L259">		Path p = toPath(toDownload);</span>
+
+<span class="nc" id="L261">		mirror(toDownload, p, monitor);</span>
+
+<span class="nc" id="L263">		boolean found = false;</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">		for (RepoMirror r : mirrorFiles.values()) {</span>
+			// p2 creates this by string concatenation so we don't to test for a
+			// real prefix
+<span class="nc bnc" id="L267" title="All 2 branches missed.">			if (toDownload.toString().startsWith(r.mirrorFile)) {</span>
+<span class="nc" id="L268">				found = true;</span>
+
+<span class="nc" id="L270">				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;</span>
+			}
+		}
+
+<span class="nc bnc" id="L274" title="All 2 branches missed.">		if (!found)</span>
+<span class="nc" id="L275">			System.err.println(&quot;Not a recogized mirror: &quot; + toDownload);</span>
+
+		try {
+<span class="nc" id="L278">			return Files.newInputStream(p);</span>
+<span class="nc" id="L279">		} catch (IOException e) {</span>
+<span class="nc" id="L280">			throw new Error(&quot;Could not open &quot; + p + &quot;: &quot; + e, e);</span>
+		}
+	}
+
+	@Override
+	public long getLastModified(URI toDownload, IProgressMonitor monitor)
+			throws CoreException, FileNotFoundException, AuthenticationFailedException {
+
+<span class="nc" id="L288">		boolean isStats = mirrorFiles.values().stream()</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">				.anyMatch(p -&gt; p.stats != null &amp;&amp; toDownload.toString().startsWith(p.stats));</span>
+
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		if (isStats) {</span>
+			// FileNotFound is the expected result for statistics anyway, so we
+			// can use it safely if we don't access them at all.
+
+<span class="nc bnc" id="L295" title="All 2 branches missed.">			if (offline == OfflineType.offline)</span>
+<span class="nc" id="L296">				throw new FileNotFoundException(&quot;Offline: &quot; + toDownload);</span>
+
+<span class="nc bnc" id="L298" title="All 2 branches missed.">			if (stats == StatsType.suppress)</span>
+<span class="nc" id="L299">				throw new FileNotFoundException(&quot;Accessing statistics was suppressed: &quot; + toDownload);</span>
+
+<span class="nc" id="L301">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
+
+<span class="nc" id="L303">				HttpHead get = new HttpHead(toDownload);</span>
+
+<span class="nc" id="L305">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
+<span class="nc bnc" id="L306" title="All 4 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
+					case HttpStatus.SC_UNAUTHORIZED:
+<span class="nc" id="L308">						throw new AuthenticationFailedException();</span>
+					case HttpStatus.SC_OK:
+<span class="nc" id="L310">						return parseLastModified(response).getTime();</span>
+					case HttpStatus.SC_NOT_FOUND:
+<span class="nc" id="L312">						throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
+					default:
+<span class="nc" id="L314">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
+					}
+
+<span class="nc bnc" id="L317" title="All 8 branches missed.">				}</span>
+<span class="nc bnc" id="L318" title="All 8 branches missed.">			} catch (FileNotFoundException | AuthenticationFailedException e) {</span>
+<span class="nc" id="L319">				throw e;</span>
+<span class="nc" id="L320">			} catch (IOException e) {</span>
+<span class="nc" id="L321">				throw new Error(e);</span>
+			}
+		}
+
+<span class="nc" id="L325">		Path p = toPath(toDownload);</span>
+<span class="nc" id="L326">		IStatus status = mirror(toDownload, p, monitor);</span>
+
+<span class="nc bnc" id="L328" title="All 2 branches missed.">		if (status.isOK()) {</span>
+			try {
+<span class="nc" id="L330">				return Files.getLastModifiedTime(p).toMillis();</span>
+<span class="nc" id="L331">			} catch (IOException e) {</span>
+<span class="nc" id="L332">				throw new Error(e);</span>
+			}
+		} else {
+<span class="nc bnc" id="L335" title="All 3 branches missed.">			switch (status.getCode()) {</span>
+			case ProvisionException.REPOSITORY_FAILED_AUTHENTICATION:
+<span class="nc" id="L337">				throw new AuthenticationFailedException();</span>
+			case ProvisionException.ARTIFACT_NOT_FOUND:
+<span class="nc" id="L339">				throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
+			default:
+<span class="nc" id="L341">				throw new Error(&quot;Unhandled status &quot; + status);</span>
+			}
+
+			// AuthenticationFailedException
+			// } catch (UnknownHostException e) {
+			// throw new CoreException(new DownloadStatus(IStatus.ERROR,
+			// Activator.PLUGIN_ID,
+			// ProvisionException.REPOSITORY_INVALID_LOCATION, &quot;Unknown host &quot; +
+			// toDownload, e));
+		}
+	}
+
+	private String convert(long amount) {
+<span class="nc bnc" id="L354" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
+<span class="nc" id="L355">			return amount + &quot;B&quot;;</span>
+		}
+<span class="nc" id="L357">		amount /= 1024;</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
+<span class="nc" id="L359">			return amount + &quot;KB&quot;;</span>
+		}
+<span class="nc" id="L361">		amount /= 1024;</span>
+<span class="nc" id="L362">		return amount + &quot;MB&quot;;</span>
+	}
+
+	private Date parseLastModified(HttpResponse response) {
+<span class="nc" id="L366">		Header header = response.getFirstHeader(HttpHeaders.LAST_MODIFIED);</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">		if (header == null) {</span>
+<span class="nc" id="L368">			return null;</span>
+		}
+<span class="nc" id="L370">		String lm = header.getValue();</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">		if (lm == null) {</span>
+<span class="nc" id="L372">			return null;</span>
+		}
+
+<span class="nc" id="L375">		return DateUtils.parseDate(lm);</span>
+	}
+
+	static class RepoMirror {
+<span class="nc" id="L379">		public RepoMirror(String base, String mirrorFile, String stats) {</span>
+<span class="nc" id="L380">			this.base = base;</span>
+<span class="nc" id="L381">			this.mirrorFile = mirrorFile;</span>
+<span class="nc" id="L382">			this.stats = stats;</span>
+<span class="nc" id="L383">		}</span>
+
+		final String mirrorFile;
+		final String base;
+		final String stats;
+
+<span class="nc" id="L389">		Mirror[] mirrors = new Mirror[0];</span>
+
+		@Override
+		public String toString() {
+<span class="nc" id="L393">			return &quot;RepoMirror(mirrorFile=&quot; + mirrorFile + &quot;,base=&quot; + base + &quot;,stats=&quot; + stats + &quot;)&quot;;</span>
+		}
+	}
+
+<span class="nc" id="L397">	private Map&lt;URI, RepoMirror&gt; mirrorFiles = new HashMap&lt;&gt;();</span>
+
+	public void addRepositories(Collection&lt;IArtifactRepository&gt; repositories) {
+<span class="nc bnc" id="L400" title="All 2 branches missed.">		for (IArtifactRepository repo : repositories) {</span>
+<span class="nc" id="L401">			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);</span>
+<span class="nc" id="L402">			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);</span>
+<span class="nc" id="L403">			String stats = repo.getProperties().get(&quot;p2.statsURI&quot;); // no public</span>
+																	// constant
+<span class="nc bnc" id="L405" title="All 2 branches missed.">			if (mirror == null)</span>
+<span class="nc" id="L406">				continue;</span>
+
+			// be a bit paranoid and sanitize these values
+<span class="nc bnc" id="L409" title="All 4 branches missed.">			if (base != null &amp;&amp; base.isEmpty())</span>
+<span class="nc" id="L410">				base = null;</span>
+<span class="nc bnc" id="L411" title="All 4 branches missed.">			if (stats != null &amp;&amp; stats.isEmpty())</span>
+<span class="nc" id="L412">				stats = null;</span>
+
+<span class="nc bnc" id="L414" title="All 2 branches missed.">			if (base == null)</span>
+<span class="nc" id="L415">				base = repo.getLocation().toString();</span>
+
+<span class="nc" id="L417">			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));</span>
+		}
+<span class="nc" id="L419">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

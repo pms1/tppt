@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>InterpolatedString.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">tppt-core</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.core</a> &gt; <span class="el_source">InterpolatedString.java</span></div><h1>InterpolatedString.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.core;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class InterpolatedString {
+<span class="nc" id="L8">	private enum State {</span>
+<span class="nc" id="L9">		DEFAULT, QUOTED_DEFAULT, SEEN_AT, VARIABLE, QUOTED_VARIABLE;</span>
+	}
+
+	private interface Part {
+
+	}
+
+	static private class Text implements Part {
+		String text;
+
+<span class="nc" id="L19">		Text(String text) {</span>
+<span class="nc" id="L20">			this.text = text;</span>
+<span class="nc" id="L21">		}</span>
+	}
+
+	static private class Variable implements Part {
+		List&lt;String&gt; var;
+
+<span class="nc" id="L27">		public Variable(List&lt;String&gt; var) {</span>
+<span class="nc" id="L28">			this.var = var;</span>
+<span class="nc" id="L29">		}</span>
+
+	}
+
+	private List&lt;Part&gt; parts;
+
+<span class="nc" id="L35">	private InterpolatedString(List&lt;Part&gt; parts) {</span>
+<span class="nc" id="L36">		this.parts = parts;</span>
+<span class="nc" id="L37">	}</span>
+
+	public static InterpolatedString parse(String text) {
+
+<span class="nc" id="L41">		State s = State.DEFAULT;</span>
+<span class="nc" id="L42">		List&lt;Part&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L43">		StringBuilder current = new StringBuilder();</span>
+<span class="nc" id="L44">		List&lt;String&gt; var = null;</span>
+
+<span class="nc bnc" id="L46" title="All 2 branches missed.">		for (char c : text.toCharArray()) {</span>
+<span class="nc bnc" id="L47" title="All 6 branches missed.">			switch (s) {</span>
+			case DEFAULT:
+<span class="nc bnc" id="L49" title="All 3 branches missed.">				switch (c) {</span>
+				case '\\':
+<span class="nc" id="L51">					s = State.QUOTED_DEFAULT;</span>
+<span class="nc" id="L52">					break;</span>
+				case '@':
+<span class="nc" id="L54">					s = State.SEEN_AT;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">					if (current.length() != 0)</span>
+<span class="nc" id="L56">						result.add(new Text(current.toString()));</span>
+<span class="nc" id="L57">					current = null;</span>
+<span class="nc" id="L58">					break;</span>
+				default:
+<span class="nc" id="L60">					current.append(c);</span>
+<span class="nc" id="L61">					break;</span>
+				}
+				break;
+			case QUOTED_DEFAULT:
+<span class="nc" id="L65">				s = State.DEFAULT;</span>
+<span class="nc" id="L66">				current.append(c);</span>
+<span class="nc" id="L67">				break;</span>
+			case QUOTED_VARIABLE:
+<span class="nc" id="L69">				s = State.VARIABLE;</span>
+<span class="nc" id="L70">				current.append(c);</span>
+<span class="nc" id="L71">				break;</span>
+			case SEEN_AT:
+<span class="nc bnc" id="L73" title="All 2 branches missed.">				switch (c) {</span>
+				case '{':
+<span class="nc" id="L75">					s = State.VARIABLE;</span>
+<span class="nc" id="L76">					current = new StringBuilder();</span>
+<span class="nc" id="L77">					var = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L78">					break;</span>
+				default:
+<span class="nc" id="L80">					throw new IllegalArgumentException();</span>
+				}
+				break;
+			case VARIABLE:
+<span class="nc bnc" id="L84" title="All 4 branches missed.">				switch (c) {</span>
+				case '}':
+<span class="nc" id="L86">					s = State.DEFAULT;</span>
+<span class="nc" id="L87">					var.add(current.toString());</span>
+<span class="nc" id="L88">					result.add(new Variable(Collections.unmodifiableList(var)));</span>
+<span class="nc bnc" id="L89" title="All 4 branches missed.">					if (var.size() == 1 &amp;&amp; current.length() == 0)</span>
+<span class="nc" id="L90">						throw new IllegalArgumentException();</span>
+<span class="nc" id="L91">					current = new StringBuilder();</span>
+<span class="nc" id="L92">					break;</span>
+				case '\\':
+<span class="nc" id="L94">					s = State.QUOTED_VARIABLE;</span>
+<span class="nc" id="L95">					break;</span>
+				case ':':
+<span class="nc" id="L97">					var.add(current.toString());</span>
+<span class="nc" id="L98">					current = new StringBuilder();</span>
+<span class="nc" id="L99">					break;</span>
+				default:
+<span class="nc" id="L101">					current.append(c);</span>
+<span class="nc" id="L102">					break;</span>
+				}
+				break;
+			default:
+<span class="nc" id="L106">				throw new IllegalStateException();</span>
+			}
+		}
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		if (current.length() != 0)</span>
+<span class="nc" id="L110">			result.add(new Text(current.toString()));</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (s != State.DEFAULT)</span>
+<span class="nc" id="L112">			throw new IllegalArgumentException();</span>
+<span class="nc" id="L113">		return new InterpolatedString(result);</span>
+	}
+
+	public interface Visitor {
+		void visitText(String text);
+
+		void visitVariable(List&lt;String&gt; variable);
+	}
+
+	public void accept(Visitor visitor) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		for (Part p : parts) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">			if (p instanceof Text)</span>
+<span class="nc" id="L125">				visitor.visitText(((Text) p).text);</span>
+			else
+<span class="nc" id="L127">				visitor.visitVariable(((Variable) p).var);</span>
+<span class="nc" id="L128">		}</span>
+<span class="nc" id="L129">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

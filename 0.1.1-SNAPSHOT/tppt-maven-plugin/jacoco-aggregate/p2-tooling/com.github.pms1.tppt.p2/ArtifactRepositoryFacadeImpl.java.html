@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ArtifactRepositoryFacadeImpl.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">ArtifactRepositoryFacadeImpl.java</span></div><h1>ArtifactRepositoryFacadeImpl.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import com.github.pms1.ldap.AttributeDescription;
+import com.github.pms1.ldap.SearchFilter;
+import com.github.pms1.ldap.SearchFilterEvaluator;
+import com.github.pms1.ldap.SearchFilterParser;
+import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
+import com.github.pms1.tppt.p2.jaxb.artifact.Property;
+import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
+import com.google.common.base.Preconditions;
+
+class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;ArtifactRepository&gt;
+		implements ArtifactRepositoryFacade {
+	private final ArtifactRepository data;
+
+	private Map&lt;ArtifactId, ArtifactFacade&gt; asMap;
+
+	private final Path path;
+
+	public ArtifactRepositoryFacadeImpl(Path path, ArtifactRepository foo) {
+<span class="nc" id="L29">		super(Property::new);</span>
+		// Preconditions.checkNotNull(root);
+<span class="nc" id="L31">		Preconditions.checkNotNull(foo);</span>
+<span class="nc" id="L32">		this.data = foo;</span>
+<span class="nc" id="L33">		this.path = path;</span>
+<span class="nc" id="L34">	}</span>
+
+	@Override
+	public String toString() {
+<span class="nc" id="L38">		return super.toString() + &quot;(&quot; + data + &quot;)&quot;;</span>
+	}
+
+	private static class ArtifactFacadeImpl implements ArtifactFacade {
+
+		private final ArtifactId id;
+
+		private final Artifact data;
+
+<span class="nc" id="L47">		ArtifactFacadeImpl(Artifact a) {</span>
+<span class="nc" id="L48">			Preconditions.checkNotNull(a);</span>
+
+<span class="nc" id="L50">			this.data = a;</span>
+<span class="nc" id="L51">			this.id = new ArtifactId(a.getId(), a.getVersion());</span>
+<span class="nc" id="L52">		}</span>
+
+		@Override
+		public ArtifactId getId() {
+<span class="nc" id="L56">			return id;</span>
+		}
+
+		@Override
+		public String getClassifier() {
+<span class="nc" id="L61">			return data.getClassifier();</span>
+		}
+
+		@Override
+		public Artifact getData() {
+<span class="nc" id="L66">			return data;</span>
+		}
+
+		@Override
+		public String getFormat() {
+<span class="nc" id="L71">			return getPropertyString(&quot;format&quot;);</span>
+		}
+
+		@Override
+		public String getPropertyString(String key) {
+<span class="nc" id="L76">			return data.getProperties().getProperty().stream().filter(p -&gt; p.getName().equals(key))</span>
+<span class="nc" id="L77">					.map(Property::getValue).findAny().orElse(null);</span>
+		}
+
+	}
+
+	@Override
+	public Map&lt;ArtifactId, ArtifactFacade&gt; getArtifacts() {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		if (asMap == null) {</span>
+<span class="nc" id="L85">			Map&lt;ArtifactId, ArtifactFacade&gt; map = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">			for (com.github.pms1.tppt.p2.jaxb.artifact.Artifact a : data.getArtifacts().getArtifact()) {</span>
+<span class="nc" id="L87">				ArtifactFacadeImpl a2 = new ArtifactFacadeImpl(a);</span>
+<span class="nc" id="L88">				map.put(a2.getId(), a2);</span>
+<span class="nc" id="L89">			}</span>
+<span class="nc" id="L90">			asMap = Collections.unmodifiableMap(map);</span>
+		}
+<span class="nc" id="L92">		return asMap;</span>
+	}
+
+<span class="nc" id="L95">	private static SearchFilterParser parser = new SearchFilterParser().lenient();</span>
+
+	@Override
+	public Path getArtifactUri(ArtifactId id) {
+<span class="nc" id="L99">		ArtifactFacadeImpl artifact = (ArtifactFacadeImpl) getArtifacts().get(id);</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		Preconditions.checkArgument(artifact != null, &quot;No artifact '&quot; + id + &quot;'&quot;);</span>
+
+<span class="nc" id="L102">		String match = null;</span>
+
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		for (Rule r : data.getMappings().getRule()) {</span>
+<span class="nc" id="L105">			SearchFilter searchFilter = parser.parse(r.getFilter());</span>
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">			if (new SearchFilterEvaluator().evaluate(searchFilter, p -&gt; {</span>
+<span class="nc" id="L108">				String k = ((AttributeDescription) p).getKeystring();</span>
+<span class="nc bnc" id="L109" title="All 10 branches missed.">				switch (k) {</span>
+				case &quot;classifier&quot;:
+<span class="nc" id="L111">					return artifact.data.getClassifier();</span>
+				case &quot;format&quot;:
+<span class="nc" id="L113">					return artifact.getFormat();</span>
+				default:
+<span class="nc" id="L115">					throw new Error(&quot;&quot; + k);</span>
+				}
+			})) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">				if (match == null)</span>
+<span class="nc" id="L119">					match = r.getOutput();</span>
+				else
+<span class="nc" id="L121">					throw new IllegalStateException();</span>
+			}
+
+<span class="nc" id="L124">		}</span>
+
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (match == null)</span>
+<span class="nc" id="L127">			throw new IllegalStateException();</span>
+
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (!match.startsWith(&quot;${repoUrl}/&quot;))</span>
+<span class="nc" id="L130">			throw new IllegalStateException();</span>
+<span class="nc" id="L131">		match = match.substring(11);</span>
+
+<span class="nc" id="L133">		Matcher m = Pattern.compile(&quot;[$][{]([^}]*)[}]&quot;).matcher(match);</span>
+
+<span class="nc" id="L135">		boolean result = m.find();</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		if (result) {</span>
+<span class="nc" id="L137">			StringBuffer sb = new StringBuffer();</span>
+			do {
+				String replacement;
+<span class="nc bnc" id="L140" title="All 10 branches missed.">				switch (m.group(1)) {</span>
+				// case &quot;repoUrl&quot;:
+				// replacement = root.toUri().toString();
+				// break;
+				case &quot;id&quot;:
+<span class="nc" id="L145">					replacement = artifact.data.getId();</span>
+<span class="nc" id="L146">					break;</span>
+				case &quot;version&quot;:
+<span class="nc" id="L148">					replacement = artifact.data.getVersion().toString();</span>
+<span class="nc" id="L149">					break;</span>
+				default:
+<span class="nc" id="L151">					throw new IllegalStateException(&quot;Unhandled substitution '&quot; + m.group(1) + &quot;'&quot;);</span>
+				}
+<span class="nc" id="L153">				m.appendReplacement(sb, replacement);</span>
+<span class="nc" id="L154">				result = m.find();</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">			} while (result);</span>
+<span class="nc" id="L156">			m.appendTail(sb);</span>
+<span class="nc" id="L157">			match = sb.toString();</span>
+		}
+
+<span class="nc" id="L160">		return path.resolveSibling(match);</span>
+	}
+
+	@Override
+	public Path getPath() {
+<span class="nc" id="L165">		return path;</span>
+	}
+
+	@Override
+	public ArtifactRepository getRepository() {
+<span class="nc" id="L170">		return data;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ArtifactRepositoryFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">ArtifactRepositoryFactory.java</span></div><h1>ArtifactRepositoryFactory.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+
+import org.codehaus.plexus.component.annotations.Component;
+
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
+import com.github.pms1.tppt.p2.jaxb.artifact.Artifacts;
+import com.github.pms1.tppt.p2.jaxb.artifact.Mappings;
+import com.github.pms1.tppt.p2.jaxb.artifact.Properties;
+import com.google.common.base.Throwables;
+
+@Component(role = ArtifactRepositoryFactory.class)
+public class ArtifactRepositoryFactory extends AbstractRepositoryFactory&lt;ArtifactRepository&gt; {
+
+	protected ArtifactRepositoryFactory() {
+<span class="nc" id="L18">		super(getJaxbContext(), ArtifactRepository.class, &quot;artifact&quot;, &quot;1.1.0&quot;, &quot;artifactRepository.xsd&quot;);</span>
+<span class="nc" id="L19">	}</span>
+
+<span class="nc" id="L21">	private static class Holder {</span>
+		private final static JAXBContext context;
+		static {
+			try {
+<span class="nc" id="L25">				context = JAXBContext.newInstance(ArtifactRepository.class);</span>
+<span class="nc" id="L26">			} catch (JAXBException t) {</span>
+<span class="nc" id="L27">				throw Throwables.propagate(t);</span>
+<span class="nc" id="L28">			}</span>
+<span class="nc" id="L29">		}</span>
+	}
+
+	public static JAXBContext getJaxbContext() {
+<span class="nc" id="L33">		return Holder.context;</span>
+	}
+
+	@Override
+	protected void normalize(ArtifactRepository t) {
+<span class="nc" id="L38">		Properties properties = t.getProperties();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">		if (properties != null)</span>
+<span class="nc" id="L40">			properties.setSize(properties.getProperty().size());</span>
+
+<span class="nc" id="L42">		Artifacts artifacts = t.getArtifacts();</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">		if (artifacts != null)</span>
+<span class="nc" id="L44">			artifacts.setSize(artifacts.getArtifact().size());</span>
+
+<span class="nc" id="L46">		Mappings mappings = t.getMappings();</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">		if (mappings != null)</span>
+<span class="nc" id="L48">			mappings.setSize(mappings.getRule().size());</span>
+<span class="nc" id="L49">	}</span>
+
+	@Override
+	protected ArtifactRepository createEmpty() {
+<span class="nc" id="L53">		throw new UnsupportedOperationException();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
