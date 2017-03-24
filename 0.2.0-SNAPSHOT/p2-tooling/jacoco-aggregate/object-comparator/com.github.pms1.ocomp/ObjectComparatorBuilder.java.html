@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ObjectComparatorBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">p2-tooling</a> &gt; <a href="../index.html" class="el_bundle">object-comparator</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.ocomp</a> &gt; <span class="el_source">ObjectComparatorBuilder.java</span></div><h1>ObjectComparatorBuilder.java</h1><pre class="source lang-java linenums">package com.github.pms1.ocomp;
+
+import java.lang.reflect.Type;
+import java.util.LinkedHashMap;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import com.github.pms1.ocomp.ObjectComparator.DecomposerFactory;
+import com.github.pms1.ocomp.ObjectComparator.DeltaCreator;
+
+public class ObjectComparatorBuilder&lt;T&gt; {
+
+<span class="nc" id="L13">	private LinkedHashMap&lt;DecomposerMatcher, DecomposerFactory&gt; locationDecomposers = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc" id="L14">	private LinkedHashMap&lt;Function&lt;Type, Boolean&gt;, BiFunction&lt;Object, Object, Boolean&gt;&gt; comparators = new LinkedHashMap&lt;&gt;();</span>
+
+	private DeltaCreator&lt;T&gt; deltaCreator;
+
+<span class="nc" id="L18">	private ObjectComparatorBuilder() {</span>
+
+<span class="nc" id="L20">	}</span>
+
+	public static ObjectComparatorBuilder&lt;ObjectDelta&gt; newBuilder() {
+<span class="nc" id="L23">		ObjectComparatorBuilder&lt;ObjectDelta&gt; builder = new ObjectComparatorBuilder&lt;&gt;();</span>
+<span class="nc" id="L24">		builder.deltaCreator = ObjectComparator.defaultDeltaCreator;</span>
+<span class="nc" id="L25">		return builder;</span>
+	}
+
+	public ObjectComparator&lt;T&gt; build() {
+<span class="nc" id="L29">		return new ObjectComparator&lt;T&gt;(deltaCreator, comparators, locationDecomposers);</span>
+	}
+
+	public &lt;S&gt; ObjectComparatorBuilder&lt;T&gt; addComparator(Function&lt;Type, Boolean&gt; matcher,
+			BiFunction&lt;Object, Object, Boolean&gt; comparator) {
+<span class="nc" id="L34">		comparators.put(matcher, comparator);</span>
+<span class="nc" id="L35">		return this;</span>
+	}
+
+	public &lt;S&gt; ObjectComparatorBuilder&lt;T&gt; addDecomposer(String string, Decomposer&lt;S&gt; listToMapDecomposer) {
+<span class="nc" id="L39">		return addDecomposer(DecomposerMatchers.path(string), listToMapDecomposer);</span>
+	}
+
+	public &lt;S&gt; ObjectComparatorBuilder&lt;T&gt; addDecomposer(DecomposerMatcher matcher, Decomposer&lt;S&gt; listToMapDecomposer) {
+<span class="nc" id="L43">		locationDecomposers.put(matcher, new DecomposerFactory() {</span>
+
+			@SuppressWarnings(&quot;unchecked&quot;)
+			@Override
+			public &lt;T1&gt; Decomposer&lt;T1&gt; generate(Type t) {
+<span class="nc" id="L48">				return (Decomposer&lt;T1&gt;) listToMapDecomposer;</span>
+			}
+		});
+<span class="nc" id="L51">		return this;</span>
+	}
+
+	public ObjectComparatorBuilder&lt;T&gt; addDecomposer(Function&lt;Type, Boolean&gt; matcher, DecomposerFactory factory) {
+<span class="nc" id="L55">		locationDecomposers.put((path, type) -&gt; matcher.apply(type), factory);</span>
+<span class="nc" id="L56">		return this;</span>
+	}
+
+	public &lt;S&gt; ObjectComparatorBuilder&lt;S&gt; setDeltaCreator(DeltaCreator&lt;S&gt; deltaCreator) {
+		@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L61">		ObjectComparatorBuilder&lt;S&gt; t = (ObjectComparatorBuilder&lt;S&gt;) this;</span>
+<span class="nc" id="L62">		t.deltaCreator = deltaCreator;</span>
+<span class="nc" id="L63">		return t;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

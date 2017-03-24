@@ -1,0 +1,622 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ObjectComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">p2-tooling</a> &gt; <a href="../index.html" class="el_bundle">object-comparator</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.ocomp</a> &gt; <span class="el_source">ObjectComparator.java</span></div><h1>ObjectComparator.java</h1><pre class="source lang-java linenums">package com.github.pms1.ocomp;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+
+public class ObjectComparator&lt;T&gt; {
+	private final LinkedHashMap&lt;DecomposerMatcher, DecomposerFactory&gt; locationDecomposers;
+
+	private final LinkedHashMap&lt;Function&lt;Type, Boolean&gt;, BiFunction&lt;Object, Object, Boolean&gt;&gt; comparators;
+
+	public static class OPath2 {
+
+		private final LinkedList&lt;OPath2&gt; parents;
+		private final String pathx;
+		private final Object left;
+		private final Object right;
+
+<span class="nc" id="L38">		public OPath2(OPath2 parent, String path, Object left, Object right) {</span>
+
+<span class="nc bnc" id="L40" title="All 2 branches missed.">			if (parent == null)</span>
+<span class="nc" id="L41">				this.parents = new LinkedList&lt;&gt;();</span>
+			else {
+<span class="nc" id="L43">				this.parents = new LinkedList&lt;&gt;(parent.parents);</span>
+<span class="nc" id="L44">				this.parents.add(parent);</span>
+			}
+<span class="nc" id="L46">			this.pathx = path;</span>
+<span class="nc" id="L47">			this.left = left;</span>
+<span class="nc" id="L48">			this.right = right;</span>
+<span class="nc" id="L49">		}</span>
+
+		static OPath2 root(Object left, Object right) {
+<span class="nc" id="L52">			return new OPath2(null, &quot;/&quot;, left, right);</span>
+		}
+
+		OPath2 child(String path, Object left, Object right) {
+<span class="nc" id="L56">			Objects.requireNonNull(path);</span>
+<span class="nc" id="L57">			return new OPath2(this, path, left, right);</span>
+		}
+
+		public String getPath() {
+<span class="nc" id="L61">			StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			for (OPath2 o : parents)</span>
+<span class="nc" id="L63">				b.append(o.pathx);</span>
+<span class="nc" id="L64">			b.append(pathx);</span>
+<span class="nc" id="L65">			return b.toString();</span>
+		}
+
+		public Object getLeft() {
+<span class="nc" id="L69">			return left;</span>
+		}
+
+		public Object getRight() {
+<span class="nc" id="L73">			return right;</span>
+		}
+
+		public OPath2 getParent() {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (parents.isEmpty())</span>
+<span class="nc" id="L78">				return null;</span>
+			else
+<span class="nc" id="L80">				return parents.getLast();</span>
+		}
+
+		public OPath2 subPath(int begin, int end) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (begin == 0) {</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				if (end &gt; parents.size() + 1)</span>
+<span class="nc" id="L86">					throw new IllegalArgumentException();</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">				else if (end == parents.size() + 1)</span>
+<span class="nc" id="L88">					return this;</span>
+				else
+<span class="nc" id="L90">					return parents.get(end - 1);</span>
+			} else {
+<span class="nc" id="L92">				return subPath(begin).subPath(0, end - begin);</span>
+			}
+		}
+
+		public OPath2 subPath(int begin) {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">			if (begin == parents.size() + 1)</span>
+<span class="nc" id="L98">				return null;</span>
+
+<span class="nc" id="L100">			Iterator&lt;OPath2&gt; p = parents.iterator();</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">			for (int i = begin; i-- &gt; 0;)</span>
+<span class="nc" id="L102">				p.next();</span>
+
+<span class="nc" id="L104">			OPath2 last = null;</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">			while (p.hasNext()) {</span>
+<span class="nc" id="L106">				OPath2 n = p.next();</span>
+<span class="nc" id="L107">				last = new OPath2(last, n.pathx, n.left, n.right);</span>
+<span class="nc" id="L108">			}</span>
+<span class="nc" id="L109">			return new OPath2(last, pathx, left, right);</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L114">			return &quot;OPath2(&quot; + getPath() + &quot;)&quot;;</span>
+		}
+
+		public int size() {
+<span class="nc" id="L118">			return parents.size() + 1;</span>
+		}
+	};
+
+	public static class OPath {
+		@Override
+		public int hashCode() {
+<span class="nc" id="L125">			final int prime = 31;</span>
+<span class="nc" id="L126">			int result = 1;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">			result = prime * result + ((path == null) ? 0 : path.hashCode());</span>
+<span class="nc" id="L128">			return result;</span>
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">			if (this == obj)</span>
+<span class="nc" id="L134">				return true;</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">			if (obj == null)</span>
+<span class="nc" id="L136">				return false;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			if (getClass() != obj.getClass())</span>
+<span class="nc" id="L138">				return false;</span>
+<span class="nc" id="L139">			OPath other = (OPath) obj;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">			if (path == null) {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">				if (other.path != null)</span>
+<span class="nc" id="L142">					return false;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">			} else if (!path.equals(other.path))</span>
+<span class="nc" id="L144">				return false;</span>
+<span class="nc" id="L145">			return true;</span>
+		}
+
+		private String path;
+
+<span class="nc" id="L150">		public OPath(String path) {</span>
+<span class="nc" id="L151">			this.path = path;</span>
+<span class="nc" id="L152">		}</span>
+
+<span class="nc" id="L154">		private static final OPath ROOT = new OPath(&quot;/&quot;);</span>
+
+		public static OPath root() {
+<span class="nc" id="L157">			return ROOT;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="nc" id="L162">			return path;</span>
+		}
+
+		public static OPath content(String name) {
+<span class="nc" id="L166">			return new OPath(&quot;/&quot; + name);</span>
+		}
+
+		public static OPath index(String condition) {
+<span class="nc" id="L170">			return new OPath(&quot;[&quot; + condition + &quot;]&quot;);</span>
+		}
+
+		public OPath append(OPath key) {
+<span class="nc" id="L174">			return new OPath(path + key.path);</span>
+		}
+
+	}
+
+	public interface DecomposerFactory {
+		&lt;T&gt; Decomposer&lt;T&gt; generate(Type t);
+	}
+
+	interface Comparator {
+		boolean compare(OPath2 p, Object o1, Object o2);
+	}
+
+	interface CompararerFactory {
+		Comparator generate(ObjectComparator&lt;?&gt; oc, Type t);
+	}
+
+<span class="nc" id="L191">	private List&lt;DecomposerFactory&gt; decomposerFactories = Arrays.asList(list, jaxb);</span>
+
+<span class="nc" id="L193">	private List&lt;CompararerFactory&gt; factories = Arrays.asList(classIdentity, primitiveTypes, naturalEquals);</span>
+
+<span class="nc" id="L195">	static DecomposerFactory jaxb = new DecomposerFactory() {</span>
+		@Override
+		public &lt;T&gt; Decomposer&lt;T&gt; generate(Type t) {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">			if (!(t instanceof Class))</span>
+<span class="nc" id="L199">				return null;</span>
+<span class="nc" id="L200">			Class&lt;?&gt; c = (Class&lt;?&gt;) t;</span>
+
+<span class="nc" id="L202">			XmlAccessorType annotation = c.getAnnotation(XmlAccessorType.class);</span>
+<span class="nc bnc" id="L203" title="All 4 branches missed.">			if (annotation == null || annotation.value() != XmlAccessType.FIELD)</span>
+<span class="nc" id="L204">				return null;</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">			if (c.getSuperclass() != Object.class)</span>
+<span class="nc" id="L207">				throw new UnsupportedOperationException();</span>
+
+<span class="nc" id="L209">			Field[] fields = c.getDeclaredFields();</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">			for (Field f : fields)</span>
+<span class="nc" id="L211">				f.setAccessible(true);</span>
+
+<span class="nc" id="L213">			return (o) -&gt; {</span>
+<span class="nc" id="L214">				DecomposedObject result = new DecomposedObject();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">				for (Field f : fields) {</span>
+					try {
+<span class="nc" id="L217">						result.put(OPath.content(f.getName()), f.getGenericType(), f.get(o));</span>
+<span class="nc" id="L218">					} catch (ReflectiveOperationException e) {</span>
+<span class="nc" id="L219">						throw new RuntimeException(e);</span>
+<span class="nc" id="L220">					}</span>
+				}
+<span class="nc" id="L222">				return result;</span>
+			};
+		}
+	};
+
+<span class="nc" id="L227">	static DecomposerFactory list = new DecomposerFactory() {</span>
+
+		@Override
+		public &lt;T&gt; Decomposer&lt;T&gt; generate(Type t) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">			if (!List.class.isAssignableFrom(asClass(t)))</span>
+<span class="nc" id="L232">				return null;</span>
+			// if (!(t instanceof ParameterizedType))
+			// return null;
+			//
+			// ParameterizedType pt = (ParameterizedType) t;
+			// System.err.println(&quot;PT &quot; + pt);
+			// if (!List.class.isAssignableFrom((Class&lt;?&gt;) pt.getRawType()))
+			// return null;
+			// System.err.println(&quot;PT2 &quot; + pt);
+			// if (pt.getActualTypeArguments().length != 1)
+			// throw new IllegalStateException();
+			// System.err.println(&quot;PT3 &quot; + pt);
+			// Type et = pt.getActualTypeArguments()[0];
+
+<span class="nc" id="L246">			return (o) -&gt; {</span>
+<span class="nc" id="L247">				DecomposedObject result = new DecomposedObject();</span>
+<span class="nc" id="L248">				int i = 0;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">				for (Object e : (List&lt;?&gt;) o)</span>
+<span class="nc" id="L250">					result.put(OPath.index(&quot;&quot; + i++), e);</span>
+<span class="nc" id="L251">				return result;</span>
+			};
+		}
+	};
+
+	ObjectComparator(DeltaCreator&lt;T&gt; deltaCreator,
+			LinkedHashMap&lt;Function&lt;Type, Boolean&gt;, BiFunction&lt;Object, Object, Boolean&gt;&gt; comparators,
+<span class="nc" id="L258">			LinkedHashMap&lt;DecomposerMatcher, DecomposerFactory&gt; locationDecomposers) {</span>
+<span class="nc" id="L259">		this.deltaCreator = deltaCreator;</span>
+<span class="nc" id="L260">		this.comparators = comparators;</span>
+<span class="nc" id="L261">		this.locationDecomposers = locationDecomposers;</span>
+<span class="nc" id="L262">	}</span>
+
+	static Class&lt;?&gt; asClass(Type t) {
+<span class="nc bnc" id="L265" title="All 2 branches missed.">		if (t instanceof ParameterizedType) {</span>
+<span class="nc" id="L266">			return (Class&lt;?&gt;) ((ParameterizedType) t).getRawType();</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">		} else if (t instanceof Class) {</span>
+<span class="nc" id="L268">			return (Class&lt;?&gt;) t;</span>
+		} else {
+<span class="nc" id="L270">			throw new Error();</span>
+		}
+	}
+
+<span class="nc" id="L274">	static CompararerFactory primitiveTypes = new CompararerFactory() {</span>
+		@Override
+		public Comparator generate(ObjectComparator&lt;?&gt; oc, Type t) {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">			if (!(t instanceof Class))</span>
+<span class="nc" id="L278">				return null;</span>
+<span class="nc" id="L279">			Class&lt;?&gt; c = (Class&lt;?&gt;) t;</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">			if (!c.isPrimitive())</span>
+<span class="nc" id="L281">				return null;</span>
+<span class="nc" id="L282">			return (p, o1, o2) -&gt; {</span>
+<span class="nc" id="L283">				return o1.equals(o2);</span>
+			};
+		}
+	};
+
+<span class="nc" id="L288">	static CompararerFactory classIdentity = new CompararerFactory() {</span>
+		@Override
+		public Comparator generate(ObjectComparator&lt;?&gt; oc, Type t) {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">			if (asClass(t) != Class.class)</span>
+<span class="nc" id="L292">				return null;</span>
+
+<span class="nc" id="L294">			return (p, o1, o2) -&gt; {</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">				return o1 == o2;</span>
+			};
+		}
+	};
+
+	// static CompararerFactory list = new CompararerFactory() {
+	// @Override
+	// public Comparator generate(ObjectComparator oc, Type t) {
+	// if (!(t instanceof ParameterizedType))
+	// return null;
+	//
+	// ParameterizedType pt = (ParameterizedType) t;
+	// if (pt.getRawType() != List.class)
+	// return null;
+	// if (pt.getActualTypeArguments().length != 1)
+	// throw new IllegalStateException();
+	// Type et = pt.getActualTypeArguments()[0];
+	// Comparator ec = oc.getComparator(et);
+	//
+	// return (p1, o1, p2, o2) -&gt; {
+	// List&lt;?&gt; l1 = (List&lt;?&gt;) o1;
+	// List&lt;?&gt; l2 = (List&lt;?&gt;) o2;
+	// if (l1.size() != l2.size()) {
+	// System.err.println(&quot;DIFFERENTSIZE &quot; + p1 + &quot;:&quot; + l1 + &quot; &quot; + p2 + &quot;:&quot; +
+	// l2);
+	// return;
+	// }
+	// Iterator&lt;?&gt; i1 = l1.iterator();
+	// Iterator&lt;?&gt; i2 = l2.iterator();
+	// int i = 0;
+	// while (i1.hasNext()) {
+	// Object le1 = i1.next();
+	// Object le2 = i2.next();
+	// ec.compare(p1.indexChild(i), le1, p1.indexChild(i), le2);
+	// ++i;
+	// }
+	// };
+	// }
+	// };
+<span class="nc" id="L334">	static CompararerFactory naturalEquals = new CompararerFactory() {</span>
+
+		@Override
+		public Comparator generate(ObjectComparator&lt;?&gt; oc, Type t) {
+<span class="nc bnc" id="L338" title="All 2 branches missed.">			if (!(t instanceof Class))</span>
+<span class="nc" id="L339">				return null;</span>
+<span class="nc" id="L340">			Class&lt;?&gt; c = (Class&lt;?&gt;) t;</span>
+
+			try {
+<span class="nc" id="L343">				Method method = c.getMethod(&quot;equals&quot;, Object.class);</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">				if (method == null)</span>
+<span class="nc" id="L345">					throw new IllegalStateException();</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">				if (method.getDeclaringClass() != c)</span>
+<span class="nc" id="L347">					return null;</span>
+<span class="nc" id="L348">				return (p1, o1, o2) -&gt; {</span>
+<span class="nc" id="L349">					return o1.equals(o2);</span>
+				};
+<span class="nc" id="L351">			} catch (NoSuchMethodException e) {</span>
+<span class="nc" id="L352">				return null;</span>
+<span class="nc" id="L353">			} catch (SecurityException e) {</span>
+<span class="nc" id="L354">				throw new Error(e);</span>
+			}
+		}
+	};
+
+	// static CompararerFactory jaxbFields = new CompararerFactory() {
+	//
+	// @Override
+	// public Comparator generate(ObjectComparator oc, Type t) {
+	// if (!(t instanceof Class))
+	// return null;
+	// Class&lt;?&gt; c = (Class&lt;?&gt;) t;
+	//
+	// XmlAccessorType annotation = c.getAnnotation(XmlAccessorType.class);
+	// if (annotation == null || annotation.value() != XmlAccessType.FIELD)
+	// return null;
+	//
+	// if (c.getSuperclass() != Object.class)
+	// throw new UnsupportedOperationException();
+	//
+	// Field[] fields = c.getDeclaredFields();
+	// int idx = 0;
+	// Comparator[] comarators = new Comparator[fields.length];
+	// for (Field f : fields) {
+	// f.setAccessible(true);
+	// Comparator comparator = oc.getComparator(f.getGenericType());
+	// comarators[idx++] = comparator;
+	// }
+	//
+	// return (p1, o1, p2, o2) -&gt; {
+	// if (o1 == o2)
+	// return;
+	// if (o1 == null || o2 == null) {
+	// System.err.println(&quot;uneq &quot; + p1 + &quot;:&quot; + o1 + &quot; &quot; + p2 + &quot;:&quot; + o2);
+	// return;
+	// }
+	//
+	// for (int i = 0; i != comarators.length; ++i) {
+	// Object n1;
+	// Object n2;
+	// try {
+	// n1 = fields[i].get(o1);
+	// n2 = fields[i].get(o2);
+	// } catch (ReflectiveOperationException e) {
+	// throw new RuntimeException(e);
+	// }
+	// comarators[i].compare(p1.child(fields[i].getName()), n1,
+	// p2.child(fields[i].getName()), n2);
+	// }
+	// };
+	// }
+	// };
+
+	// static CompararerFactory beanProperties = new CompararerFactory() {
+	//
+	// @Override
+	// public Comparator generate(ObjectComparator oc, Type t) {
+	// if (!(t instanceof Class))
+	// return null;
+	// Class&lt;?&gt; c = (Class&lt;?&gt;) t;
+	//
+	// try {
+	// BeanInfo beanInfo = java.beans.Introspector.getBeanInfo(c);
+	// PropertyDescriptor[] pds = beanInfo.getPropertyDescriptors();
+	//
+	// if (pds.length == 0)
+	// return null;
+	//
+	// int idx = 0;
+	// Comparator[] comarators = new Comparator[pds.length];
+	//
+	// for (PropertyDescriptor pd : beanInfo.getPropertyDescriptors()) {
+	// System.err.println(&quot;pd=&quot; + pd);
+	// Comparator comparator =
+	// oc.getComparator(pd.getReadMethod().getGenericReturnType());
+	// comarators[idx++] = comparator;
+	// }
+	//
+	// return (p1, o1, p2, o2) -&gt; {
+	// for (int i = 0; i != comarators.length; ++i) {
+	// Object n1;
+	// Object n2;
+	// try {
+	// n1 = pds[i].getReadMethod().invoke(o1);
+	// n2 = pds[i].getReadMethod().invoke(o1);
+	// } catch (InvocationTargetException e) {
+	// throw new RuntimeException(e.getCause());
+	// } catch (ReflectiveOperationException e) {
+	// throw new RuntimeException(e);
+	// }
+	// comarators[i].compare(p1.child(pds[i].getName()), n1,
+	// p2.child(pds[i].getName()), n2);
+	// }
+	// };
+	// } catch (IntrospectionException e) {
+	// throw new RuntimeException(e);
+	// }
+	// }
+	//
+	// };
+
+	private Comparator findComparator(Type t) {
+<span class="nc bnc" id="L456" title="All 2 branches missed.">		for (CompararerFactory f : factories) {</span>
+<span class="nc" id="L457">			Comparator result = f.generate(this, t);</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">			if (result != null)</span>
+<span class="nc" id="L459">				return result;</span>
+<span class="nc" id="L460">		}</span>
+
+<span class="nc" id="L462">		return null;</span>
+	}
+
+	private Decomposer&lt;?&gt; findDecomposer(Type t) {
+<span class="nc bnc" id="L466" title="All 2 branches missed.">		for (DecomposerFactory f : decomposerFactories) {</span>
+<span class="nc" id="L467">			Decomposer&lt;?&gt; result = f.generate(t);</span>
+<span class="nc bnc" id="L468" title="All 2 branches missed.">			if (result != null)</span>
+<span class="nc" id="L469">				return result;</span>
+<span class="nc" id="L470">		}</span>
+
+<span class="nc" id="L472">		return null;</span>
+	}
+
+	public static &lt;T&gt; Decomposer&lt;List&lt;T&gt;&gt; listToMapDecomposer(Function&lt;T, String&gt; keyRenderer) {
+<span class="nc" id="L476">		return new Decomposer&lt;List&lt;T&gt;&gt;() {</span>
+
+			@Override
+			public DecomposedObject decompose(List&lt;T&gt; o) {
+<span class="nc" id="L480">				DecomposedObject result = new DecomposedObject();</span>
+
+<span class="nc bnc" id="L482" title="All 2 branches missed.">				for (T e : o) {</span>
+<span class="nc" id="L483">					OPath key = OPath.index(keyRenderer.apply(e));</span>
+
+<span class="nc" id="L485">					result.put(key, e);</span>
+<span class="nc" id="L486">				}</span>
+
+<span class="nc" id="L488">				return result;</span>
+			}
+
+		};
+	}
+
+<span class="nc" id="L494">	public enum ChangeType {</span>
+<span class="nc" id="L495">		CHANGED, ADDED, REMOVED;</span>
+	}
+
+	public interface DeltaCreator&lt;T&gt; {
+		T changed(OPath2 p, ChangeType change, Object m1, Object m2);
+
+		default T missing(OPath2 p, Object m1) {
+<span class="nc" id="L502">			return changed(p, ChangeType.REMOVED, m1, null);</span>
+		}
+
+		default T additional(OPath2 p, Object m2) {
+<span class="nc" id="L506">			return changed(p, ChangeType.ADDED, null, m2);</span>
+		}
+	};
+
+	private final DeltaCreator&lt;T&gt; deltaCreator;
+<span class="nc" id="L511">	final static DeltaCreator&lt;ObjectDelta&gt; defaultDeltaCreator = (p, change, m1, m2) -&gt; new ObjectDelta(p.getPath(),</span>
+			change, m1, m2);
+
+	private void add(Consumer&lt;T&gt; sink, T delta) {
+<span class="nc bnc" id="L515" title="All 2 branches missed.">		if (delta != null)</span>
+<span class="nc" id="L516">			sink.accept(delta);</span>
+<span class="nc" id="L517">	}</span>
+
+	private void compare(OPath2 p, TypedObject m1, TypedObject m2, Consumer&lt;T&gt; sink) {
+<span class="nc bnc" id="L520" title="All 2 branches missed.">		if (m1.getValue() == m2.getValue())</span>
+<span class="nc" id="L521">			return;</span>
+
+<span class="nc bnc" id="L523" title="All 4 branches missed.">		if (m1.getValue() == null || m2.getValue() == null) {</span>
+<span class="nc" id="L524">			add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));</span>
+<span class="nc" id="L525">			return;</span>
+		}
+
+<span class="nc bnc" id="L528" title="All 2 branches missed.">		Type t1 = m1.getType() != null ? m1.getType() : m1.getValue().getClass();</span>
+
+		// decompose
+
+		@SuppressWarnings(&quot;rawtypes&quot;)
+<span class="nc" id="L533">		Decomposer decomposer = null;</span>
+
+<span class="nc bnc" id="L535" title="All 2 branches missed.">		for (Entry&lt;DecomposerMatcher, DecomposerFactory&gt; e : locationDecomposers.entrySet()) {</span>
+<span class="nc bnc" id="L536" title="All 2 branches missed.">			if (e.getKey().apply(p, t1)) {</span>
+<span class="nc" id="L537">				decomposer = e.getValue().generate(t1);</span>
+<span class="nc bnc" id="L538" title="All 2 branches missed.">				if (decomposer != null)</span>
+<span class="nc" id="L539">					break;</span>
+			}
+<span class="nc" id="L541">		}</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">		if (decomposer == null)</span>
+<span class="nc" id="L543">			decomposer = findDecomposer(t1);</span>
+
+<span class="nc bnc" id="L545" title="All 2 branches missed.">		if (decomposer != null) {</span>
+
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L548">			DecomposedObject d1 = decomposer.decompose(m1.getValue());</span>
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L550">			DecomposedObject d2 = decomposer.decompose(m2.getValue());</span>
+
+<span class="nc bnc" id="L552" title="All 2 branches missed.">			for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {</span>
+
+				// OPath child = key != null ? p.child(key) : p;
+
+<span class="nc" id="L556">				Collection&lt;TypedObject&gt; c1 = d1.get(key);</span>
+<span class="nc" id="L557">				LinkedList&lt;TypedObject&gt; c2 = new LinkedList&lt;&gt;(d2.get(key));</span>
+
+<span class="nc bnc" id="L559" title="All 6 branches missed.">				if (key != null &amp;&amp; c1.size() == 1 &amp;&amp; c2.size() == 1) {</span>
+<span class="nc" id="L560">					compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),</span>
+<span class="nc" id="L561">							Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),</span>
+<span class="nc" id="L562">							Iterables.getOnlyElement(c2), sink);</span>
+<span class="nc" id="L563">					continue;</span>
+				}
+<span class="nc bnc" id="L565" title="All 2 branches missed.">				for (TypedObject v1 : c1) {</span>
+
+<span class="nc" id="L567">					boolean found = false;</span>
+
+<span class="nc bnc" id="L569" title="All 2 branches missed.">					for (Iterator&lt;TypedObject&gt; i2 = c2.iterator(); i2.hasNext();) {</span>
+
+<span class="nc" id="L571">						List&lt;T&gt; temp = new ArrayList&lt;&gt;();</span>
+
+<span class="nc" id="L573">						TypedObject v2 = i2.next();</span>
+<span class="nc" id="L574">						compare(OPath2.root(v1, v2.getValue()), v1, v2, temp::add);</span>
+
+<span class="nc bnc" id="L576" title="All 2 branches missed.">						if (temp.isEmpty()) {</span>
+<span class="nc" id="L577">							i2.remove();</span>
+<span class="nc" id="L578">							found = true;</span>
+<span class="nc" id="L579">							break;</span>
+						}
+<span class="nc" id="L581">					}</span>
+
+<span class="nc bnc" id="L583" title="All 2 branches missed.">					if (!found) {</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">						add(sink, deltaCreator.missing(key != null ? p.child(key.path, v1.getValue(), null) : p,</span>
+<span class="nc" id="L585">								v1.getValue()));</span>
+					}
+<span class="nc" id="L587">				}</span>
+
+<span class="nc bnc" id="L589" title="All 2 branches missed.">				for (TypedObject v2 : c2) {</span>
+<span class="nc bnc" id="L590" title="All 2 branches missed.">					add(sink, deltaCreator.additional(key != null ? p.child(key.path, null, v2.getValue()) : p,</span>
+<span class="nc" id="L591">							v2.getValue()));</span>
+<span class="nc" id="L592">				}</span>
+<span class="nc" id="L593">			}</span>
+
+<span class="nc" id="L595">			return;</span>
+		}
+
+		// compare
+<span class="nc bnc" id="L599" title="All 2 branches missed.">		for (Entry&lt;Function&lt;Type, Boolean&gt;, BiFunction&lt;Object, Object, Boolean&gt;&gt; e : comparators.entrySet()) {</span>
+<span class="nc bnc" id="L600" title="All 2 branches missed.">			if (e.getKey().apply(t1)) {</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">				if (!e.getValue().apply(m1.getValue(), m2.getValue()))</span>
+<span class="nc" id="L602">					add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));</span>
+<span class="nc" id="L603">				return;</span>
+			}
+<span class="nc" id="L605">		}</span>
+<span class="nc" id="L606">		Comparator comparator = findComparator(m1.getValue().getClass());</span>
+<span class="nc bnc" id="L607" title="All 2 branches missed.">		if (comparator != null) {</span>
+<span class="nc bnc" id="L608" title="All 2 branches missed.">			if (!comparator.compare(p, m1.getValue(), m2.getValue()))</span>
+<span class="nc" id="L609">				add(sink, deltaCreator.changed(p, ChangeType.CHANGED, m1.getValue(), m2.getValue()));</span>
+<span class="nc" id="L610">			return;</span>
+		}
+<span class="nc" id="L612">		throw new Error(&quot;Don't know how to compare '&quot; + t1 + &quot;' / '&quot; + m1.getValue().getClass().getSimpleName() + &quot;'&quot;);</span>
+	}
+
+	public List&lt;T&gt; compare(Object m1, Object m2) {
+<span class="nc" id="L616">		List&lt;T&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L617">		compare(OPath2.root(m1, m2), new TypedObject(m1), new TypedObject(m2), result::add);</span>
+<span class="nc" id="L618">		return result;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
