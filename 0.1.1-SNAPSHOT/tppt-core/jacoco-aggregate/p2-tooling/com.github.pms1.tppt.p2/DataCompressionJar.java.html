@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DataCompressionJar.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">DataCompressionJar.java</span></div><h1>DataCompressionJar.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.JarOutputStream;
+import java.util.zip.ZipEntry;
+
+import org.codehaus.plexus.component.annotations.Component;
+
+@Component(role = DataCompression.class, hint = &quot;jar&quot;)
+<span class="nc" id="L16">public class DataCompressionJar implements DataCompression {</span>
+
+	@Override
+	public String getFileSuffix() {
+<span class="nc" id="L20">		return &quot;jar&quot;;</span>
+	}
+
+	@Override
+	public String getP2IndexSuffix() {
+<span class="nc" id="L25">		return &quot;xml&quot;;</span>
+	}
+
+	@Override
+	public InputStream openInputStream(Path repository, String prefix) throws IOException {
+<span class="nc" id="L30">		JarInputStream jar = new JarInputStream(Files.newInputStream(repository.resolve(prefix + &quot;.jar&quot;)));</span>
+
+<span class="nc" id="L32">		String file = prefix + &quot;.xml&quot;;</span>
+
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		for (ZipEntry e = jar.getNextEntry(); e != null; e = jar.getNextEntry()) {</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">			if (e.getName().equals(file))</span>
+<span class="nc" id="L36">				return jar;</span>
+		}
+
+<span class="nc" id="L39">		throw new IllegalArgumentException(&quot;Did not contain '&quot; + file + &quot;'&quot;);</span>
+	}
+
+	@Override
+	public OutputStream openOutputStream(Path repository, String prefix) throws IOException {
+<span class="nc" id="L44">		OutputStream os = Files.newOutputStream(repository.resolve(prefix + &quot;.jar&quot;));</span>
+<span class="nc" id="L45">		JarOutputStream jar = new JarOutputStream(os);</span>
+
+<span class="nc" id="L47">		JarEntry je = new JarEntry(prefix + &quot;.xml&quot;);</span>
+
+<span class="nc" id="L49">		jar.putNextEntry(je);</span>
+
+		// jar.close() will close &quot;os&quot; too.
+<span class="nc" id="L52">		return jar;</span>
+	}
+
+	@Override
+	public int getPriority() {
+<span class="nc" id="L57">		return 100;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DomRenderer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">DomRenderer.java</span></div><h1>DomRenderer.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Function;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.namespace.QName;
+import javax.xml.transform.dom.DOMResult;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Comment;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.ProcessingInstruction;
+import org.w3c.dom.Text;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+
+@Component(role = DomRenderer.class)
+<span class="nc" id="L31">public class DomRenderer {</span>
+
+<span class="nc" id="L33">	static public enum Options {</span>
+<span class="nc" id="L34">		TOP_LEVEL;</span>
+	}
+
+	public String render(Node item, Options... options) {
+<span class="nc" id="L38">		return render(item, createOptions(options));</span>
+	}
+
+	public String render(Node item, DomRendererOptions options) {
+<span class="nc" id="L42">		StringBuilder b = new StringBuilder();</span>
+		try {
+<span class="nc" id="L44">			render(item, b, options, &quot;&quot;);</span>
+<span class="nc" id="L45">		} catch (IOException e) {</span>
+<span class="nc" id="L46">			throw new RuntimeException();</span>
+<span class="nc" id="L47">		}</span>
+<span class="nc" id="L48">		return b.toString();</span>
+	}
+
+	public void render(Appendable b, Node item, DomRendererOptions options) throws IOException {
+<span class="nc" id="L52">		render(item, b, options, &quot;&quot;);</span>
+<span class="nc" id="L53">	}</span>
+
+	private DomRendererOptions createOptions(Options[] options) {
+<span class="nc" id="L56">		DomRendererOptions o = new DomRendererOptions();</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		for (Options o2 : options) {</span>
+<span class="nc bnc" id="L58" title="All 2 branches missed.">			switch (o2) {</span>
+			case TOP_LEVEL:
+<span class="nc" id="L60">				o.recurse = false;</span>
+				break;
+			}
+		}
+
+<span class="nc" id="L65">		return o;</span>
+	}
+
+<span class="nc" id="L68">	static public class DomRendererOptions {</span>
+<span class="nc" id="L69">		public boolean recurse = true;</span>
+<span class="nc" id="L70">		public String indent = null;</span>
+<span class="nc" id="L71">		public char quote = '&quot;';</span>
+
+<span class="nc" id="L73">		public List&lt;Function&lt;Element, List&lt;String&gt;&gt;&gt; attributeSorters = new LinkedList&lt;&gt;();</span>
+	}
+
+	private static String getReplacement(char c, boolean attr) {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">		if (attr) {</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">			switch (c) {</span>
+			case (char) 9: // \t
+<span class="nc" id="L80">				return &quot;#x9&quot;;</span>
+			case (char) 10: // \r
+<span class="nc" id="L82">				return &quot;#xA&quot;;</span>
+			case '&quot;':
+<span class="nc" id="L84">				return &quot;quot&quot;; //$NON-NLS-1$</span>
+			}
+<span class="nc bnc" id="L86" title="All 2 branches missed.">			if ((int) c &lt; 32)</span>
+<span class="nc" id="L87">				throw new Error(&quot;C=&quot; + c + &quot; &quot; + (int) c);</span>
+		}
+
+		// Encode special XML characters into the equivalent character
+		// references.
+		// These five are defined by default for all XML documents.
+<span class="nc bnc" id="L93" title="All 9 branches missed.">		switch (c) {</span>
+		case (char) 9: // \t
+<span class="nc" id="L95">			return &quot;#x9&quot;;</span>
+		case (char) 13: // \n
+<span class="nc" id="L97">			return &quot;#x0D&quot;;</span>
+		case (char) 10: // \r
+<span class="nc" id="L99">			return &quot;#xA&quot;;</span>
+		case '&quot;':
+<span class="nc" id="L101">			return &quot;quot&quot;; //$NON-NLS-1$</span>
+		case '&lt;':
+<span class="nc" id="L103">			return &quot;lt&quot;; //$NON-NLS-1$</span>
+		case '&gt;':
+<span class="nc" id="L105">			return &quot;gt&quot;; //$NON-NLS-1$</span>
+		case '\'':
+<span class="nc" id="L107">			return &quot;apos&quot;; //$NON-NLS-1$</span>
+		case '&amp;':
+<span class="nc" id="L109">			return &quot;amp&quot;; //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L111">		return null;</span>
+	}
+
+	private static String quote(String text, boolean attr) {
+<span class="nc" id="L115">		StringBuilder result = new StringBuilder();</span>
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		for (char c : text.toCharArray()) {</span>
+<span class="nc" id="L118">			String replacement = getReplacement(c, attr);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">			if (replacement != null)</span>
+<span class="nc" id="L120">				result.append('&amp;').append(replacement).append(';');</span>
+			else
+<span class="nc" id="L122">				result.append(c);</span>
+
+		}
+
+<span class="nc" id="L126">		return result.toString();</span>
+
+	}
+
+	private static String quoteAttribute(String nodeValue, DomRendererOptions options) {
+<span class="nc" id="L131">		return options.quote + quote(nodeValue, true) + options.quote;</span>
+	}
+
+	private void render(Node node, Appendable b, DomRendererOptions options, String indent) throws IOException {
+<span class="nc" id="L135">		boolean children = options.recurse;</span>
+
+<span class="nc bnc" id="L137" title="All 6 branches missed.">		switch (node.getNodeType()) {</span>
+		case Node.TEXT_NODE:
+<span class="nc" id="L139">			Text t = (Text) node;</span>
+<span class="nc" id="L140">			String txt = t.getTextContent();</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			if (options.indent != null) {</span>
+<span class="nc" id="L142">				txt = txt.trim();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				if (!txt.isEmpty())</span>
+<span class="nc" id="L144">					b.append(indent);</span>
+			}
+<span class="nc" id="L146">			b.append(quote(txt, false));</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">			if (options.indent != null)</span>
+<span class="nc" id="L148">				b.append(&quot;\n&quot;);</span>
+<span class="nc" id="L149">			children = false;</span>
+<span class="nc" id="L150">			break;</span>
+		case Node.ELEMENT_NODE:
+<span class="nc" id="L152">			Element e = (Element) node;</span>
+<span class="nc" id="L153">			children = true;</span>
+<span class="nc" id="L154">			b.append(indent);</span>
+<span class="nc" id="L155">			b.append(&quot;&lt;&quot; + e.getNodeName());</span>
+
+<span class="nc" id="L157">			List&lt;String&gt; sort = Collections.emptyList();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">			for (Function&lt;Element, List&lt;String&gt;&gt; e1 : options.attributeSorters) {</span>
+<span class="nc" id="L159">				List&lt;String&gt; s = e1.apply(e);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">				if (s != null) {</span>
+<span class="nc" id="L161">					sort = s;</span>
+<span class="nc" id="L162">					break;</span>
+				}
+<span class="nc" id="L164">			}</span>
+<span class="nc" id="L165">			NamedNodeMap attributes = e.getAttributes();</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">			for (String name : sort) {</span>
+<span class="nc" id="L167">				Attr a = (Attr) attributes.getNamedItem(name);</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">				if (a != null)</span>
+<span class="nc" id="L169">					b.append(&quot; &quot;).append(a.getNodeName()).append(&quot;=&quot;).append(quoteAttribute(a.getNodeValue(), options));</span>
+<span class="nc" id="L170">			}</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">			for (int i = 0; i != attributes.getLength(); ++i) {</span>
+<span class="nc" id="L172">				Attr a = (Attr) attributes.item(i);</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">				if (!sort.contains(a.getNodeName()))</span>
+<span class="nc" id="L174">					b.append(&quot; &quot;).append(a.getNodeName()).append(&quot;=&quot;).append(quoteAttribute(a.getNodeValue(), options));</span>
+			}
+<span class="nc bnc" id="L176" title="All 2 branches missed.">			if (e.getChildNodes().getLength() == 0) {</span>
+<span class="nc" id="L177">				b.append(&quot;/&gt;&quot;);</span>
+<span class="nc" id="L178">				children = false;</span>
+			} else {
+<span class="nc" id="L180">				b.append(&quot;&gt;&quot;);</span>
+			}
+<span class="nc bnc" id="L182" title="All 2 branches missed.">			if (options.indent != null)</span>
+<span class="nc" id="L183">				b.append(&quot;\n&quot;);</span>
+			break;
+		case Node.PROCESSING_INSTRUCTION_NODE:
+<span class="nc" id="L186">			children = false;</span>
+<span class="nc" id="L187">			ProcessingInstruction pi = (ProcessingInstruction) node;</span>
+<span class="nc" id="L188">			b.append(&quot;&lt;?&quot; + pi.getTarget() + &quot; &quot; + pi.getData() + &quot;?&gt;&quot;);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">			if (options.indent != null)</span>
+<span class="nc" id="L190">				b.append(&quot;\n&quot;);</span>
+			break;
+		case Node.COMMENT_NODE:
+<span class="nc" id="L193">			children = false;</span>
+<span class="nc" id="L194">			Comment c = (Comment) node;</span>
+<span class="nc" id="L195">			b.append(&quot;&lt;!--&quot; + c.getTextContent() + &quot;--&gt;&quot;);</span>
+<span class="nc" id="L196">			break;</span>
+		case Node.DOCUMENT_NODE:
+<span class="nc" id="L198">			children = true;</span>
+<span class="nc" id="L199">			Document d = (Document) node;</span>
+
+<span class="nc bnc" id="L201" title="All 2 branches missed.">			String standalone = d.getXmlStandalone() ? &quot; standalone=&quot; + options.quote + &quot;yes&quot; + options.quote : &quot;&quot;;</span>
+
+<span class="nc bnc" id="L203" title="All 2 branches missed.">			if (d.getXmlVersion() == null)</span>
+<span class="nc" id="L204">				throw new UnsupportedOperationException();</span>
+
+			// we always transcode to UTF-8
+			// if (d.getXmlEncoding() != null &amp;&amp;
+			// !Objects.equals(d.getXmlEncoding().toUpperCase(), &quot;UTF-8&quot;))
+			// throw new UnsupportedOperationException();
+
+<span class="nc" id="L211">			b.append(&quot;&lt;?xml version=&quot; + options.quote + d.getXmlVersion() + options.quote + &quot; encoding=&quot; + options.quote</span>
+					+ &quot;UTF-8&quot; + options.quote + standalone + &quot;?&gt;&quot;);
+<span class="nc bnc" id="L213" title="All 2 branches missed.">			if (options.indent != null)</span>
+<span class="nc" id="L214">				b.append(&quot;\n&quot;);</span>
+			break;
+		default:
+<span class="nc" id="L217">			throw new Error(&quot;Unhandled node &quot; + node.getNodeType() + &quot; &quot; + node);</span>
+		}
+
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (children) {</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">			for (int i = 0; i != node.getChildNodes().getLength(); ++i)</span>
+<span class="nc bnc" id="L222" title="All 4 branches missed.">				render(node.getChildNodes().item(i), b, options,</span>
+						options.indent != null &amp;&amp; !(node instanceof Document) ? indent + options.indent : indent);
+<span class="nc bnc" id="L224" title="All 2 branches missed.">		} else if (node.getChildNodes().getLength() != 0) {</span>
+<span class="nc" id="L225">			throw new IllegalStateException(&quot;No children expected for nodeType=&quot; + node.getNodeType() + &quot; &quot; + node);</span>
+		}
+
+<span class="nc bnc" id="L228" title="All 2 branches missed.">		switch (node.getNodeType()) {</span>
+		case Node.ELEMENT_NODE:
+<span class="nc" id="L230">			Element e = (Element) node;</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">			if (e.getChildNodes().getLength() != 0) {</span>
+<span class="nc" id="L232">				b.append(indent);</span>
+<span class="nc" id="L233">				b.append(&quot;&lt;/&quot; + node.getNodeName() + &quot;&gt;&quot;);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">				if (options.indent != null)</span>
+<span class="nc" id="L235">					b.append(&quot;\n&quot;);</span>
+			}
+		}
+<span class="nc" id="L238">	}</span>
+
+	public String jaxbRender(JAXBContext context, Object o, String name, Options... options) {
+		try {
+<span class="nc" id="L242">			Marshaller jaxbMarshaller = context.createMarshaller();</span>
+
+			@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
+<span class="nc" id="L245">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(name), o.getClass(), o);</span>
+
+<span class="nc" id="L247">			DOMResult r = new DOMResult();</span>
+
+<span class="nc" id="L249">			jaxbMarshaller.marshal(root, r);</span>
+
+<span class="nc" id="L251">			return render(((Document) r.getNode()).getDocumentElement(), options);</span>
+<span class="nc" id="L252">		} catch (JAXBException e) {</span>
+<span class="nc" id="L253">			throw Throwables.propagate(e);</span>
+		}
+	}
+
+	public String jaxbRender(JAXBContext context, Object o, Options... options) {
+<span class="nc" id="L258">		Preconditions.checkNotNull(o);</span>
+<span class="nc" id="L259">		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">		Preconditions.checkArgument(!annotation.namespace().isEmpty());</span>
+
+<span class="nc" id="L262">		return jaxbRender(context, o, annotation.name(), options);</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

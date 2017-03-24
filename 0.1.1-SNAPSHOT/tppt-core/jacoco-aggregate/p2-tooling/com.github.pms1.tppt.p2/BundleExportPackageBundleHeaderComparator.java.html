@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BundleExportPackageBundleHeaderComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">BundleExportPackageBundleHeaderComparator.java</span></div><h1>BundleExportPackageBundleHeaderComparator.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.eclipse.osgi.util.ManifestElement;
+import org.osgi.framework.Version;
+
+import com.github.pms1.tppt.p2.BundleManifestComparator.UnparseableManifestException;
+import com.google.common.collect.Sets;
+
+@Component(role = BundleHeaderComparator.class, hint = BundleExportPackageBundleHeaderComparator.HINT)
+<span class="nc" id="L17">public class BundleExportPackageBundleHeaderComparator extends AbstractManifestHeaderComparator {</span>
+	public final static String HINT = &quot;Export-Package&quot;;
+
+	@Override
+	public boolean compare(FileId file1, FileId file2, ManifestElement[] headers1, ManifestElement[] headers2,
+			Consumer&lt;FileDelta&gt; dest) {
+
+<span class="nc" id="L24">		Map&lt;String, ManifestElement&gt; package1 = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">		for (ManifestElement e : headers1) {</span>
+<span class="nc" id="L26">			ManifestElement old = package1.put(e.getValue(), e);</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">			if (old != null)</span>
+<span class="nc" id="L28">				throw new UnparseableManifestException(file1, &quot;Duplicate Export-Package &quot; + e.getValue());</span>
+		}
+
+<span class="nc" id="L31">		Map&lt;String, ManifestElement&gt; package2 = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">		for (ManifestElement e : headers2) {</span>
+<span class="nc" id="L33">			ManifestElement old = package2.put(e.getValue(), e);</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">			if (old != null)</span>
+<span class="nc" id="L35">				throw new UnparseableManifestException(file1, &quot;Duplicate Export-Package &quot; + e.getValue());</span>
+		}
+
+<span class="nc bnc" id="L38" title="All 2 branches missed.">		for (String p : Sets.union(package1.keySet(), package2.keySet())) {</span>
+<span class="nc" id="L39">			ManifestElement e1 = package1.get(p);</span>
+<span class="nc" id="L40">			ManifestElement e2 = package2.get(p);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">			if (e1 == null) {</span>
+<span class="nc" id="L42">				dest.accept(new ManifestExportPackageAddedDelta(file1, file2, p));</span>
+<span class="nc" id="L43">				continue;</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">			} else if (e2 == null) {</span>
+<span class="nc" id="L45">				dest.accept(new ManifestExportPackageRemovedDelta(file1, file2, p));</span>
+<span class="nc" id="L46">				continue;</span>
+			}
+
+<span class="nc bnc" id="L49" title="All 2 branches missed.">			if (!Objects.equals(directives(file1, e1), directives(file2, e2)))</span>
+<span class="nc" id="L50">				return false;</span>
+
+<span class="nc" id="L52">			Map&lt;String, List&lt;String&gt;&gt; attributes1 = attributes(file1, e1);</span>
+<span class="nc" id="L53">			Map&lt;String, List&lt;String&gt;&gt; attributes2 = attributes(file2, e2);</span>
+
+<span class="nc bnc" id="L55" title="All 2 branches missed.">			for (String a : Sets.union(attributes1.keySet(), attributes2.keySet())) {</span>
+<span class="nc bnc" id="L56" title="All 6 branches missed.">				switch (a) {</span>
+				case &quot;version&quot;:
+<span class="nc" id="L58">					List&lt;String&gt; v1 = attributes1.get(a);</span>
+<span class="nc" id="L59">					List&lt;String&gt; v2 = attributes2.get(a);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">					if (v1.size() &gt; 1)</span>
+<span class="nc" id="L61">						return false;</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">					Version vv1 = v1.isEmpty() ? null : Version.parseVersion(v1.get(0));</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">					if (v2.size() &gt; 1)</span>
+<span class="nc" id="L64">						return false;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">					Version vv2 = v2.isEmpty() ? null : Version.parseVersion(v2.get(0));</span>
+
+<span class="nc bnc" id="L67" title="All 2 branches missed.">					if (!Objects.equals(v1, v2))</span>
+<span class="nc" id="L68">						dest.accept(new ManifestExportPackageVersionDelta(file1, file2, p, vv1, vv2));</span>
+
+					break;
+				default:
+<span class="nc" id="L72">					return false;</span>
+				}
+<span class="nc" id="L74">			}</span>
+<span class="nc" id="L75">		}</span>
+
+<span class="nc" id="L77">		return true;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

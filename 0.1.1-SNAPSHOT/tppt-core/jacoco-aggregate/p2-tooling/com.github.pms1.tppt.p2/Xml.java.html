@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Xml.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">Xml.java</span></div><h1>Xml.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+
+import org.w3c.dom.ls.LSInput;
+import org.w3c.dom.ls.LSResourceResolver;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
+import com.google.common.base.Preconditions;
+
+final class Xml {
+<span class="nc" id="L26">	private Xml() {</span>
+
+<span class="nc" id="L28">	}</span>
+
+	private static final class ClasspathResourceLSResourceResolver implements LSResourceResolver {
+		private final Class&lt;?&gt; clazz;
+
+<span class="nc" id="L33">		ClasspathResourceLSResourceResolver(Class&lt;?&gt; clazz) {</span>
+<span class="nc" id="L34">			Preconditions.checkNotNull(clazz);</span>
+<span class="nc" id="L35">			this.clazz = clazz;</span>
+<span class="nc" id="L36">		}</span>
+
+		@Override
+		public LSInput resolveResource(String type, String namespaceURI, String publicId, String systemId,
+				String baseURI) {
+
+<span class="nc bnc" id="L42" title="All 4 branches missed.">			if (type.equals(&quot;http://www.w3.org/2001/XMLSchema&quot;)</span>
+					&amp;&amp; /* namespaceURI == null &amp;&amp; */ publicId == null
+			/* &amp;&amp; baseURI == null */) {
+<span class="nc" id="L45">				return new LSInput() {</span>
+
+					@Override
+					public void setSystemId(String systemId) {
+<span class="nc" id="L49">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setStringData(String stringData) {
+<span class="nc" id="L54">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setPublicId(String publicId) {
+<span class="nc" id="L59">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setEncoding(String encoding) {
+<span class="nc" id="L64">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setCharacterStream(Reader characterStream) {
+<span class="nc" id="L69">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setCertifiedText(boolean certifiedText) {
+<span class="nc" id="L74">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setByteStream(InputStream byteStream) {
+<span class="nc" id="L79">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public void setBaseURI(String baseURI) {
+<span class="nc" id="L84">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public String getSystemId() {
+<span class="nc" id="L89">						return systemId;</span>
+					}
+
+					@Override
+					public String getStringData() {
+<span class="nc" id="L94">						return null;</span>
+					}
+
+					@Override
+					public String getPublicId() {
+<span class="nc" id="L99">						return null;</span>
+					}
+
+					@Override
+					public String getEncoding() {
+<span class="nc" id="L104">						return null;</span>
+					}
+
+					@Override
+					public Reader getCharacterStream() {
+<span class="nc" id="L109">						return null;</span>
+					}
+
+					@Override
+					public boolean getCertifiedText() {
+<span class="nc" id="L114">						throw new UnsupportedOperationException();</span>
+					}
+
+					@Override
+					public InputStream getByteStream() {
+<span class="nc" id="L119">						return clazz.getResourceAsStream(systemId);</span>
+					}
+
+					@Override
+					public String getBaseURI() {
+<span class="nc" id="L124">						return baseURI;</span>
+					}
+				};
+			} else {
+<span class="nc" id="L128">				throw new Error(&quot;Cannot locate resource (type='&quot; + type + &quot;', namespaceURI='&quot; + namespaceURI</span>
+						+ &quot;', publicId='&quot; + publicId + &quot;', systemId='&quot; + systemId + &quot;', baseURI='&quot; + baseURI + &quot;')&quot;);
+			}
+		}
+	}
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">	static class Holder {</span>
+		final static DocumentBuilderFactory factory;
+		static {
+<span class="nc" id="L137">			factory = DocumentBuilderFactory.newInstance();</span>
+<span class="nc bnc" id="L138" title="All 4 branches missed.">			assert factory != null;</span>
+<span class="nc" id="L139">			factory.setNamespaceAware(true);</span>
+<span class="nc" id="L140">		}</span>
+	}
+
+	// The default handler of Oracle's JDK writes to System.err, so we
+	// have to overwrite it.
+<span class="nc" id="L145">	private static ErrorHandler throwingErrorHandler = new ErrorHandler() {</span>
+
+		@Override
+		public void warning(SAXParseException exception) throws SAXException {
+			// may be to strict, not seen in practice (yet)
+<span class="nc" id="L150">			throw exception;</span>
+		}
+
+		@Override
+		public void error(SAXParseException exception) throws SAXException {
+			// may be to strict, not seen in practice (yet)
+<span class="nc" id="L156">			throw exception;</span>
+		}
+
+		@Override
+		public void fatalError(SAXParseException exception) throws SAXException {
+<span class="nc" id="L161">			throw exception;</span>
+
+		}
+
+	};
+
+	// We never, ever want to try to load external resources
+<span class="nc" id="L168">	private static final EntityResolver throwingEntityResolver = new EntityResolver() {</span>
+
+		@Override
+		public InputSource resolveEntity(String publicId, String systemId) throws SAXException, IOException {
+<span class="nc" id="L172">			throw new Error(&quot;Cannot locate resource (publicId='&quot; + publicId + &quot;', systemId='&quot; + systemId + &quot;')&quot;);</span>
+		}
+	};
+
+	private static void harden(DocumentBuilder db) {
+<span class="nc" id="L177">		db.setEntityResolver(throwingEntityResolver);</span>
+<span class="nc" id="L178">		db.setErrorHandler(throwingErrorHandler);</span>
+<span class="nc" id="L179">	}</span>
+
+	static Schema createSchema(Class&lt;?&gt; clazz, String resource) {
+<span class="nc" id="L182">		SchemaFactory schemaFactory = SchemaFactory.newInstance(&quot;http://www.w3.org/2001/XMLSchema&quot;);</span>
+<span class="nc" id="L183">		schemaFactory.setErrorHandler(throwingErrorHandler);</span>
+<span class="nc" id="L184">		schemaFactory.setResourceResolver(new ClasspathResourceLSResourceResolver(clazz));</span>
+<span class="nc" id="L185">		try (InputStream is = clazz.getResourceAsStream(resource)) {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">			if (is == null)</span>
+<span class="nc" id="L187">				throw new Error(&quot;C=&quot; + clazz + &quot; &quot; + resource);</span>
+<span class="nc" id="L188">			return schemaFactory.newSchema(new Source[] { new StreamSource(is) });</span>
+<span class="nc bnc" id="L189" title="All 8 branches missed.">		} catch (SAXException | IOException e) {</span>
+<span class="nc" id="L190">			throw new RuntimeException(&quot;Creation of schema (&quot; + clazz.getName() + &quot;,&quot; + resource + &quot; failed&quot;</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">					+ (e.getMessage() != null ? &quot;: &quot; + e.getMessage() : &quot;&quot;), e);</span>
+		}
+	}
+
+	static DocumentBuilder createValidatingDocumentBuilder(Class&lt;?&gt; clazz, String resource) {
+		try {
+<span class="nc" id="L197">			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();</span>
+<span class="nc" id="L198">			dbf.setValidating(false);</span>
+
+<span class="nc" id="L200">			SchemaFactory schemaFactory = SchemaFactory.newInstance(&quot;http://www.w3.org/2001/XMLSchema&quot;);</span>
+<span class="nc" id="L201">			schemaFactory.setErrorHandler(throwingErrorHandler);</span>
+<span class="nc" id="L202">			schemaFactory.setResourceResolver(new ClasspathResourceLSResourceResolver(clazz));</span>
+<span class="nc" id="L203">			try (InputStream is = clazz.getResourceAsStream(resource)) {</span>
+<span class="nc" id="L204">				dbf.setSchema(schemaFactory.newSchema(new Source[] { new StreamSource(is) }));</span>
+<span class="nc bnc" id="L205" title="All 8 branches missed.">			}</span>
+
+<span class="nc" id="L207">			DocumentBuilder db = dbf.newDocumentBuilder();</span>
+
+<span class="nc" id="L209">			harden(db);</span>
+
+<span class="nc" id="L211">			return db;</span>
+<span class="nc" id="L212">		} catch (IOException | ParserConfigurationException | SAXException e) {</span>
+<span class="nc" id="L213">			throw new RuntimeException(&quot;Creation of validating parser(&quot; + clazz.getName() + &quot;,&quot; + resource + &quot; failed&quot;</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">					+ (e.getMessage() != null ? &quot;: &quot; + e.getMessage() : &quot;&quot;), e);</span>
+		}
+	}
+
+	static DocumentBuilder createDocumentBuilder() {
+		try {
+<span class="nc" id="L220">			DocumentBuilder db = Holder.factory.newDocumentBuilder();</span>
+
+<span class="nc" id="L222">			harden(db);</span>
+
+<span class="nc" id="L224">			return db;</span>
+<span class="nc" id="L225">		} catch (ParserConfigurationException e) {</span>
+<span class="nc" id="L226">			throw new RuntimeException(e);</span>
+		}
+
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
