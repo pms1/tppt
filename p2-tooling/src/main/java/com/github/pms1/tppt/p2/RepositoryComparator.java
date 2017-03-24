@@ -342,6 +342,14 @@ public class RepositoryComparator {
 		}
 	}
 
+	static class CompositeDelta extends FileDelta {
+		public CompositeDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
+			super(id1, id2, "Composite change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
+			Preconditions.checkNotNull(p);
+			Preconditions.checkNotNull(change);
+		}
+	}
+
 	static class ArtifactsDelta extends FileDelta {
 		public ArtifactsDelta(FileId id1, FileId id2, OPath2 p, ChangeType change) {
 			super(id1, id2, "Artifacts change {0} {1}: {2} -> {3}", p.getPath(), change, p.getLeft(), p.getRight());
@@ -453,7 +461,7 @@ public class RepositoryComparator {
 									Long.parseLong((String) m2));
 						}
 
-						throw new Error(p + " " + change + " " + m1 + " " + m2);
+						return new CompositeDelta(arf1id, arf2id, p, change);
 					}
 
 				}).build();

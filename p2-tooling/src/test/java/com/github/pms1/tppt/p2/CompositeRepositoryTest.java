@@ -10,6 +10,7 @@ import org.junit.rules.TemporaryFolder;
 
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
+import com.github.pms1.tppt.p2.jaxb.composite.Property;
 
 public class CompositeRepositoryTest {
 
@@ -18,6 +19,42 @@ public class CompositeRepositoryTest {
 
 	@Rule
 	public TemporaryFolder folder = new TemporaryFolder();
+
+	@Test
+	public void compare() throws Exception {
+		P2RepositoryFactory factory = plexusContainer.lookup(P2RepositoryFactory.class);
+
+		P2CompositeRepository composite1 = factory.createComposite(folder.getRoot().toPath());
+		Property p = new Property();
+		p.setName("n");
+		p.setValue("v");
+		composite1.getArtifactRepositoryFacade().getRepository().getProperties().getProperty().add(p);
+		composite1.getArtifactRepositoryFacade().getRepository().getProperties().setSize(1);
+
+		Child c = new Child();
+		c.setLocation("foo1");
+		composite1.getArtifactRepositoryFacade().getRepository().getChildren().getChild().add(c);
+		composite1.getArtifactRepositoryFacade().getRepository().getChildren().setSize(1);
+
+		P2CompositeRepository composite2 = factory.createComposite(folder.getRoot().toPath());
+		p = new Property();
+		p.setName("n");
+		p.setValue("v2");
+		composite2.getArtifactRepositoryFacade().getRepository().getProperties().getProperty().add(p);
+		composite2.getArtifactRepositoryFacade().getRepository().getProperties().setSize(2);
+		c = new Child();
+		c.setLocation("foo1");
+		composite2.getArtifactRepositoryFacade().getRepository().getChildren().getChild().add(c);
+		c = new Child();
+		c.setLocation("foo2");
+		composite2.getArtifactRepositoryFacade().getRepository().getChildren().getChild().add(c);
+		composite2.getArtifactRepositoryFacade().getRepository().getChildren().setSize(2);
+
+		RepositoryComparator comparator = plexusContainer.lookup(RepositoryComparator.class);
+
+		comparator.run(composite1, composite2);
+
+	}
 
 	@Test
 	public void create() throws Exception {
