@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>P2RepositoryFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">P2RepositoryFactory.java</span></div><h1>P2RepositoryFactory.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.util.IOUtil;
+
+import com.github.pms1.tppt.p2.jaxb.Repository;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
+import com.google.common.base.Preconditions;
+
+@Component(role = P2RepositoryFactory.class)
+<span class="nc" id="L37">public class P2RepositoryFactory {</span>
+
+	@Requirement
+	private ArtifactRepositoryFactory artifactRepositoryFactory;
+
+	@Requirement
+	private MetadataRepositoryFactory metadataRepositoryFactory;
+
+	@Requirement
+	private CompositeArtifactRepositoryFactory compositeArtifactRepositoryFactory;
+
+	@Requirement
+	private CompositeMetadataRepositoryFactory compositeMetadataRepositoryFactory;
+
+	@Requirement
+	private Map&lt;String, DataCompression&gt; compressions;
+
+	@Requirement(hint = &quot;xml&quot;)
+	private DataCompression noCompression;
+
+	void setCompressions(Map&lt;String, DataCompression&gt; compressions) {
+<span class="nc" id="L58">		this.compressions = compressions;</span>
+<span class="nc" id="L59">	}</span>
+
+	public static final String P2INDEX = &quot;p2.index&quot;;
+
+	private static final String P2_VERSION = &quot;1&quot;;
+	private static final String P2_VERSION_PROPERTY = &quot;version&quot;;
+
+<span class="nc" id="L66">	private static final Comparator&lt;? super DataCompression&gt; compressionPrioritySorter = (b, a) -&gt; a.getPriority()</span>
+<span class="nc" id="L67">			- b.getPriority();</span>
+
+	static class P2Index {
+		final private Properties properties;
+
+<span class="nc" id="L72">		P2Index() {</span>
+<span class="nc" id="L73">			properties = new Properties();</span>
+<span class="nc" id="L74">			properties.put(P2_VERSION_PROPERTY, P2_VERSION);</span>
+<span class="nc" id="L75">		}</span>
+
+<span class="nc" id="L77">		P2Index(Path root) throws IOException {</span>
+<span class="nc" id="L78">			properties = new Properties();</span>
+<span class="nc" id="L79">			try (InputStream is = Files.newInputStream(root.resolve(P2INDEX))) {</span>
+<span class="nc" id="L80">				properties.load(is);</span>
+<span class="nc bnc" id="L81" title="All 8 branches missed.">			}</span>
+
+<span class="nc" id="L83">			String version = properties.getProperty(P2_VERSION_PROPERTY, null);</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (!Objects.equals(version, P2_VERSION))</span>
+<span class="nc" id="L85">				throw new UnsupportedOperationException(</span>
+						&quot;p2.index does not have a supported version: &quot; + version + &quot; at &quot; + root);
+<span class="nc" id="L87">		}</span>
+
+		@Deprecated
+		public void set(String property, String prefix, DataCompression... compressions) {
+<span class="nc" id="L91">			LinkedHashSet&lt;String&gt; entries = new LinkedHashSet&lt;&gt;();</span>
+
+<span class="nc bnc" id="L93" title="All 2 branches missed.">			for (DataCompression c : compressions)</span>
+<span class="nc" id="L94">				entries.add(prefix + &quot;.&quot; + c.getP2IndexSuffix());</span>
+<span class="nc" id="L95">			entries.add(&quot;!&quot;);</span>
+
+<span class="nc" id="L97">			String newEntry = entries.stream().collect(Collectors.joining(&quot;,&quot;));</span>
+
+<span class="nc" id="L99">			properties.setProperty(property, newEntry);</span>
+<span class="nc" id="L100">		}</span>
+
+		public DataCompression prefered(String property, String prefix, Collection&lt;DataCompression&gt; compressions,
+				Set&lt;DataCompression&gt; available) {
+
+<span class="nc" id="L105">			String p2entry = properties.getProperty(property);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (p2entry == null)</span>
+<span class="nc" id="L107">				throw new IllegalArgumentException(&quot;No entry in p2.index for '&quot; + property + &quot;'&quot;);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">			for (String e : p2entry.trim().split(&quot;,&quot;)) {</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">				if (e.equals(&quot;!&quot;))</span>
+<span class="nc" id="L110">					break;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">				if (!e.startsWith(prefix + &quot;.&quot;))</span>
+<span class="nc" id="L112">					throw new IllegalArgumentException(&quot;Unhandled p2.index entry '&quot; + e + &quot;'&quot;);</span>
+<span class="nc" id="L113">				e = e.substring(prefix.length() + 1);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">				for (DataCompression c : compressions) {</span>
+<span class="nc bnc" id="L115" title="All 4 branches missed.">					if (c.getP2IndexSuffix().equals(e) &amp;&amp; available.contains(c)) {</span>
+<span class="nc" id="L116">						return c;</span>
+					}
+<span class="nc" id="L118">				}</span>
+			}
+
+<span class="nc" id="L121">			throw new UnsupportedOperationException(&quot;No supported format found in &quot; + p2entry);</span>
+		}
+
+		public void write(Path root) throws IOException {
+<span class="nc" id="L125">			try (OutputStream os = Files.newOutputStream(root.resolve(P2INDEX))) {</span>
+<span class="nc" id="L126">				properties.store(os, null);</span>
+<span class="nc bnc" id="L127" title="All 8 branches missed.">			}</span>
+<span class="nc" id="L128">		}</span>
+
+		P2IndexType getIndexEntry(P2Kind artifact) {
+<span class="nc" id="L131">			String p2entry = properties.getProperty(artifact.getProperty());</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			if (p2entry == null)</span>
+<span class="nc" id="L133">				throw new IllegalArgumentException(&quot;No entry in p2.index for '&quot; + artifact + &quot;'&quot;);</span>
+
+<span class="nc" id="L135">			P2IndexType result = null;</span>
+
+<span class="nc bnc" id="L137" title="All 2 branches missed.">			for (String e : p2entry.trim().split(&quot;,&quot;)) {</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">				if (e.equals(&quot;!&quot;))</span>
+<span class="nc" id="L139">					break;</span>
+
+<span class="nc" id="L141">				int idx = e.lastIndexOf('.');</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">				if (idx == -1)</span>
+<span class="nc" id="L143">					throw new IllegalArgumentException();</span>
+
+<span class="nc" id="L145">				P2IndexType t = P2IndexType.fromFilePrefix(e.substring(0, idx));</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">				if (result == null)</span>
+<span class="nc" id="L147">					result = t;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">				else if (result != null)</span>
+<span class="nc" id="L149">					throw new IllegalArgumentException(&quot;Mixed types for '&quot; + artifact + &quot;'&quot;);</span>
+			}
+
+<span class="nc bnc" id="L152" title="All 2 branches missed.">			if (result == null)</span>
+<span class="nc" id="L153">				throw new IllegalArgumentException(&quot;No types for '&quot; + artifact + &quot;'&quot;);</span>
+
+<span class="nc" id="L155">			return result;</span>
+		}
+
+		public P2Type identifyType(Set&lt;P2Kind&gt; kinds) {
+<span class="nc" id="L159">			P2Type type = null;</span>
+
+<span class="nc bnc" id="L161" title="All 2 branches missed.">			for (P2Kind t : kinds) {</span>
+<span class="nc" id="L162">				P2IndexType entry = getIndexEntry(t);</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				if (entry.getKind() != t)</span>
+<span class="nc" id="L164">					throw new IllegalArgumentException();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">				if (type == null)</span>
+<span class="nc" id="L166">					type = entry.getType();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">				else if (type != entry.getType())</span>
+<span class="nc" id="L168">					throw new IllegalArgumentException();</span>
+<span class="nc" id="L169">			}</span>
+
+<span class="nc bnc" id="L171" title="All 2 branches missed.">			if (type == null)</span>
+<span class="nc" id="L172">				throw new Error();</span>
+
+<span class="nc" id="L174">			return type;</span>
+		}
+
+		@Deprecated
+		public String getProperty(String p2MetadataProperty) {
+<span class="nc" id="L179">			return properties.getProperty(p2MetadataProperty);</span>
+		}
+
+		List&lt;DataCompression&gt; getPossibleCompressions(P2Kind kind, Map&lt;String, DataCompression&gt; compressions) {
+<span class="nc" id="L183">			List&lt;DataCompression&gt; result = new ArrayList&lt;&gt;(compressions.size());</span>
+
+<span class="nc bnc" id="L185" title="All 2 branches missed.">			for (String e : properties.getProperty(kind.getProperty()).split(&quot;,&quot;)) {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">				if (e.equals(&quot;!&quot;))</span>
+<span class="nc" id="L187">					break;</span>
+
+<span class="nc" id="L189">				int idx = e.lastIndexOf('.');</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">				if (idx == -1)</span>
+<span class="nc" id="L191">					throw new IllegalArgumentException();</span>
+
+<span class="nc" id="L193">				String suffix = e.substring(idx + 1);</span>
+
+<span class="nc" id="L195">				DataCompression[] any = compressions.values().stream().filter(p -&gt; p.getP2IndexSuffix().equals(suffix))</span>
+<span class="nc" id="L196">						.sorted(compressionPrioritySorter).toArray(DataCompression[]::new);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">				if (any.length == 0)</span>
+<span class="nc" id="L198">					throw new IllegalArgumentException(&quot;No compression known for entry '&quot; + e + &quot;'&quot;);</span>
+
+<span class="nc" id="L200">				Collections.addAll(result, any);</span>
+			}
+
+<span class="nc" id="L203">			return result;</span>
+		}
+
+		List&lt;String&gt; getSuffixes(P2Kind kind) {
+<span class="nc" id="L207">			List&lt;String&gt; result = new ArrayList&lt;&gt;(2);</span>
+
+<span class="nc bnc" id="L209" title="All 2 branches missed.">			for (String e : properties.getProperty(kind.getProperty()).split(&quot;,&quot;)) {</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">				if (e.equals(&quot;!&quot;))</span>
+<span class="nc" id="L211">					break;</span>
+
+<span class="nc" id="L213">				int idx = e.lastIndexOf('.');</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">				if (idx == -1)</span>
+<span class="nc" id="L215">					throw new IllegalArgumentException();</span>
+
+<span class="nc" id="L217">				String suffix = e.substring(idx + 1);</span>
+
+<span class="nc" id="L219">				result.add(suffix);</span>
+			}
+
+<span class="nc" id="L222">			return result;</span>
+		}
+	}
+
+	public P2Repository loadContent(Path path, P2Kind... kinds) throws IOException {
+<span class="nc" id="L227">		return (P2Repository) loadInternal(path, P2Type.content, parseKinds(kinds));</span>
+	}
+
+	class P2RepositoryImpl extends
+			AbstractRepository&lt;ArtifactRepository, ArtifactRepositoryFacade, MetadataRepository, MetadataRepositoryFacade&gt;
+			implements P2Repository {
+
+<span class="nc" id="L234">		public P2RepositoryImpl(Path path, P2Index p2index, Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions) {</span>
+<span class="nc" id="L235">			super(P2Type.content, path, p2index, availableCompressions, artifactRepositoryFactory,</span>
+<span class="nc" id="L236">					metadataRepositoryFactory, ArtifactRepositoryFacadeImpl::new, MetadataRepositoryFacadeImpl::new,</span>
+					null, null);
+<span class="nc" id="L238">		}</span>
+
+		public P2RepositoryImpl(Path path, P2Index p2index, Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions,
+<span class="nc" id="L241">				ArtifactRepositoryFacade a, MetadataRepositoryFacade m) {</span>
+<span class="nc" id="L242">			super(P2Type.content, path, p2index, availableCompressions, artifactRepositoryFactory,</span>
+<span class="nc" id="L243">					metadataRepositoryFactory, ArtifactRepositoryFacadeImpl::new, MetadataRepositoryFacadeImpl::new, a,</span>
+					m);
+<span class="nc" id="L245">		}</span>
+
+		@Override
+		public &lt;T&gt; T accept(P2RepositoryVisitor&lt;T&gt; visitor) {
+<span class="nc" id="L249">			return visitor.visit(this);</span>
+		}
+	}
+
+	private P2Repository loadContent(Path root, P2Index p2index,
+			Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions) throws IOException {
+
+<span class="nc" id="L256">		return new P2RepositoryImpl(root, p2index, availableCompressions);</span>
+	}
+
+	static abstract class AbstractRepository&lt;A1 extends Repository, A extends RepositoryFacade&lt;A1&gt;, M1 extends Repository, M extends RepositoryFacade&lt;M1&gt;&gt;
+			implements CommonP2Repository {
+		private final Path root;
+		private final P2Index p2index;
+		private final P2IndexType artifact;
+		private final P2IndexType metadata;
+		private final Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions;
+
+		private final AbstractRepositoryFactory&lt;A1&gt; artifactFactory;
+		private final AbstractRepositoryFactory&lt;M1&gt; metadataFactory;
+
+		private final BiFunction&lt;Path, A1, A&gt; artifactCreator;
+		private final BiFunction&lt;Path, M1, M&gt; metadataCreator;
+
+		private A a;
+		private M m;
+
+		protected AbstractRepository(P2Type type, Path root, P2Index p2index,
+				Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions, AbstractRepositoryFactory&lt;A1&gt; aFactory,
+				AbstractRepositoryFactory&lt;M1&gt; mFactory, BiFunction&lt;Path, A1, A&gt; aCreator,
+<span class="nc" id="L279">				BiFunction&lt;Path, M1, M&gt; mCreator, A a, M m) {</span>
+<span class="nc" id="L280">			Objects.requireNonNull(type);</span>
+<span class="nc" id="L281">			this.artifact = type.getIndexEntry(P2Kind.artifact);</span>
+<span class="nc" id="L282">			this.metadata = type.getIndexEntry(P2Kind.metadata);</span>
+<span class="nc" id="L283">			Objects.requireNonNull(root);</span>
+<span class="nc" id="L284">			this.root = root;</span>
+<span class="nc" id="L285">			Objects.requireNonNull(p2index);</span>
+<span class="nc" id="L286">			this.p2index = p2index;</span>
+<span class="nc" id="L287">			Objects.requireNonNull(availableCompressions);</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">			Preconditions.checkArgument(!availableCompressions.isEmpty());</span>
+<span class="nc" id="L289">			this.availableCompressions = availableCompressions;</span>
+<span class="nc" id="L290">			Objects.requireNonNull(aFactory);</span>
+<span class="nc" id="L291">			this.artifactFactory = aFactory;</span>
+<span class="nc" id="L292">			Objects.requireNonNull(mFactory);</span>
+<span class="nc" id="L293">			this.metadataFactory = mFactory;</span>
+<span class="nc" id="L294">			Objects.requireNonNull(aCreator);</span>
+<span class="nc" id="L295">			this.artifactCreator = aCreator;</span>
+<span class="nc" id="L296">			Objects.requireNonNull(mCreator);</span>
+<span class="nc" id="L297">			this.metadataCreator = mCreator;</span>
+<span class="nc" id="L298">			this.a = a;</span>
+<span class="nc" id="L299">			this.m = m;</span>
+<span class="nc" id="L300">		}</span>
+
+		@Override
+		final public A getArtifactRepositoryFacade() throws IOException {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (a == null) {</span>
+<span class="nc" id="L305">				DataCompression dc = availableCompressions.get(P2Kind.artifact).get(0);</span>
+<span class="nc" id="L306">				try (InputStream is = dc.openInputStream(root, artifact.getFilePrefix())) {</span>
+<span class="nc" id="L307">					a = artifactCreator.apply(root.resolve(artifact.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix()),</span>
+<span class="nc" id="L308">							artifactFactory.read(is));</span>
+<span class="nc bnc" id="L309" title="All 8 branches missed.">				}</span>
+			}
+<span class="nc" id="L311">			return a;</span>
+		}
+
+		@Override
+		final public M getMetadataRepositoryFacade() throws IOException {
+<span class="nc bnc" id="L316" title="All 2 branches missed.">			if (m == null) {</span>
+<span class="nc" id="L317">				DataCompression dc = availableCompressions.get(P2Kind.metadata).get(0);</span>
+<span class="nc" id="L318">				try (InputStream is = dc.openInputStream(root, metadata.getFilePrefix())) {</span>
+<span class="nc" id="L319">					m = metadataCreator.apply(root.resolve(metadata.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix()),</span>
+<span class="nc" id="L320">							metadataFactory.read(is));</span>
+<span class="nc bnc" id="L321" title="All 8 branches missed.">				}</span>
+			}
+<span class="nc" id="L323">			return m;</span>
+		}
+
+		@Override
+		final public List&lt;DataCompression&gt; getMetadataDataCompressions() {
+<span class="nc" id="L328">			return availableCompressions.get(P2Kind.metadata);</span>
+		}
+
+		@Override
+		final public List&lt;DataCompression&gt; getArtifactDataCompressions() {
+<span class="nc" id="L333">			return availableCompressions.get(P2Kind.artifact);</span>
+		}
+
+		@Override
+		public void setCompression(DataCompression... compressions) throws IOException {
+<span class="nc" id="L338">			Preconditions.checkNotNull(compressions);</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">			Preconditions.checkArgument(compressions.length &gt; 0);</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">			if (kinds().contains(P2Kind.artifact))</span>
+<span class="nc bnc" id="L341" title="All 2 branches missed.">				Preconditions.checkState(!availableCompressions.get(P2Kind.artifact).isEmpty());</span>
+<span class="nc bnc" id="L342" title="All 2 branches missed.">			if (kinds().contains(P2Kind.metadata))</span>
+<span class="nc bnc" id="L343" title="All 2 branches missed.">				Preconditions.checkState(!availableCompressions.get(P2Kind.metadata).isEmpty());</span>
+<span class="nc" id="L344">			boolean deleteOldArtifact = kinds().contains(P2Kind.artifact);</span>
+<span class="nc" id="L345">			boolean deleteOldMetadata = kinds().contains(P2Kind.metadata);</span>
+
+<span class="nc bnc" id="L347" title="All 2 branches missed.">			for (DataCompression c : compressions) {</span>
+<span class="nc bnc" id="L348" title="All 2 branches missed.">				if (kinds().contains(P2Kind.artifact))</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">					if (c == availableCompressions.get(P2Kind.artifact).get(0))</span>
+<span class="nc" id="L350">						deleteOldArtifact = false;</span>
+					else
+<span class="nc" id="L352">						try (InputStream is = availableCompressions.get(P2Kind.artifact).get(0).openInputStream(root,</span>
+<span class="nc" id="L353">								artifact.getFilePrefix())) {</span>
+<span class="nc" id="L354">							try (OutputStream os = c.openOutputStream(root, artifact.getFilePrefix())) {</span>
+<span class="nc" id="L355">								IOUtil.copy(is, os);</span>
+<span class="nc bnc" id="L356" title="All 8 branches missed.">							}</span>
+<span class="nc bnc" id="L357" title="All 8 branches missed.">						}</span>
+
+<span class="nc bnc" id="L359" title="All 2 branches missed.">				if (kinds().contains(P2Kind.metadata))</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">					if (c == availableCompressions.get(P2Kind.metadata).get(0))</span>
+<span class="nc" id="L361">						deleteOldMetadata = false;</span>
+					else
+<span class="nc" id="L363">						try (InputStream is = availableCompressions.get(P2Kind.metadata).get(0).openInputStream(root,</span>
+<span class="nc" id="L364">								metadata.getFilePrefix())) {</span>
+<span class="nc" id="L365">							try (OutputStream os = c.openOutputStream(root, metadata.getFilePrefix())) {</span>
+<span class="nc" id="L366">								IOUtil.copy(is, os);</span>
+<span class="nc bnc" id="L367" title="All 8 branches missed.">							}</span>
+<span class="nc bnc" id="L368" title="All 8 branches missed.">						}</span>
+			}
+
+<span class="nc bnc" id="L371" title="All 2 branches missed.">			if (deleteOldArtifact)</span>
+<span class="nc" id="L372">				Files.delete(root.resolve(artifact.getFilePrefix() + &quot;.&quot;</span>
+<span class="nc" id="L373">						+ availableCompressions.get(P2Kind.artifact).get(0).getFileSuffix()));</span>
+
+<span class="nc bnc" id="L375" title="All 2 branches missed.">			if (deleteOldMetadata)</span>
+<span class="nc" id="L376">				Files.delete(root.resolve(metadata.getFilePrefix() + &quot;.&quot;</span>
+<span class="nc" id="L377">						+ availableCompressions.get(P2Kind.metadata).get(0).getFileSuffix()));</span>
+
+<span class="nc bnc" id="L379" title="All 2 branches missed.">			if (kinds().contains(P2Kind.artifact))</span>
+<span class="nc" id="L380">				p2index.set(P2Kind.artifact.getProperty(), artifact.getFilePrefix(), compressions);</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">			if (kinds().contains(P2Kind.metadata))</span>
+<span class="nc" id="L382">				p2index.set(P2Kind.metadata.getProperty(), metadata.getFilePrefix(), compressions);</span>
+<span class="nc" id="L383">			p2index.write(root);</span>
+
+<span class="nc bnc" id="L385" title="All 2 branches missed.">			for (P2Kind kind : kinds())</span>
+<span class="nc" id="L386">				availableCompressions.put(kind, Arrays.asList(compressions));</span>
+<span class="nc" id="L387">		}</span>
+
+		@Override
+		public Path getPath() {
+<span class="nc" id="L391">			return root;</span>
+		}
+
+		private Set&lt;P2Kind&gt; kinds() {
+<span class="nc" id="L395">			return availableCompressions.keySet();</span>
+		}
+
+		public final void save(DataCompression... compressions) throws IOException {
+<span class="nc bnc" id="L399" title="All 2 branches missed.">			for (P2Kind kind : kinds()) {</span>
+<span class="nc bnc" id="L400" title="All 4 branches missed.">				if (compressions.length != 0 &amp;&amp; !availableCompressions.get(kind).isEmpty())</span>
+<span class="nc" id="L401">					throw new IllegalStateException();</span>
+<span class="nc bnc" id="L402" title="All 4 branches missed.">				if (compressions.length == 0 &amp;&amp; availableCompressions.get(kind).isEmpty())</span>
+<span class="nc" id="L403">					throw new IllegalStateException();</span>
+
+<span class="nc bnc" id="L405" title="All 2 branches missed.">				if (compressions.length != 0)</span>
+<span class="nc" id="L406">					availableCompressions.put(kind, Arrays.asList(compressions));</span>
+<span class="nc" id="L407">			}</span>
+
+<span class="nc bnc" id="L409" title="All 2 branches missed.">			if (kinds().contains(P2Kind.artifact))</span>
+<span class="nc bnc" id="L410" title="All 2 branches missed.">				for (DataCompression c : availableCompressions.get(P2Kind.artifact)) {</span>
+<span class="nc" id="L411">					p2index.set(P2RepositoryFactory.P2Kind.artifact.getProperty(), artifact.getFilePrefix(), c);</span>
+<span class="nc" id="L412">					try (OutputStream outputStream = c.openOutputStream(root, artifact.getFilePrefix())) {</span>
+<span class="nc" id="L413">						artifactFactory.write(a.getRepository(), outputStream);</span>
+<span class="nc bnc" id="L414" title="All 8 branches missed.">					}</span>
+<span class="nc" id="L415">				}</span>
+
+<span class="nc bnc" id="L417" title="All 2 branches missed.">			if (kinds().contains(P2Kind.metadata))</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">				for (DataCompression c : availableCompressions.get(P2Kind.metadata)) {</span>
+<span class="nc" id="L419">					p2index.set(P2RepositoryFactory.P2Kind.metadata.getProperty(), metadata.getFilePrefix(), c);</span>
+<span class="nc" id="L420">					try (OutputStream outputStream = c.openOutputStream(root, metadata.getFilePrefix())) {</span>
+<span class="nc" id="L421">						metadataFactory.write(m.getRepository(), outputStream);</span>
+<span class="nc bnc" id="L422" title="All 8 branches missed.">					}</span>
+<span class="nc" id="L423">				}</span>
+
+<span class="nc" id="L425">			p2index.write(root);</span>
+<span class="nc" id="L426">		}</span>
+
+	}
+
+	class P2CompositeRepositoryImpl extends
+			AbstractRepository&lt;CompositeRepository, CompositeRepositoryFacade, CompositeRepository, CompositeRepositoryFacade&gt;
+			implements P2CompositeRepository {
+
+		public P2CompositeRepositoryImpl(Path root, P2Index p2index,
+<span class="nc" id="L435">				Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions) {</span>
+<span class="nc" id="L436">			super(P2Type.composite, root, p2index, availableCompressions, compositeArtifactRepositoryFactory,</span>
+<span class="nc" id="L437">					compositeMetadataRepositoryFactory, CompositeRepositoryFacadeImpl::new,</span>
+					CompositeRepositoryFacadeImpl::new, null, null);
+<span class="nc" id="L439">		}</span>
+
+		public P2CompositeRepositoryImpl(Path root, P2Index p2index,
+				Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions, CompositeRepositoryFacade a,
+<span class="nc" id="L443">				CompositeRepositoryFacade m) {</span>
+<span class="nc" id="L444">			super(P2Type.composite, root, p2index, availableCompressions, compositeArtifactRepositoryFactory,</span>
+<span class="nc" id="L445">					compositeMetadataRepositoryFactory, CompositeRepositoryFacadeImpl::new,</span>
+					CompositeRepositoryFacadeImpl::new, a, m);
+<span class="nc" id="L447">		}</span>
+
+		@Override
+		public &lt;T&gt; T accept(P2RepositoryVisitor&lt;T&gt; visitor) {
+<span class="nc" id="L451">			return visitor.visit(this);</span>
+		}
+	}
+
+	public P2CompositeRepository createComposite(Path path) throws IOException {
+<span class="nc" id="L456">		P2Index p2index = new P2Index();</span>
+
+<span class="nc" id="L458">		Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L459">		availableCompressions.put(P2Kind.artifact, Collections.emptyList());</span>
+<span class="nc" id="L460">		availableCompressions.put(P2Kind.metadata, Collections.emptyList());</span>
+
+<span class="nc" id="L462">		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions,</span>
+<span class="nc" id="L463">				new CompositeRepositoryFacadeImpl(path, compositeArtifactRepositoryFactory.createEmpty()),</span>
+<span class="nc" id="L464">				new CompositeRepositoryFacadeImpl(path, compositeMetadataRepositoryFactory.createEmpty()));</span>
+	}
+
+	static Set&lt;P2Kind&gt; parseKinds(P2Kind... kind) {
+<span class="nc" id="L468">		Preconditions.checkNotNull(kind);</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">		if (kind.length == 0) {</span>
+<span class="nc" id="L470">			return EnumSet.allOf(P2Kind.class);</span>
+		} else {
+<span class="nc" id="L472">			Set&lt;P2Kind&gt; result = new HashSet&lt;P2Kind&gt;();</span>
+<span class="nc" id="L473">			Collections.addAll(result, kind);</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">			if (kind.length != result.size())</span>
+<span class="nc" id="L475">				throw new IllegalArgumentException();</span>
+<span class="nc" id="L476">			return result;</span>
+		}
+	}
+
+	public P2Repository createContent(Path path, P2Kind... kind) throws IOException {
+<span class="nc" id="L481">		Set&lt;P2Kind&gt; kinds = parseKinds(kind);</span>
+<span class="nc" id="L482">		P2Index p2index = new P2Index();</span>
+
+<span class="nc" id="L484">		Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">		for (P2Kind k : kinds)</span>
+<span class="nc" id="L486">			availableCompressions.put(k, Collections.emptyList());</span>
+
+<span class="nc" id="L488">		return new P2RepositoryImpl(path, p2index, availableCompressions,</span>
+<span class="nc bnc" id="L489" title="All 2 branches missed.">				kinds.contains(P2Kind.artifact)</span>
+<span class="nc" id="L490">						? new ArtifactRepositoryFacadeImpl(path, artifactRepositoryFactory.createEmpty()) : null,</span>
+<span class="nc bnc" id="L491" title="All 2 branches missed.">				kinds.contains(P2Kind.metadata)</span>
+<span class="nc" id="L492">						? new MetadataRepositoryFacadeImpl(path, metadataRepositoryFactory.createEmpty()) : null);</span>
+	}
+
+	public P2CompositeRepository loadComposite(Path path, P2Kind... kinds) throws IOException {
+<span class="nc" id="L496">		return (P2CompositeRepository) loadInternal(path, P2Type.composite, parseKinds(kinds));</span>
+	}
+
+	private P2CompositeRepository loadComposite(Path path, P2Index p2index,
+			Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions) throws IOException {
+
+<span class="nc" id="L502">		return new P2CompositeRepositoryImpl(path, p2index, availableCompressions);</span>
+	}
+
+<span class="nc" id="L505">	public enum P2IndexType {</span>
+<span class="nc" id="L506">		compositeArtifacts(P2Kind.artifact, P2Type.composite, &quot;compositeArtifacts&quot;), //</span>
+<span class="nc" id="L507">		compositeMetadata(P2Kind.metadata, P2Type.composite, &quot;compositeContent&quot;), //</span>
+<span class="nc" id="L508">		artifacts(P2Kind.artifact, P2Type.content, &quot;artifacts&quot;), //</span>
+<span class="nc" id="L509">		metadata(P2Kind.metadata, P2Type.content, &quot;content&quot;);</span>
+
+		private final P2Kind kind;
+		private final P2Type type;
+		private final String filePrefix;
+
+<span class="nc" id="L515">		private P2IndexType(P2Kind key, P2Type type, String filePrefix) {</span>
+<span class="nc" id="L516">			Objects.requireNonNull(key);</span>
+<span class="nc" id="L517">			Objects.requireNonNull(type);</span>
+<span class="nc" id="L518">			Objects.requireNonNull(filePrefix);</span>
+<span class="nc" id="L519">			this.kind = key;</span>
+<span class="nc" id="L520">			this.type = type;</span>
+<span class="nc" id="L521">			this.filePrefix = filePrefix;</span>
+<span class="nc" id="L522">		}</span>
+
+		P2Kind getKind() {
+<span class="nc" id="L525">			return kind;</span>
+		}
+
+		P2Type getType() {
+<span class="nc" id="L529">			return type;</span>
+		}
+
+		public String getFilePrefix() {
+<span class="nc" id="L533">			return filePrefix;</span>
+		}
+
+		static P2IndexType fromFilePrefix(String filePrefix) {
+<span class="nc" id="L537">			Objects.requireNonNull(filePrefix);</span>
+
+<span class="nc bnc" id="L539" title="All 2 branches missed.">			for (P2IndexType v : values())</span>
+<span class="nc bnc" id="L540" title="All 2 branches missed.">				if (v.getFilePrefix().equals(filePrefix))</span>
+<span class="nc" id="L541">					return v;</span>
+<span class="nc" id="L542">			throw new IllegalArgumentException(&quot;No enum constant has filePrefix '&quot; + filePrefix + &quot;'&quot;);</span>
+		}
+	}
+
+<span class="nc" id="L546">	enum P2Type {</span>
+<span class="nc" id="L547">		composite, //</span>
+<span class="nc" id="L548">		content;</span>
+
+		public P2IndexType getIndexEntry(P2Kind d) {
+<span class="nc bnc" id="L551" title="All 2 branches missed.">			for (P2IndexType e : P2IndexType.values())</span>
+<span class="nc bnc" id="L552" title="All 4 branches missed.">				if (e.getKind() == d &amp;&amp; e.getType() == this)</span>
+<span class="nc" id="L553">					return e;</span>
+<span class="nc" id="L554">			throw new UnsupportedOperationException();</span>
+		}
+	}
+
+<span class="nc" id="L558">	public enum P2Kind {</span>
+<span class="nc" id="L559">		artifact, metadata;</span>
+
+		public String getProperty() {
+<span class="nc" id="L562">			return name() + &quot;.repository.factory.order&quot;;</span>
+		}
+	}
+
+	public CommonP2Repository loadAny(Path path, P2Kind... kinds) throws IOException {
+<span class="nc" id="L567">		return loadInternal(path, null, parseKinds(kinds));</span>
+	}
+
+	private CommonP2Repository loadInternal(Path path, P2Type expectedType, Set&lt;P2Kind&gt; kinds) throws IOException {
+		P2Index p2index;
+		try {
+<span class="nc" id="L573">			p2index = new P2Index(path);</span>
+<span class="nc" id="L574">		} catch (NoSuchFileException e) {</span>
+<span class="nc" id="L575">			throw new NoRepositoryFoundException(&quot;No repository with p2.index found at &quot; + path, e);</span>
+<span class="nc" id="L576">		}</span>
+
+<span class="nc" id="L578">		P2Type type = p2index.identifyType(kinds);</span>
+<span class="nc bnc" id="L579" title="All 4 branches missed.">		if (expectedType != null &amp;&amp; type != expectedType)</span>
+<span class="nc" id="L580">			throw new IllegalArgumentException(</span>
+					&quot;Wrong repository type found at &quot; + path + &quot;. Expected &quot; + expectedType + &quot;, got &quot; + type);
+
+<span class="nc" id="L583">		Map&lt;P2Kind, List&lt;DataCompression&gt;&gt; availableCompressions = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L584" title="All 2 branches missed.">		for (P2Kind kind : kinds) {</span>
+<span class="nc" id="L585">			List&lt;DataCompression&gt; compr = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L586" title="All 2 branches missed.">			for (String suffix : p2index.getSuffixes(kind)) {</span>
+<span class="nc" id="L587">				DataCompression[] all = compressions.values().stream().filter(p -&gt; p.getP2IndexSuffix().equals(suffix))</span>
+<span class="nc" id="L588">						.sorted(compressionPrioritySorter).toArray(DataCompression[]::new);</span>
+<span class="nc bnc" id="L589" title="All 2 branches missed.">				if (all.length == 0)</span>
+<span class="nc" id="L590">					throw new IllegalArgumentException();</span>
+<span class="nc" id="L591">				boolean any = false;</span>
+<span class="nc bnc" id="L592" title="All 2 branches missed.">				for (DataCompression dc : all) {</span>
+<span class="nc" id="L593">					P2IndexType indexType = type.getIndexEntry(kind);</span>
+
+<span class="nc" id="L595">					Path p = path.resolve(indexType.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
+<span class="nc bnc" id="L596" title="All 2 branches missed.">					if (Files.exists(p)) {</span>
+<span class="nc" id="L597">						compr.add(dc);</span>
+<span class="nc" id="L598">						any = true;</span>
+					}
+				}
+<span class="nc bnc" id="L601" title="All 2 branches missed.">				if (!any)</span>
+<span class="nc" id="L602">					throw new IllegalArgumentException();</span>
+<span class="nc" id="L603">			}</span>
+			// FIXME: check reverse that all files in the directory are covered
+<span class="nc" id="L605">			availableCompressions.put(kind, Collections.unmodifiableList(compr));</span>
+<span class="nc" id="L606">		}</span>
+
+<span class="nc bnc" id="L608" title="All 3 branches missed.">		switch (type) {</span>
+		case composite:
+<span class="nc" id="L610">			return loadComposite(path, p2index, availableCompressions);</span>
+		case content:
+<span class="nc" id="L612">			return loadContent(path, p2index, availableCompressions);</span>
+		default:
+<span class="nc" id="L614">			throw new UnsupportedOperationException();</span>
+		}
+	}
+
+<span class="nc" id="L618">	public class NoRepositoryFoundException extends RuntimeException {</span>
+<span class="nc" id="L619">		public NoRepositoryFoundException(String message, Throwable cause) {</span>
+<span class="nc" id="L620">			super(message, cause);</span>
+<span class="nc" id="L621">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

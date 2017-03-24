@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractRepositoryFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">AbstractRepositoryFactory.java</span></div><h1>AbstractRepositoryFactory.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Arrays;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.ValidationEvent;
+import javax.xml.bind.ValidationEventHandler;
+import javax.xml.namespace.QName;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.ProcessingInstruction;
+
+import com.github.pms1.tppt.p2.DomRenderer.DomRendererOptions;
+import com.github.pms1.tppt.p2.jaxb.VersionAdapter;
+import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
+
+public abstract class AbstractRepositoryFactory&lt;T&gt; {
+	private final Class&lt;T&gt; clazz;
+	protected final String prefix;
+	private final Schema schema;
+	private final JAXBContext jaxbContext;
+	private final String version;
+
+	@Requirement
+	DomRenderer renderer;
+
+	protected AbstractRepositoryFactory(JAXBContext jaxbContext, Class&lt;T&gt; clazz, String prefix, String version,
+<span class="nc" id="L42">			String xsd) {</span>
+<span class="nc" id="L43">		Preconditions.checkNotNull(jaxbContext);</span>
+<span class="nc" id="L44">		Preconditions.checkNotNull(clazz);</span>
+<span class="nc" id="L45">		this.jaxbContext = jaxbContext;</span>
+<span class="nc" id="L46">		this.clazz = clazz;</span>
+<span class="nc" id="L47">		this.prefix = prefix;</span>
+<span class="nc" id="L48">		this.version = version;</span>
+<span class="nc" id="L49">		this.schema = Xml.createSchema(VersionAdapter.class, xsd);</span>
+<span class="nc" id="L50">	}</span>
+
+	protected T read(InputStream is) {
+		try {
+<span class="nc" id="L54">			Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();</span>
+<span class="nc" id="L55">			unmarshaller.setSchema(schema);</span>
+<span class="nc" id="L56">			unmarshaller.setEventHandler(new ValidationEventHandler() {</span>
+
+				@Override
+				public boolean handleEvent(ValidationEvent event) {
+<span class="nc" id="L60">					return false;</span>
+				}
+			});
+<span class="nc" id="L63">			return unmarshaller.unmarshal(new StreamSource(is), clazz).getValue();</span>
+<span class="nc" id="L64">		} catch (JAXBException e) {</span>
+<span class="nc" id="L65">			throw new RuntimeException(e);</span>
+		}
+	}
+
+	abstract protected void normalize(T t);
+
+	abstract protected T createEmpty();
+
+	final protected void write(T t, OutputStream os) {
+
+<span class="nc" id="L75">		normalize(t);</span>
+
+		try {
+<span class="nc" id="L78">			Marshaller marshaller = jaxbContext.createMarshaller();</span>
+
+			@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
+<span class="nc" id="L81">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(&quot;repository&quot;), t.getClass(), t);</span>
+
+<span class="nc" id="L83">			DOMResult r = new DOMResult();</span>
+
+<span class="nc" id="L85">			marshaller.marshal(root, r);</span>
+
+<span class="nc" id="L87">			Node node = r.getNode();</span>
+
+<span class="nc" id="L89">			ProcessingInstruction instruction = ((Document) node).createProcessingInstruction(prefix + &quot;Repository&quot;,</span>
+					&quot;version='&quot; + version + &quot;'&quot;);
+<span class="nc" id="L91">			node.appendChild(instruction);</span>
+
+<span class="nc" id="L93">			node.insertBefore(instruction, node.getFirstChild());</span>
+
+<span class="nc" id="L95">			DomRendererOptions options = new DomRendererOptions();</span>
+<span class="nc" id="L96">			options.quote = '\'';</span>
+<span class="nc" id="L97">			options.indent = &quot;  &quot;;</span>
+<span class="nc" id="L98">			options.attributeSorters.add(e -&gt; {</span>
+<span class="nc bnc" id="L99" title="All 18 branches missed.">				switch (e.getNodeName()) {</span>
+				case &quot;unit&quot;:
+<span class="nc" id="L101">					return Arrays.asList(&quot;id&quot;, &quot;version&quot;, &quot;singleton&quot;);</span>
+				case &quot;update&quot;:
+<span class="nc" id="L103">					return Arrays.asList(&quot;id&quot;, &quot;match&quot;, &quot;range&quot;, &quot;severity&quot;, &quot;description&quot;);</span>
+				case &quot;provided&quot;:
+<span class="nc" id="L105">					return Arrays.asList(&quot;namespace&quot;, &quot;name&quot;, &quot;version&quot;);</span>
+				case &quot;required&quot;:
+<span class="nc" id="L107">					return Arrays.asList(&quot;namespace&quot;, &quot;name&quot;, &quot;version&quot;, &quot;range&quot;, &quot;optional&quot;, &quot;multiple&quot;, &quot;greedy&quot;,</span>
+							&quot;match&quot;, &quot;matchParameters&quot;, &quot;min&quot;, &quot;max&quot;);
+				default:
+<span class="nc" id="L110">					return null;</span>
+				}
+			});
+
+<span class="nc" id="L114">			try (OutputStreamWriter pw = new OutputStreamWriter(os, Charsets.UTF_8)) {</span>
+<span class="nc" id="L115">				renderer.render(pw, node, options);</span>
+<span class="nc bnc" id="L116" title="All 8 branches missed.">			}</span>
+
+<span class="nc" id="L118">		} catch (JAXBException | IOException e) {</span>
+<span class="nc" id="L119">			throw new RuntimeException(e);</span>
+<span class="nc" id="L120">		}</span>
+
+<span class="nc" id="L122">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

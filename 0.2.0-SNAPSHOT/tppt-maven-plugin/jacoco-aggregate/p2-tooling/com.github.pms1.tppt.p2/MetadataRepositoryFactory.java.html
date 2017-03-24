@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MetadataRepositoryFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">MetadataRepositoryFactory.java</span></div><h1>MetadataRepositoryFactory.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+
+import org.codehaus.plexus.component.annotations.Component;
+
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
+import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
+import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
+import com.github.pms1.tppt.p2.jaxb.metadata.Units;
+import com.google.common.base.Throwables;
+
+@Component(role = MetadataRepositoryFactory.class)
+public class MetadataRepositoryFactory extends AbstractRepositoryFactory&lt;MetadataRepository&gt; {
+
+	protected MetadataRepositoryFactory() {
+<span class="nc" id="L18">		super(getJaxbContext(), MetadataRepository.class, &quot;metadata&quot;, &quot;1.1.0&quot;, &quot;metadataRepository.xsd&quot;);</span>
+<span class="nc" id="L19">	}</span>
+
+<span class="nc" id="L21">	private static class Holder {</span>
+		private final static JAXBContext context;
+		static {
+			try {
+<span class="nc" id="L25">				context = JAXBContext.newInstance(MetadataRepository.class);</span>
+<span class="nc" id="L26">			} catch (JAXBException t) {</span>
+<span class="nc" id="L27">				throw Throwables.propagate(t);</span>
+<span class="nc" id="L28">			}</span>
+<span class="nc" id="L29">		}</span>
+	}
+
+	public static JAXBContext getJaxbContext() {
+<span class="nc" id="L33">		return Holder.context;</span>
+	}
+
+	@Override
+	protected void normalize(MetadataRepository t) {
+<span class="nc" id="L38">		Properties properties = t.getProperties();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">		if (properties != null)</span>
+<span class="nc" id="L40">			properties.setSize(properties.getProperty().size());</span>
+
+<span class="nc" id="L42">		Units units = t.getUnits();</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">		if (units != null) {</span>
+<span class="nc" id="L44">			units.setSize(units.getUnit().size());</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">			for (Unit u : units.getUnit())</span>
+<span class="nc" id="L46">				normalize(u);</span>
+		}
+
+<span class="nc" id="L49">	}</span>
+
+	private void normalize(Unit u) {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		if (u.getRequires() != null)</span>
+<span class="nc" id="L53">			u.getRequires().setSize(u.getRequires().getRequired().size());</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (u.getProperties() != null)</span>
+<span class="nc" id="L55">			u.getProperties().setSize(u.getProperties().getProperty().size());</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (u.getProvides() != null)</span>
+<span class="nc" id="L57">			u.getProvides().setSize(u.getProvides().getProvided().size());</span>
+<span class="nc" id="L58">	}</span>
+
+	@Override
+	protected MetadataRepository createEmpty() {
+<span class="nc" id="L62">		MetadataRepository repository = new MetadataRepository();</span>
+<span class="nc" id="L63">		repository.setType(&quot;org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository&quot;);</span>
+<span class="nc" id="L64">		repository.setVersion(&quot;1&quot;);</span>
+<span class="nc" id="L65">		repository.setProperties(new Properties());</span>
+<span class="nc" id="L66">		repository.setUnits(new Units());</span>
+<span class="nc" id="L67">		return repository;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

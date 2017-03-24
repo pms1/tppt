@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompositeRepositoryFacadeImpl.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">CompositeRepositoryFacadeImpl.java</span></div><h1>CompositeRepositoryFacadeImpl.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.nio.file.Path;
+
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
+import com.github.pms1.tppt.p2.jaxb.composite.Property;
+import com.google.common.base.Preconditions;
+
+class CompositeRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;CompositeRepository&gt;
+		implements CompositeRepositoryFacade {
+	private final CompositeRepository data;
+
+	private final Path path;
+
+	public CompositeRepositoryFacadeImpl(Path path, CompositeRepository data) {
+<span class="nc" id="L16">		super(Property::new);</span>
+<span class="nc" id="L17">		Preconditions.checkNotNull(data);</span>
+<span class="nc" id="L18">		this.data = data;</span>
+<span class="nc" id="L19">		this.path = path;</span>
+<span class="nc" id="L20">	}</span>
+
+	@Override
+	public String toString() {
+<span class="nc" id="L24">		return super.toString() + &quot;(&quot; + data + &quot;)&quot;;</span>
+	}
+
+	@Override
+	public Path getPath() {
+<span class="nc" id="L29">		return path;</span>
+	}
+
+	@Override
+	public CompositeRepository getRepository() {
+<span class="nc" id="L34">		return data;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
