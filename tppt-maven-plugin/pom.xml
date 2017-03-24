@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.1.0</version>
+		<version>0.1.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>tppt-maven-plugin</artifactId>
 
@@ -22,25 +22,25 @@
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>maven-equinox-runner</artifactId>
-			<version>0.1.0</version>
+			<version>0.1.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>tppt-mirror-application</artifactId>
-			<version>0.1.0</version>
+			<version>0.1.1-SNAPSHOT</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>p2-tooling</artifactId>
-			<version>0.1.0</version>
+			<version>0.1.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>tppt-core</artifactId>
-			<version>0.1.0</version>
+			<version>0.1.1-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
