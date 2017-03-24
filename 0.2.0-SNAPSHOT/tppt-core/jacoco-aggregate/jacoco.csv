@@ -1,0 +1,172 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Change,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,License,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Copyright,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Provides,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Update,38,0,0,0,16,0,11,0,11,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Unit,136,0,0,0,58,0,39,0,39,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Instructions,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,PatchScope,10,0,0,0,4,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Provided,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,RepositoryReference,31,0,0,0,13,0,9,0,9,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Instruction,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Requires,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Required,80,0,0,0,34,0,23,0,23,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Touchpoint,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,ObjectFactory,122,0,0,0,30,0,29,0,29,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,MetadataRepository,52,0,0,0,22,0,15,0,15,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,References,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,MetadataArtifact,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,MetadataArtifacts,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Licenses,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Units,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Property,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,TouchpointData,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,ChangeFromTo,10,0,0,0,4,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Properties,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Changes,14,0,2,0,4,0,3,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Scope,10,0,0,0,4,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,ArtifactRepository,52,0,0,0,22,0,15,0,15,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Mappings,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Properties,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Property,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,ObjectFactory,54,0,0,0,13,0,12,0,12,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Artifact,45,0,0,0,19,0,13,0,13,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Artifacts,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Rule,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Processing,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.artifact,Step,24,0,0,0,10,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,Properties,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,Property,17,0,0,0,7,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,CompositeRepository,45,0,0,0,19,0,13,0,13,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,Child,10,0,0,0,4,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,ObjectFactory,38,0,0,0,9,0,8,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb.composite,Children,21,0,2,0,7,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DomRenderer.Options,28,0,0,0,2,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestExportPackageVersionDelta,35,0,0,0,7,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.DuplicateElementException,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml.Holder,24,0,6,0,5,0,5,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFactory.Holder,17,0,0,0,6,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new P2RepositoryVisitor() {...},53,0,0,0,7,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new Decomposer() {...},46,0,2,0,10,0,3,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new Decomposer() {...},69,0,8,0,14,0,9,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new Decomposer() {...},69,0,8,0,14,0,9,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new ObjectComparator.DecomposerFactory() {...},61,0,8,0,16,0,7,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,PropertiesComparator,180,0,24,0,22,0,14,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new TypeToken() {...},3,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ProvidedRemoved,28,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleManifestComparator,218,0,28,0,32,0,17,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,MetadataId,90,0,12,0,19,0,12,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DataCompressionJar,101,0,4,0,15,0,8,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new ObjectComparator.DeltaCreator() {...},238,0,30,0,25,0,19,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,CompositeMetadataRepositoryFactory,27,0,0,0,8,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new ObjectComparator.DeltaCreator() {...},129,0,13,0,12,0,9,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleManifestComparator.UnparseableManifestException,11,0,0,0,4,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractRepositoryFactory,336,0,26,0,41,0,20,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleVersionHeaderComparator,96,0,14,0,17,0,9,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,CompositeArtifactRepositoryFactory,27,0,0,0,8,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.ElementDeltaReporter() {...},51,0,0,0,5,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},100,0,2,0,10,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,NestedZipFileSystemProvider,120,0,2,0,25,0,21,0,20,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},81,0,0,0,7,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactKey,177,0,30,0,40,0,21,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.ElementDeltaReporter() {...},51,0,0,0,5,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2RepositoryImpl,40,0,0,0,9,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},84,0,2,0,9,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleComparator,19,0,4,0,6,0,4,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,MetadataRepositoryFactory.Holder,17,0,0,0,6,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory,375,0,29,0,67,0,30,0,15,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RequiredRemoved,28,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.Change,3,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.FeatureVersionChange,898,0,144,0,141,0,80,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2Type,68,0,6,0,7,0,8,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArchiveContentRemovedDelta,12,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureComparator,22,0,2,0,4,0,3,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml,270,0,22,0,36,0,17,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.Nodes,23,0,0,0,5,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleExportPackageBundleHeaderComparator,251,0,34,0,40,0,19,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactRemovedDelta,15,0,0,0,3,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml.new EntityResolver() {...},21,0,0,0,2,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml.new ErrorHandler() {...},9,0,0,0,4,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractManifestHeaderComparator,155,0,12,0,32,0,10,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FileDelta,177,0,32,0,44,0,24,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml.ClasspathResourceLSResourceResolver,52,0,4,0,7,0,4,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactClassifierDelta,26,0,2,0,4,0,2,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.UnparseableXmlException,7,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,Xml.ClasspathResourceLSResourceResolver.new LSInput() {...},69,0,0,0,17,0,17,0,17,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,UnhandledException,13,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFacadeImpl,290,0,40,0,53,0,30,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RequiredMatcher,160,0,32,0,28,0,30,0,14,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.PluginChildElementsException,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFactory,46,0,6,0,14,0,7,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFacadeImpl.ArtifactFacadeImpl,52,0,0,0,11,0,7,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.AbstractRepository,913,0,120,0,105,0,69,0,9,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractZipComparator.UnparseableZipException,7,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryAdded,12,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.AbstractUnitDelta,19,0,0,0,6,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ProvidedAdded,28,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,CompositeRepositoryFactory,32,0,4,0,10,0,5,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BundleEclipseSourceBundleHeaderComparator,153,0,26,0,28,0,15,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new ObjectComparator.DeltaCreator() {...},127,0,14,0,16,0,9,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DataCompressionRaw,37,0,0,0,6,0,6,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator,1335,0,118,0,205,0,99,0,38,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new Object() {...},26,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.UnexpectedTextException,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactAddedDelta,15,0,0,0,3,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DomRenderer,644,0,79,0,123,0,57,0,11,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractZipComparator,238,0,26,0,40,0,16,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactVersionChange,122,0,12,0,22,0,8,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DomRenderer.DomRendererOptions,17,0,0,0,5,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryDataCompressionChanged,32,0,0,0,3,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.UnitDelta,36,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,CompositeRepositoryFacadeImpl,34,0,0,0,8,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestExportPackageAddedDelta,15,0,0,0,3,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2Kind,48,0,0,0,3,0,5,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.DeltaReporter,41,0,0,0,10,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryTimestampChange,7,0,0,0,3,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,NestedZipFileSystemProvider.new DelegatingFileSystem() {...},27,0,0,0,5,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,BinaryComparator,45,0,4,0,9,0,4,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestExportPackageRemovedDelta,15,0,0,0,3,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,PathByteSource,23,0,0,0,7,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractZipComparator.new SimpleFileVisitor() {...},21,0,0,0,3,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestEclipseSourceBundleVersionDelta,50,0,2,0,12,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestVersionDelta,34,0,0,0,8,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.new Object() {...},19,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2CompositeRepositoryImpl,40,0,0,0,9,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.NoRepositoryFoundException,8,0,0,0,3,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.PluginMissingAttributeException,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractRepositoryFacade,95,0,6,0,24,0,9,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryTimestampDelta,18,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DelegatingFileSystem,70,0,0,0,19,0,16,0,16,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,MetadataRepositoryFactory,101,0,12,0,25,0,11,0,5,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureVersionDelta,34,0,0,0,8,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactDelta,36,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryRemoved,12,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.AbstractArtifactDelta,19,0,0,0,6,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,CompositeRepositoryFactory.Holder,17,0,0,0,6,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.DuplicatePluginException,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.MetadataDelta,33,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DomRenderer.new Object() {...},12,0,0,0,1,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.CategoryVersionChange,126,0,26,0,27,0,16,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator,1128,0,151,0,181,0,93,0,11,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArtifactId,90,0,12,0,19,0,12,0,6,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FeaturePluginVersionDelta,54,0,2,0,12,0,5,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactsDelta,33,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2IndexType,137,0,4,0,21,0,10,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2Index,617,0,72,0,94,0,48,0,12,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,VersionParser,68,0,8,0,8,0,6,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ArchiveContentAddedDelta,12,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,MetadataRepositoryFacadeImpl,37,0,0,0,9,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RequiredAdded,28,0,0,0,4,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,VersionRangeParser,43,0,4,0,7,0,4,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,FileId,166,0,24,0,38,0,20,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,SemanticException,27,0,0,0,4,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.BundleVersionChange,889,0,152,0,184,0,84,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestHeaderDelta,42,0,2,0,8,0,3,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,DataCompression,5,0,0,0,2,0,1,0,1,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractRepositoryFactory.new ValidationEventHandler() {...},8,0,0,0,2,0,2,0,2,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ProvidedMatcher,76,0,12,0,16,0,14,0,8,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb,VersionAdapter,9,0,0,0,3,0,3,0,3,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb,SearchFilterAdapter,22,0,0,0,5,0,4,0,4,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2.jaxb,VersionRangeAdapter,13,0,2,0,5,0,4,0,3,0

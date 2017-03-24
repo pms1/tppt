@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FeatureXmlComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">FeatureXmlComparator.java</span></div><h1>FeatureXmlComparator.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
+import org.xml.sax.SAXException;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+
+@Component(hint = &quot;feature.xml&quot;, role = FileComparator.class)
+<span class="nc" id="L36">public class FeatureXmlComparator implements FileComparator {</span>
+
+<span class="nc" id="L38">	private DomRenderer domRenderer = new DomRenderer();</span>
+
+	@Override
+	public void compare(FileId file1, Path p1, FileId file2, Path p2, Consumer&lt;FileDelta&gt; dest) throws IOException {
+		Document d1;
+		Document d2;
+
+<span class="nc" id="L45">		try (InputStream is = Files.newInputStream(p1)) {</span>
+			try {
+<span class="nc" id="L47">				d1 = Xml.createDocumentBuilder().parse(is);</span>
+<span class="nc" id="L48">			} catch (SAXException e) {</span>
+<span class="nc" id="L49">				throw new UnparseableXmlException(file1, e);</span>
+<span class="nc" id="L50">			}</span>
+<span class="nc bnc" id="L51" title="All 8 branches missed.">		}</span>
+
+<span class="nc" id="L53">		try (InputStream is = Files.newInputStream(p2)) {</span>
+			try {
+<span class="nc" id="L55">				d2 = Xml.createDocumentBuilder().parse(is);</span>
+<span class="nc" id="L56">			} catch (SAXException e) {</span>
+<span class="nc" id="L57">				throw new UnparseableXmlException(file2, e);</span>
+<span class="nc" id="L58">			}</span>
+<span class="nc bnc" id="L59" title="All 8 branches missed.">		}</span>
+
+<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (!d1.getDocumentElement().getTagName().equals(&quot;feature&quot;))</span>
+<span class="nc" id="L62">			throw new Error();</span>
+
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (!d2.getDocumentElement().getTagName().equals(&quot;feature&quot;))</span>
+<span class="nc" id="L65">			throw new Error();</span>
+
+<span class="nc" id="L67">		compareAttributes(d1.getDocumentElement(), d2.getDocumentElement(), new AttributesDeltaReporter() {</span>
+
+			@Override
+			public void added(String key, String value) {
+<span class="nc" id="L71">				dest.accept(new FileDelta(file1, file2, &quot;Added feature attribute: {0} {1} &quot;, key, value));</span>
+<span class="nc" id="L72">			}</span>
+
+			@Override
+			public void removed(String key) {
+<span class="nc" id="L76">				dest.accept(new FileDelta(file1, file2, &quot;Removed feature attribute: {0}&quot;, key));</span>
+<span class="nc" id="L77">			}</span>
+
+			@Override
+			public void changed(String key, String left, String right) {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">				if (key.equals(&quot;version&quot;))</span>
+<span class="nc" id="L82">					dest.accept(new FeatureVersionDelta(file1, file2, VersionParser.valueOf(left),</span>
+<span class="nc" id="L83">							VersionParser.valueOf(right)));</span>
+				else
+<span class="nc" id="L85">					dest.accept(</span>
+							new FileDelta(file1, file2, &quot;Changed feature attribute: {0} {1} -&gt; {2}&quot;, key, left, right));
+<span class="nc" id="L87">			}</span>
+
+		});
+
+<span class="nc" id="L91">		Nodes n1 = new Nodes();</span>
+<span class="nc" id="L92">		Nodes n2 = new Nodes();</span>
+<span class="nc" id="L93">		processRootElement(file1, d1.getDocumentElement().getChildNodes(), n1);</span>
+<span class="nc" id="L94">		processRootElement(file2, d2.getDocumentElement().getChildNodes(), n2);</span>
+
+<span class="nc" id="L96">		comparePlugins2(n1.plugins, n2.plugins, new ElementDeltaReporter() {</span>
+
+			@Override
+			public void added(String e) {
+<span class="nc" id="L100">				dest.accept(new FileDelta(file1, file2, &quot;Added plugin: {0}&quot;, e));</span>
+<span class="nc" id="L101">			}</span>
+
+			@Override
+			public void removed(String e) {
+<span class="nc" id="L105">				dest.accept(new FileDelta(file1, file2, &quot;Removed plugin: {0}&quot;, e));</span>
+<span class="nc" id="L106">			}</span>
+
+		}, new DeltaReporter(file1, file2, dest));
+<span class="nc" id="L109">		comparePlugins(n1.includes, n2.includes, new ElementDeltaReporter() {</span>
+
+			@Override
+			public void added(String e) {
+<span class="nc" id="L113">				dest.accept(new FileDelta(file1, file2, &quot;Added includes: {0}&quot;, e));</span>
+<span class="nc" id="L114">			}</span>
+
+			@Override
+			public void removed(String e) {
+<span class="nc" id="L118">				dest.accept(new FileDelta(file1, file2, &quot;Removed includes: {0}&quot;, e));</span>
+<span class="nc" id="L119">			}</span>
+
+<span class="nc" id="L121">		}, new AttributesDeltaReporter() {</span>
+
+			@Override
+			public void added(String key, String value) {
+<span class="nc" id="L125">				dest.accept(new FileDelta(file1, file2, &quot;Added includes attribute: {0} {1}&quot;, key, value));</span>
+<span class="nc" id="L126">			}</span>
+
+			@Override
+			public void removed(String key) {
+<span class="nc" id="L130">				dest.accept(new FileDelta(file1, file2, &quot;Removed includes attribute: {0} &quot;, key));</span>
+<span class="nc" id="L131">			}</span>
+
+			@Override
+			public void changed(String key, String left, String right) {
+<span class="nc" id="L135">				dest.accept(</span>
+						new FileDelta(file1, file2, &quot;Changed includes attribute: {0} {1} -&gt; {2}&quot;, key, left, right));
+<span class="nc" id="L137">			}</span>
+
+		});
+<span class="nc" id="L140">		compareImports(n1.imports, n2.imports, (d, p) -&gt; dest.accept(new FileDelta(file1, file2, d, p)));</span>
+<span class="nc" id="L141">	}</span>
+
+	static class DeltaReporter {
+		final FileId baseline;
+		final FileId current;
+		final Consumer&lt;FileDelta&gt; dest;
+
+<span class="nc" id="L148">		DeltaReporter(FileId baseline, FileId current, Consumer&lt;FileDelta&gt; dest) {</span>
+<span class="nc" id="L149">			this.baseline = baseline;</span>
+<span class="nc" id="L150">			this.current = current;</span>
+<span class="nc" id="L151">			this.dest = dest;</span>
+<span class="nc" id="L152">		}</span>
+
+		public void fileDelta(String description, Object... parameters) {
+<span class="nc" id="L155">			dest.accept(new FileDelta(baseline, current, description, parameters));</span>
+<span class="nc" id="L156">		}</span>
+
+		public void pluginVersionDelta(String id, String left, String right) {
+<span class="nc" id="L159">			dest.accept(new FeaturePluginVersionDelta(baseline, current, id, VersionParser.valueOf(left),</span>
+<span class="nc" id="L160">					VersionParser.valueOf(right)));</span>
+<span class="nc" id="L161">		}</span>
+	}
+
+	private void comparePlugins2(Map&lt;String, Multimap&lt;String, Element&gt;&gt; baseline,
+			Map&lt;String, Multimap&lt;String, Element&gt;&gt; current, ElementDeltaReporter elementDeltaReporter,
+			DeltaReporter deltaReporter) {
+
+<span class="nc bnc" id="L168" title="All 2 branches missed.">		for (String id : Sets.union(baseline.keySet(), current.keySet())) {</span>
+<span class="nc" id="L169">			Multimap&lt;String, Element&gt; b = baseline.get(id);</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">			if (b == null)</span>
+<span class="nc" id="L171">				b = HashMultimap.create();</span>
+			else
+<span class="nc" id="L173">				b = HashMultimap.create(b);</span>
+
+<span class="nc" id="L175">			Multimap&lt;String, Element&gt; c = current.get(id);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">			if (c == null)</span>
+<span class="nc" id="L177">				c = HashMultimap.create();</span>
+			else
+<span class="nc" id="L179">				c = HashMultimap.create(c);</span>
+
+<span class="nc" id="L181">			AttributesDeltaReporter r = new AttributesDeltaReporter() {</span>
+
+				@Override
+				public void removed(String key) {
+<span class="nc" id="L185">					deltaReporter.fileDelta(&quot;Plugin {0} attribute {1} removed&quot;, id, key);</span>
+<span class="nc" id="L186">				}</span>
+
+				@Override
+				public void changed(String key, String left, String right) {
+<span class="nc bnc" id="L190" title="All 2 branches missed.">					if (key.equals(&quot;version&quot;)) {</span>
+<span class="nc" id="L191">						deltaReporter.pluginVersionDelta(id, left, right);</span>
+					} else {
+<span class="nc" id="L193">						deltaReporter.fileDelta(&quot;Plugin {0} attribute {1} changed {2} -&gt; {3}&quot;, id, key, left, right);</span>
+					}
+<span class="nc" id="L195">				}</span>
+
+				@Override
+				public void added(String key, String value) {
+<span class="nc" id="L199">					deltaReporter.fileDelta(&quot;Plugin {0} attribute {1} / {2} added&quot;, id, key, value);</span>
+<span class="nc" id="L200">				}</span>
+			};
+
+<span class="nc" id="L203">			Set&lt;String&gt; intersection = new HashSet&lt;&gt;(b.keys());</span>
+<span class="nc" id="L204">			intersection.retainAll(c.keys());</span>
+
+<span class="nc bnc" id="L206" title="All 2 branches missed.">			for (String v : intersection) {</span>
+<span class="nc" id="L207">				Collection&lt;Element&gt; be = b.get(v);</span>
+<span class="nc" id="L208">				Collection&lt;Element&gt; ce = c.get(v);</span>
+<span class="nc bnc" id="L209" title="All 4 branches missed.">				if (be.size() == 1 &amp;&amp; ce.size() == 1) {</span>
+<span class="nc" id="L210">					compareAttributes(Iterables.getOnlyElement(be), Iterables.getOnlyElement(ce), r);</span>
+<span class="nc" id="L211">					b.removeAll(v);</span>
+<span class="nc" id="L212">					c.removeAll(v);</span>
+				}
+<span class="nc" id="L214">			}</span>
+
+<span class="nc bnc" id="L216" title="All 4 branches missed.">			if (b.size() == 1 &amp;&amp; c.size() == 1) {</span>
+<span class="nc" id="L217">				compareAttributes(Iterables.getOnlyElement(b.values()), Iterables.getOnlyElement(c.values()), r);</span>
+			} else {
+<span class="nc bnc" id="L219" title="All 2 branches missed.">				for (Element e : b.values())</span>
+<span class="nc" id="L220">					deltaReporter.fileDelta(&quot;Plugin removed: {0}&quot;, domRenderer.render(e));</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">				for (Element e : c.values())</span>
+<span class="nc" id="L222">					deltaReporter.fileDelta(&quot;Plugin added: {0}&quot;, domRenderer.render(e));</span>
+			}
+<span class="nc" id="L224">		}</span>
+
+<span class="nc" id="L226">	}</span>
+
+	private void compareImports(List&lt;Element&gt; imports, List&lt;Element&gt; imports2, BiConsumer&lt;String, Object[]&gt; consumer) {
+
+<span class="nc" id="L230">		List&lt;Element&gt; e2 = new ArrayList&lt;&gt;(imports2);</span>
+
+<span class="nc bnc" id="L232" title="All 2 branches missed.">		for (Element e : imports) {</span>
+<span class="nc" id="L233">			String re = domRenderer.render(e);</span>
+
+<span class="nc" id="L235">			boolean found = false;</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">			for (Iterator&lt;Element&gt; i = e2.iterator(); i.hasNext();) {</span>
+
+<span class="nc" id="L238">				String r = domRenderer.render(i.next());</span>
+
+<span class="nc bnc" id="L240" title="All 2 branches missed.">				if (re.equals(r)) {</span>
+<span class="nc" id="L241">					i.remove();</span>
+<span class="nc" id="L242">					found = true;</span>
+<span class="nc" id="L243">					break;</span>
+				}
+<span class="nc" id="L245">			}</span>
+
+<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (found)</span>
+<span class="nc" id="L248">				continue;</span>
+
+<span class="nc" id="L250">			consumer.accept(&quot;removed import {0}&quot;, new Object[] { re });</span>
+<span class="nc" id="L251">		}</span>
+
+<span class="nc bnc" id="L253" title="All 2 branches missed.">		for (Element e : e2) {</span>
+<span class="nc" id="L254">			consumer.accept(&quot;Added import {0}&quot;, new Object[] { domRenderer.render(e) });</span>
+<span class="nc" id="L255">		}</span>
+<span class="nc" id="L256">	}</span>
+
+	// private void compareText(Element d1, Element d2) {
+	// if (d1 == null &amp;&amp; d2 == null) {
+	// return;
+	// } else if (d2 != null) {
+	// System.err.println(&quot;ADDED TEXT &quot; + d2);
+	// } else if (d1 != null) {
+	// System.err.println(&quot;REMOVED TEXT &quot; + d2);
+	// }
+	//
+	// if (!d1.getTextContent().equals(d2.getTextContent())) {
+	// System.err.println(&quot;CONTENT CHANGED&quot;);
+	// }
+	// System.err.println(&quot;D1 &quot; + d1.getTextContent());
+	// }
+
+	private void comparePlugins(Map&lt;String, Element&gt; plugins1, Map&lt;String, Element&gt; plugins2,
+			ElementDeltaReporter elementDeltaReporter, AttributesDeltaReporter attributesDeltaReporter) {
+
+<span class="nc bnc" id="L276" title="All 2 branches missed.">		for (String id : Sets.union(plugins1.keySet(), plugins2.keySet())) {</span>
+<span class="nc" id="L277">			Element e1 = plugins1.get(id);</span>
+<span class="nc" id="L278">			Element e2 = plugins2.get(id);</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">			if (e1 == null) {</span>
+<span class="nc" id="L280">				elementDeltaReporter.added(domRenderer.render(e2));</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">			} else if (e2 == null) {</span>
+<span class="nc" id="L282">				elementDeltaReporter.removed(domRenderer.render(e1));</span>
+			} else {
+<span class="nc" id="L284">				compareAttributes(e1, e2, attributesDeltaReporter);</span>
+			}
+<span class="nc" id="L286">		}</span>
+<span class="nc" id="L287">	}</span>
+
+	static class DuplicatePluginException extends SemanticException {
+
+		public DuplicatePluginException(FileId file, String text) {
+<span class="nc" id="L292">			super(file, text);</span>
+<span class="nc" id="L293">		}</span>
+
+	}
+
+	static class PluginChildElementsException extends SemanticException {
+
+		public PluginChildElementsException(FileId file, String text) {
+<span class="nc" id="L300">			super(file, text);</span>
+<span class="nc" id="L301">		}</span>
+
+	}
+
+	static class PluginMissingAttributeException extends SemanticException {
+
+		public PluginMissingAttributeException(FileId file, String text) {
+<span class="nc" id="L308">			super(file, text);</span>
+<span class="nc" id="L309">		}</span>
+
+	}
+
+	static class DuplicateElementException extends SemanticException {
+
+		public DuplicateElementException(FileId file, String text) {
+<span class="nc" id="L316">			super(file, text);</span>
+<span class="nc" id="L317">		}</span>
+
+	}
+
+	static class UnexpectedTextException extends SemanticException {
+
+		public UnexpectedTextException(FileId file, String text) {
+<span class="nc" id="L324">			super(file, text);</span>
+<span class="nc" id="L325">		}</span>
+
+	}
+
+	static class UnparseableXmlException extends SemanticException {
+
+		public UnparseableXmlException(FileId file, SAXException parent) {
+<span class="nc" id="L332">			super(file, parent.toString(), parent);</span>
+<span class="nc" id="L333">		}</span>
+
+	}
+
+<span class="nc" id="L337">	private static class Nodes {</span>
+<span class="nc" id="L338">		Map&lt;String, Multimap&lt;String, Element&gt;&gt; plugins = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L339">		Map&lt;String, Element&gt; includes = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L340">		List&lt;Element&gt; imports = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L341">		Map&lt;String, String&gt; other = new HashMap&lt;&gt;();</span>
+	}
+
+	private void processRootElement(FileId file, NodeList nl, Nodes nodes) {
+<span class="nc bnc" id="L345" title="All 2 branches missed.">		for (int i = 0; i != nl.getLength(); ++i) {</span>
+<span class="nc" id="L346">			Node item = nl.item(i);</span>
+<span class="nc bnc" id="L347" title="All 4 branches missed.">			switch (item.getNodeType()) {</span>
+			case Node.TEXT_NODE:
+<span class="nc" id="L349">				Text t = ((Text) item);</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">				for (char c : t.getNodeValue().toCharArray()) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">					if (!Character.isWhitespace(c)) {</span>
+<span class="nc" id="L352">						throw new UnexpectedTextException(file,</span>
+<span class="nc" id="L353">								&quot;Unexpected non-whitespace between elements: &quot; + quoteForDisplay(t.getNodeValue()));</span>
+					}
+				}
+<span class="nc" id="L356">				break;</span>
+			case Node.ELEMENT_NODE:
+<span class="nc" id="L358">				Element e = ((Element) item);</span>
+<span class="nc bnc" id="L359" title="All 23 branches missed.">				switch (e.getTagName()) {</span>
+				case &quot;plugin&quot;:
+<span class="nc bnc" id="L361" title="All 2 branches missed.">					if (e.getChildNodes().getLength() != 0)</span>
+<span class="nc" id="L362">						throw new PluginChildElementsException(file, &quot;&lt;plugin&gt; element has children&quot;);</span>
+<span class="nc" id="L363">					Attr id = e.getAttributeNode(&quot;id&quot;);</span>
+<span class="nc bnc" id="L364" title="All 4 branches missed.">					if (id == null || id.getValue().isEmpty())</span>
+<span class="nc" id="L365">						throw new PluginMissingAttributeException(file, &quot;&lt;plugin&gt; has no or empty attribute 'id'&quot;);</span>
+<span class="nc" id="L366">					Attr version = e.getAttributeNode(&quot;version&quot;);</span>
+<span class="nc bnc" id="L367" title="All 4 branches missed.">					if (version == null || version.getValue().isEmpty())</span>
+<span class="nc" id="L368">						throw new PluginMissingAttributeException(file, &quot;&lt;plugin&gt; has no attribute 'version'&quot;);</span>
+<span class="nc" id="L369">					Multimap&lt;String, Element&gt; v2e = nodes.plugins.get(id.getValue());</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">					if (v2e == null) {</span>
+<span class="nc" id="L371">						v2e = HashMultimap.create();</span>
+<span class="nc" id="L372">						nodes.plugins.put(id.getValue(), v2e);</span>
+					}
+<span class="nc" id="L374">					v2e.put(version.getValue(), e);</span>
+<span class="nc" id="L375">					break;</span>
+				case &quot;requires&quot;:
+<span class="nc" id="L377">					processRequires(file, e.getChildNodes(), nodes);</span>
+<span class="nc" id="L378">					break;</span>
+				// throw new Error(&quot;req &quot; + domRenderer.render(e));
+				case &quot;includes&quot;:
+<span class="nc bnc" id="L381" title="All 2 branches missed.">					if (e.getChildNodes().getLength() != 0)</span>
+<span class="nc" id="L382">						throw new PluginChildElementsException(file, &quot;&lt;includes&gt; element has children&quot;);</span>
+<span class="nc" id="L383">					id = e.getAttributeNode(&quot;id&quot;);</span>
+<span class="nc bnc" id="L384" title="All 4 branches missed.">					if (id == null || id.getValue().isEmpty())</span>
+<span class="nc" id="L385">						throw new PluginMissingAttributeException(file, &quot;&lt;includes&gt; has no or empty attribute 'id'&quot;);</span>
+<span class="nc" id="L386">					version = e.getAttributeNode(&quot;version&quot;);</span>
+<span class="nc bnc" id="L387" title="All 4 branches missed.">					if (version == null || version.getValue().isEmpty())</span>
+<span class="nc" id="L388">						throw new PluginMissingAttributeException(file, &quot;&lt;includes&gt; has no attribute 'version'&quot;);</span>
+<span class="nc" id="L389">					Object old = nodes.includes.put(featureId(id, version), e);</span>
+<span class="nc bnc" id="L390" title="All 2 branches missed.">					if (old != null)</span>
+<span class="nc" id="L391">						throw new UnhandledException(file, &quot;Duplicate &lt;includes&gt; '&quot; + id + &quot;' '&quot; + version + &quot;'&quot;);</span>
+					break;
+				case &quot;description&quot;:
+				case &quot;copyright&quot;:
+				case &quot;license&quot;:
+				default:
+<span class="nc" id="L397">					old = nodes.other.put(e.getTagName(), domRenderer.render(e));</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">					if (old != null)</span>
+<span class="nc" id="L399">						throw new DuplicateElementException(file, &quot;duplicate element &lt;&quot; + e.getTagName() + &quot;&gt;&quot;);</span>
+				}
+<span class="nc" id="L401">				break;</span>
+			case Node.COMMENT_NODE:
+<span class="nc" id="L403">				break;</span>
+			default:
+<span class="nc" id="L405">				throw new UnhandledException(file, &quot;Unhandled node &quot; + item.getNodeType() + &quot; &quot; + item);</span>
+			}
+		}
+<span class="nc" id="L408">	}</span>
+
+	private void processRequires(FileId file, NodeList nl, Nodes nodes) {
+<span class="nc bnc" id="L411" title="All 2 branches missed.">		for (int i = 0; i != nl.getLength(); ++i) {</span>
+<span class="nc" id="L412">			Node item = nl.item(i);</span>
+<span class="nc bnc" id="L413" title="All 4 branches missed.">			switch (item.getNodeType()) {</span>
+			case Node.TEXT_NODE:
+<span class="nc" id="L415">				Text t = ((Text) item);</span>
+<span class="nc bnc" id="L416" title="All 2 branches missed.">				for (char c : t.getNodeValue().toCharArray()) {</span>
+<span class="nc bnc" id="L417" title="All 2 branches missed.">					if (!Character.isWhitespace(c)) {</span>
+<span class="nc" id="L418">						throw new UnexpectedTextException(file,</span>
+<span class="nc" id="L419">								&quot;Unexpected non-whitespace between elements: &quot; + quoteForDisplay(t.getNodeValue()));</span>
+					}
+				}
+<span class="nc" id="L422">				break;</span>
+			case Node.ELEMENT_NODE:
+<span class="nc" id="L424">				Element e = ((Element) item);</span>
+<span class="nc bnc" id="L425" title="All 6 branches missed.">				switch (e.getTagName()) {</span>
+				case &quot;import&quot;:
+<span class="nc" id="L427">					nodes.imports.add(e);</span>
+<span class="nc" id="L428">					break;</span>
+				default:
+<span class="nc" id="L430">					throw new Error();</span>
+				}
+<span class="nc" id="L432">				break;</span>
+			case Node.COMMENT_NODE:
+<span class="nc" id="L434">				break;</span>
+			default:
+<span class="nc" id="L436">				throw new UnhandledException(file, &quot;Unhandled node &quot; + item.getNodeType() + &quot; &quot; + item);</span>
+			}
+		}
+
+<span class="nc" id="L440">	}</span>
+
+	private static String quoteForDisplay(String nodeValue) {
+<span class="nc" id="L443">		StringBuilder b = new StringBuilder();</span>
+<span class="nc bnc" id="L444" title="All 2 branches missed.">		for (char c : nodeValue.toCharArray()) {</span>
+<span class="nc bnc" id="L445" title="All 4 branches missed.">			switch (c) {</span>
+			case '\\':
+<span class="nc" id="L447">				b.append(&quot;\\\\&quot;);</span>
+<span class="nc" id="L448">				break;</span>
+			case '\n':
+<span class="nc" id="L450">				b.append(&quot;\\n&quot;);</span>
+<span class="nc" id="L451">				break;</span>
+			case '\r':
+<span class="nc" id="L453">				b.append(&quot;\\r&quot;);</span>
+<span class="nc" id="L454">				break;</span>
+			default:
+<span class="nc" id="L456">				b.append(c);</span>
+				break;
+			}
+		}
+<span class="nc" id="L460">		return b.toString();</span>
+	}
+
+	private String featureId(Attr idAttr, Attr versionAttr) {
+<span class="nc" id="L464">		Preconditions.checkNotNull(idAttr);</span>
+<span class="nc" id="L465">		String id = idAttr.getValue();</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">		Preconditions.checkArgument(!id.contains(&quot;\t&quot;));</span>
+<span class="nc" id="L467">		Preconditions.checkNotNull(versionAttr);</span>
+<span class="nc" id="L468">		String version = versionAttr.getValue();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">		Preconditions.checkArgument(!version.contains(&quot;\t&quot;));</span>
+<span class="nc" id="L470">		return id + &quot;\t&quot; + version;</span>
+	}
+
+	static interface ElementDeltaReporter {
+		void added(String e);
+
+		void removed(String e);
+	}
+
+<span class="nc" id="L479">	static interface AttributesDeltaReporter {</span>
+		void added(String key, String value);
+
+		void removed(String key);
+
+		void changed(String key, String left, String right);
+	}
+
+	private void compareAttributes(Element e1, Element e2, AttributesDeltaReporter c) {
+<span class="nc" id="L488">		NamedNodeMap attrs1 = e1.getAttributes();</span>
+<span class="nc" id="L489">		NamedNodeMap attrs2 = e2.getAttributes();</span>
+
+<span class="nc bnc" id="L491" title="All 2 branches missed.">		for (int i = 0; i != attrs1.getLength(); ++i) {</span>
+<span class="nc" id="L492">			Attr a1 = (Attr) attrs1.item(i);</span>
+
+<span class="nc" id="L494">			Attr a2 = (Attr) attrs2.getNamedItemNS(a1.getNamespaceURI(), a1.getLocalName());</span>
+
+<span class="nc bnc" id="L496" title="All 2 branches missed.">			if (a2 == null) {</span>
+<span class="nc" id="L497">				c.removed(a1.getName());</span>
+			} else {
+<span class="nc bnc" id="L499" title="All 2 branches missed.">				if (!Objects.equals(a1.getValue(), a2.getValue()))</span>
+<span class="nc" id="L500">					c.changed(a1.getName(), a1.getValue(), a2.getValue());</span>
+			}
+		}
+
+<span class="nc bnc" id="L504" title="All 2 branches missed.">		for (int i = 0; i != attrs2.getLength(); ++i) {</span>
+<span class="nc" id="L505">			Attr a2 = (Attr) attrs2.item(i);</span>
+
+<span class="nc" id="L507">			Attr a1 = (Attr) e2.getAttributes().getNamedItemNS(a2.getNamespaceURI(), a2.getLocalName());</span>
+
+<span class="nc bnc" id="L509" title="All 2 branches missed.">			if (a1 == null) {</span>
+<span class="nc" id="L510">				c.added(a2.getName(), a2.getValue());</span>
+			}
+		}
+<span class="nc" id="L513">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

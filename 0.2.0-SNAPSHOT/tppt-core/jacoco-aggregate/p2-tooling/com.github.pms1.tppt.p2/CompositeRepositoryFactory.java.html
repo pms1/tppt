@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompositeRepositoryFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">CompositeRepositoryFactory.java</span></div><h1>CompositeRepositoryFactory.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+
+import com.github.pms1.tppt.p2.jaxb.composite.Children;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
+import com.github.pms1.tppt.p2.jaxb.composite.Properties;
+import com.google.common.base.Throwables;
+
+public abstract class CompositeRepositoryFactory extends AbstractRepositoryFactory&lt;CompositeRepository&gt; {
+
+	protected CompositeRepositoryFactory(String prefix) {
+<span class="nc" id="L14">		super(getJaxbContext(), CompositeRepository.class, prefix, &quot;1.0.0&quot;, &quot;compositeRepository.xsd&quot;);</span>
+<span class="nc" id="L15">	}</span>
+
+<span class="nc" id="L17">	private static class Holder {</span>
+		private final static JAXBContext context;
+		static {
+			try {
+<span class="nc" id="L21">				context = JAXBContext.newInstance(CompositeRepository.class);</span>
+<span class="nc" id="L22">			} catch (JAXBException t) {</span>
+<span class="nc" id="L23">				throw Throwables.propagate(t);</span>
+<span class="nc" id="L24">			}</span>
+<span class="nc" id="L25">		}</span>
+	}
+
+	public static JAXBContext getJaxbContext() {
+<span class="nc" id="L29">		return Holder.context;</span>
+	}
+
+	protected void normalize(CompositeRepository t) {
+<span class="nc" id="L33">		Properties properties = t.getProperties();</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		if (properties != null)</span>
+<span class="nc" id="L35">			properties.setSize(properties.getProperty().size());</span>
+
+<span class="nc" id="L37">		Children children = t.getChildren();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">		if (children != null)</span>
+<span class="nc" id="L39">			children.setSize(children.getChild().size());</span>
+<span class="nc" id="L40">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

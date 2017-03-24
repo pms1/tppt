@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractRepositoryFacade.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-core</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">AbstractRepositoryFacade.java</span></div><h1>AbstractRepositoryFacade.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.util.List;
+import java.util.Optional;
+
+import com.github.pms1.tppt.p2.jaxb.Properties;
+import com.github.pms1.tppt.p2.jaxb.Property;
+import com.github.pms1.tppt.p2.jaxb.Repository;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
+
+abstract class AbstractRepositoryFacade&lt;T extends Repository&gt; implements RepositoryFacade&lt;T&gt; {
+
+	private final Supplier&lt;Property&gt; createProperty;
+
+	private final static String P2_TIMESTAMP = &quot;p2.timestamp&quot;;
+
+<span class="nc" id="L18">	AbstractRepositoryFacade(Supplier&lt;Property&gt; createProperty) {</span>
+<span class="nc" id="L19">		this.createProperty = createProperty;</span>
+<span class="nc" id="L20">	}</span>
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private &lt;P&gt; void set(List&lt;P&gt; l, Object l1) {
+<span class="nc" id="L24">		l.add((P) l1);</span>
+<span class="nc" id="L25">	}</span>
+
+	@Override
+	public void setTimestamp(long time) {
+<span class="nc bnc" id="L29" title="All 2 branches missed.">		Preconditions.checkArgument(time &gt; 0);</span>
+
+<span class="nc" id="L31">		Repository r = getRepository();</span>
+
+<span class="nc" id="L33">		Properties properties = r.getProperties();</span>
+
+<span class="nc" id="L35">		List&lt;? extends Property&gt; property = properties.getProperty();</span>
+
+<span class="nc" id="L37">		Optional&lt;? extends Property&gt; prop = property.stream().filter(p -&gt; p.getName().equals(P2_TIMESTAMP)).findAny();</span>
+
+		Property prop2;
+<span class="nc bnc" id="L40" title="All 2 branches missed.">		if (!prop.isPresent()) {</span>
+<span class="nc" id="L41">			prop2 = createProperty.get();</span>
+<span class="nc" id="L42">			prop2.setName(P2_TIMESTAMP);</span>
+<span class="nc" id="L43">			set(property, prop2);</span>
+		} else {
+<span class="nc" id="L45">			prop2 = prop.get();</span>
+		}
+<span class="nc" id="L47">		prop2.setValue(String.valueOf(time));</span>
+<span class="nc" id="L48">	}</span>
+
+	@Override
+	public Long getTimestamp() {
+<span class="nc" id="L52">		Repository r = getRepository();</span>
+<span class="nc" id="L53">		Properties properties = r.getProperties();</span>
+
+<span class="nc" id="L55">		List&lt;? extends Property&gt; property = properties.getProperty();</span>
+
+<span class="nc" id="L57">		Optional&lt;? extends Property&gt; prop = property.stream().filter(p -&gt; p.getName().equals(P2_TIMESTAMP)).findAny();</span>
+
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (prop.isPresent())</span>
+<span class="nc" id="L60">			return Long.valueOf(prop.get().getValue());</span>
+		else
+<span class="nc" id="L62">			return null;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
