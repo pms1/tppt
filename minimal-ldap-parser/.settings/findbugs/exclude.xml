@@ -1,0 +1,5 @@
+<FindBugsFilter>
+	<!-- generated code -->
+	<Class name="com.github.pms1.ldap.Rfc4515Parser" />
+	<Class name="com.github.pms1.ldap.Rfc4515Parser$OptionsContext" />
+</FindBugsFilter >

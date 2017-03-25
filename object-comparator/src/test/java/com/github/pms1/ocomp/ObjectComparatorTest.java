@@ -21,9 +21,7 @@ public class ObjectComparatorTest {
 
 		@Override
 		public boolean equals(Object obj) {
-			System.err.println(this + " " + System.identityHashCode(this) + " " + i + " " + obj + " "
-					+ System.identityHashCode(obj) + " " + ((A) obj).i);
-			return i == ((A) obj).i;
+			return obj instanceof A && i == ((A) obj).i;
 		}
 
 		@Override

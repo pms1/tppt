@@ -30,7 +30,7 @@
 			<artifactId>tppt-mirror-application</artifactId>
 			<version>0.2.0-SNAPSHOT</version>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>p2-tooling</artifactId>
@@ -94,7 +94,7 @@
 			<artifactId>maven-scm-provider-jgit</artifactId>
 			<version>1.9.5</version>
 		</dependency>
- 
+
 		<dependency>
 			<groupId>biz.aQute.bnd</groupId>
 			<artifactId>biz.aQute.bndlib</artifactId>
@@ -106,6 +106,13 @@
 			<artifactId>maven-dependency-tree</artifactId>
 			<version>3.0</version>
 		</dependency>
+
+		<dependency>
+			<groupId>com.google.code.findbugs</groupId>
+			<artifactId>annotations</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -183,7 +190,7 @@ project.properties.setProperty('deploymentTarget',java.nio.file.Paths.get(projec
 					<noLog>false</noLog>
 
 					<postBuildHookScript>verify.groovy</postBuildHookScript>
-					
+
 					<properties>
 						<tppt.deploymentTarget>${deploymentTarget}</tppt.deploymentTarget>
 					</properties>

@@ -2,6 +2,7 @@ package com.github.pms1.tppt.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -296,7 +297,13 @@ public class DeploymentHelper {
 			}
 		}
 
-		// TODO: remove directories that got empty // toRemove
+		for (Path p : toRemove.descendingSet()) {
+			try {
+				Files.delete(p);
+			} catch (DirectoryNotEmptyException e) {
+				// that's ok
+			}
+		}
 	}
 
 	public void replace(CommonP2Repository source, CommonP2Repository target) throws IOException {

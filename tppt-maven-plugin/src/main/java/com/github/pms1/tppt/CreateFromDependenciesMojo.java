@@ -212,8 +212,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		try {
 			Files.createDirectories(repoDependenciesPlugins);
 
-			List<Plugin> plugins = new LinkedList<>();
-
 			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
 			pbRequest.setLocalRepository(localRepository);
 			pbRequest.setProject(project);
@@ -257,8 +255,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				if (plugin == null)
 					throw new Error();
 
-				plugins.add(plugin);
-
 				// try to find artifacts with "sources" qualifier
 				Artifact sourcesArtifact = repositorySystem.createArtifactWithClassifier(a.getGroupId(),
 						a.getArtifactId(), a.getVersion(), "jar", "sources");
@@ -278,8 +274,6 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					Path out1 = repoDependenciesPlugins.resolve(sourceArtifact.getFile().toPath().getFileName());
 
 					createSourceBundle(plugin, sourceArtifact.getFile().toPath(), out1);
-
-					plugins.add(scanPlugin(out1));
 
 					break;
 				default:

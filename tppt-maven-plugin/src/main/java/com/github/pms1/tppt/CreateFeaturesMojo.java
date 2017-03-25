@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
@@ -24,8 +23,6 @@ import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
@@ -109,20 +106,6 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	@Component(hint = "xml")
 	private DataCompression raw;
-
-	@Parameter
-	private ArtifactFilter exclusionTransitives = new ExclusionSetFilter(Collections.emptySet());
-
-	public void setExclusionTransitives(String[] exclusionTransitives) {
-		this.exclusionTransitives = new ExclusionSetFilter(exclusionTransitives);
-	}
-
-	@Parameter
-	private ArtifactFilter exclusions = new ExclusionSetFilter(Collections.emptySet());
-
-	public void setExclusions(String[] exclusions) {
-		this.exclusions = new ExclusionSetFilter(exclusions);
-	}
 
 	private static Plugin scanPlugin(Path path, Plugin plugin)
 			throws IOException, BundleException, MojoExecutionException {

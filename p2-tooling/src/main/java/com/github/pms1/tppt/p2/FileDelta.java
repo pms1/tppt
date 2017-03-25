@@ -1,5 +1,7 @@
 package com.github.pms1.tppt.p2;
 
+import java.util.Arrays;
+
 import com.google.common.base.Preconditions;
 
 public class FileDelta {
@@ -28,17 +30,31 @@ public class FileDelta {
 	}
 
 	@Override
-	public int hashCode() {
+	public String toString() {
+		return f1 + " -> " + f2 + ": " + description + " " + Arrays.toString(parameters);
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public Object[] getParameters() {
+		return parameters;
+	}
+
+	@Override
+	final public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((description == null) ? 0 : description.hashCode());
 		result = prime * result + ((f1 == null) ? 0 : f1.hashCode());
 		result = prime * result + ((f2 == null) ? 0 : f2.hashCode());
+		result = prime * result + Arrays.hashCode(parameters);
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	final public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -61,19 +77,8 @@ public class FileDelta {
 				return false;
 		} else if (!f2.equals(other.f2))
 			return false;
+		if (!Arrays.equals(parameters, other.parameters))
+			return false;
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return f1 + " -> " + f2 + ": " + description;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public Object[] getParameters() {
-		return parameters;
 	}
 }

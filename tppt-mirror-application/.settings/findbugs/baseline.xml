@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<BugCollection version="3.0.2-dev-20160306-90c514b" sequence="1" timestamp="1490380300968" analysisTimestamp="1490380296474" release="">
+  <Project projectName="tppt-mirror-application">
+    <Jar>W:\work\workspaces\i3\workspace-luna\zzz-p2i\tppt-mirror-application\target\classes</Jar>
+    <AuxClasspathEntry>W:\work\workspaces\i3\workspace-luna\zzz-p2i\tppt-mirror-application\target\classes</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.core.runtime_3.12.0.v20160606-1342.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\javax.inject_1.0.0.v20091030.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>W:\work\eclipse-neon-rcp\eclipse\plugins\org.eclipse.osgi_3.11.3.v20170209-1843.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>W:\work\eclipse-neon-rcp\eclipse\plugins\org.eclipse.osgi.compatibility.state_1.0.200.v20160504-1419.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>W:\work\eclipse-neon-rcp\eclipse\plugins\org.eclipse.wst.jsdt.nashorn.extension_1.0.2.v201610280128.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.common_3.8.0.v20160509-1230.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.core.jobs_3.8.0.v20160509-0411.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.registry_3.6.100.v20160223-2218.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.preferences_3.6.1.v20160815-1406.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.core.contenttype_3.5.100.v20160418-1621.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.app_1.3.400.v20150715-1528.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.repository.tools_2.1.300.v20160421-0324.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.apache.httpcomponents.httpclient_4.3.6.v201511171540.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.apache.httpcomponents.httpcore_4.3.3.v201411290715.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.artifact.repository_1.1.500.v20160419-0834.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.core_2.4.100.v20160419-0834.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.director_2.3.300.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.engine_2.4.100.v20160419-0834.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.metadata.repository_1.2.300.v20160419-0834.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.metadata_2.3.100.v20160427-2220.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.publisher_1.4.100.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.repository_2.3.200.v20160421-0324.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>D:\Program Files\Java\jdk1.8.0_31\jre\lib\rt.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.apache.commons.codec_1.6.0.v201305230611.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.sat4j.pb_2.3.5.v201404071733.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\javax.xml_1.3.4.v201005080400.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.frameworkadmin.equinox_1.0.700.v20160102-2223.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.apache.commons.logging_1.1.1.v201101211721.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\javax.servlet_3.1.0.v201410161800.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.simpleconfigurator.manipulator_2.0.200.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.publisher.eclipse_1.2.100.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.tukaani.xz_1.3.0.v201308270617.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.p2.jarprocessor_1.0.500.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.security_1.2.200.v20150715-1528.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.simpleconfigurator_1.1.200.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.equinox.frameworkadmin_2.0.300.v20160504-1450.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.sat4j.core_2.3.5.v201308161310.jar</AuxClasspathEntry>
+    <AuxClasspathEntry>C:\Users\Mirko\workspace-neon\.metadata\.plugins\org.eclipse.pde.core\.bundle_pool\plugins\org.eclipse.osgi.services_3.5.100.v20160504-1419.jar</AuxClasspathEntry>
+    <SrcDir>W:\work\workspaces\i3\workspace-luna\zzz-p2i\tppt-mirror-application\src</SrcDir>
+    <Cloud id="edu.umd.cs.findbugs.cloud.doNothingCloud" online="false"></Cloud>
+  </Project>
+  <BugInstance type="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" priority="2" rank="17" abbrev="ST" category="STYLE" first="1">
+    <Class classname="com.github.pms1.tppt.mirror.Activator">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Class>
+    <Method classname="com.github.pms1.tppt.mirror.Activator" name="start" signature="(Lorg/osgi/framework/BundleContext;)V" isStatic="false">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="23" end="24" startBytecode="0" endBytecode="60" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Method>
+    <Field classname="com.github.pms1.tppt.mirror.Activator" name="context" signature="Lorg/osgi/framework/BundleContext;" isStatic="true">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Field>
+    <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="23" end="23" startBytecode="1" endBytecode="1" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="23" end="23" startBytecode="1" endBytecode="1" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+  </BugInstance>
+  <BugInstance type="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" priority="2" rank="17" abbrev="ST" category="STYLE" first="1">
+    <Class classname="com.github.pms1.tppt.mirror.Activator">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Class>
+    <Method classname="com.github.pms1.tppt.mirror.Activator" name="stop" signature="(Lorg/osgi/framework/BundleContext;)V" isStatic="false">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="33" end="34" startBytecode="0" endBytecode="60" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Method>
+    <Field classname="com.github.pms1.tppt.mirror.Activator" name="context" signature="Lorg/osgi/framework/BundleContext;" isStatic="true">
+      <SourceLine classname="com.github.pms1.tppt.mirror.Activator" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    </Field>
+    <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="33" end="33" startBytecode="1" endBytecode="1" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+    <SourceLine classname="com.github.pms1.tppt.mirror.Activator" start="33" end="33" startBytecode="1" endBytecode="1" sourcefile="Activator.java" sourcepath="com/github/pms1/tppt/mirror/Activator.java"/>
+  </BugInstance>
+  <Errors errors="0" missingClasses="0"></Errors>
+  <FindBugsSummary timestamp="Fri, 24 Mar 2017 19:12:39 +0100" total_classes="15" referenced_classes="134" total_bugs="3" total_size="509" num_packages="2" java_version="1.8.0_111" vm_version="25.111-b14" cpu_seconds="212.53" clock_seconds="2004.00" peak_mbytes="1465.91" alloc_mbytes="1024.00" gc_seconds="1.19" priority_2="3">
+    <PackageStats package="com.github.pms1.tppt.mirror" total_bugs="3" total_types="13" total_size="499" priority_2="3">
+      <ClassStats class="com.github.pms1.tppt.mirror.Activator" sourceFile="Activator.java" interface="false" size="13" bugs="2" priority_2="2"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorApplication" sourceFile="MirrorApplication.java" interface="false" size="167" bugs="1" priority_2="1"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorApplication$1" sourceFile="MirrorApplication.java" interface="false" size="21" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorApplication$Type" sourceFile="MirrorApplication.java" interface="false" size="13" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec" sourceFile="MirrorSpec.java" interface="false" size="10" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$Filter" sourceFile="MirrorSpec.java" interface="false" size="4" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$MapAdapter" sourceFile="MirrorSpec.java" interface="false" size="18" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$MapAdapter$Entry" sourceFile="MirrorSpec.java" interface="false" size="5" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$OfflineType" sourceFile="MirrorSpec.java" interface="false" size="11" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$PathAdapter" sourceFile="MirrorSpec.java" interface="false" size="10" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MirrorSpec$StatsType" sourceFile="MirrorSpec.java" interface="false" size="11" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MyTransport" sourceFile="MyTransport.java" interface="false" size="202" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.MyTransport$RepoMirror" sourceFile="MyTransport.java" interface="false" size="14" bugs="0"/>
+    </PackageStats>
+    <PackageStats package="com.github.pms1.tppt.mirror.jaxb" total_bugs="0" total_types="2" total_size="10">
+      <ClassStats class="com.github.pms1.tppt.mirror.jaxb.Mirror" sourceFile="Mirror.java" interface="false" size="6" bugs="0"/>
+      <ClassStats class="com.github.pms1.tppt.mirror.jaxb.Mirrors" sourceFile="Mirrors.java" interface="false" size="4" bugs="0"/>
+    </PackageStats>
+    <FindBugsProfile>
+      <ClassProfile name="de.tobject.findbugs.builder.FindBugs2Eclipse" totalMilliseconds="886" invocations="2" avgMicrosecondsPerInvocation="443445" maxMicrosecondsPerInvocation="744734" standardDeviationMircosecondsPerInvocation="301288"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassInfoAnalysisEngine" totalMilliseconds="388" invocations="958" avgMicrosecondsPerInvocation="405" maxMicrosecondsPerInvocation="64548" standardDeviationMircosecondsPerInvocation="2962"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.ClassDataAnalysisEngine" totalMilliseconds="308" invocations="962" avgMicrosecondsPerInvocation="320" maxMicrosecondsPerInvocation="52591" standardDeviationMircosecondsPerInvocation="2543"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FieldItemSummary" totalMilliseconds="245" invocations="134" avgMicrosecondsPerInvocation="1829" maxMicrosecondsPerInvocation="49417" standardDeviationMircosecondsPerInvocation="5577"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.StreamResourceTracker" totalMilliseconds="232" invocations="20" avgMicrosecondsPerInvocation="11645" maxMicrosecondsPerInvocation="44729" standardDeviationMircosecondsPerInvocation="9890"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.UnconditionalValueDerefDataflowFactory" totalMilliseconds="217" invocations="44" avgMicrosecondsPerInvocation="4942" maxMicrosecondsPerInvocation="84813" standardDeviationMircosecondsPerInvocation="17446"/>
+      <ClassProfile name="edu.umd.cs.findbugs.OpcodeStack$JumpInfoFactory" totalMilliseconds="208" invocations="359" avgMicrosecondsPerInvocation="581" maxMicrosecondsPerInvocation="39055" standardDeviationMircosecondsPerInvocation="2351"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.ValueNumberDataflowFactory" totalMilliseconds="193" invocations="76" avgMicrosecondsPerInvocation="2539" maxMicrosecondsPerInvocation="158154" standardDeviationMircosecondsPerInvocation="18044"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.IsNullValueDataflowFactory" totalMilliseconds="178" invocations="76" avgMicrosecondsPerInvocation="2344" maxMicrosecondsPerInvocation="89870" standardDeviationMircosecondsPerInvocation="12113"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FindNoSideEffectMethods" totalMilliseconds="158" invocations="134" avgMicrosecondsPerInvocation="1179" maxMicrosecondsPerInvocation="14577" standardDeviationMircosecondsPerInvocation="2485"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.IntCast2LongAsInstant" totalMilliseconds="108" invocations="15" avgMicrosecondsPerInvocation="7229" maxMicrosecondsPerInvocation="97729" standardDeviationMircosecondsPerInvocation="24259"/>
+      <ClassProfile name="edu.umd.cs.findbugs.classfile.engine.bcel.TypeDataflowFactory" totalMilliseconds="83" invocations="76" avgMicrosecondsPerInvocation="1099" maxMicrosecondsPerInvocation="55899" standardDeviationMircosecondsPerInvocation="6398"/>
+      <ClassProfile name="edu.umd.cs.findbugs.detect.FindRefComparison$SpecialTypeAnalysis" totalMilliseconds="72" invocations="58" avgMicrosecondsPerInvocation="1252" maxMicrosecondsPerInvocation="26795" standardDeviationMircosecondsPerInvocation="4826"/>
+      <ClassProfile name="edu.umd.cs.findbugs.ba.npe.TypeQualifierNullnessAnnotationDatabase" totalMilliseconds="60" invocations="1451" avgMicrosecondsPerInvocation="42" maxMicrosecondsPerInvocation="53023" standardDeviationMircosecondsPerInvocation="1391"/>
+    </FindBugsProfile>
+  </FindBugsSummary>
+  <ClassFeatures></ClassFeatures>
+  <History>
+    <AppVersion sequence="0" timestamp="1490380300968" release="" codeSize="0" numClasses="0"/>
+  </History>
+</BugCollection>

@@ -234,6 +234,9 @@ public class DomRenderer {
 				if (options.indent != null)
 					b.append("\n");
 			}
+			break;
+		default:
+			break;
 		}
 	}
 

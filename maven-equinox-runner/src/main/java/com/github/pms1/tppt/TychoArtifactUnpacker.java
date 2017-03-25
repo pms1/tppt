@@ -52,7 +52,9 @@ public class TychoArtifactUnpacker {
 								e);
 					}
 
-					eclipseDir.setLastModified(artifact.getFile().lastModified());
+					boolean ok = eclipseDir.setLastModified(artifact.getFile().lastModified());
+					if (!ok)
+						logger.warn("Failed to set last-modified timestamp of Tycho's OSGi runtime: " + eclipseDir);
 				}
 			}
 		}

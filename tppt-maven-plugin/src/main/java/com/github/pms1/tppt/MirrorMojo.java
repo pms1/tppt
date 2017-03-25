@@ -97,7 +97,7 @@ public class MirrorMojo extends AbstractMojo {
 		public Map<String, String>[] filters = new Map[0];
 	}
 
-	private final String cacheRelPath = ".cache/tppt/p2";
+	private static final String cacheRelPath = ".cache/tppt/p2";
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {

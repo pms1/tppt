@@ -196,11 +196,11 @@ public class MirrorApplication implements IApplication {
 								throw new Error("");
 							String shortId = removeSuffix(iu.getId(), ".feature.jar");
 							List<String> cand = new ArrayList<>();
-							cand.add(shortId + ".source.feature.group");
+							cand.add(shortId + ".source" + featureSuffix);
 							if (shortId.endsWith(".feature")) {
 								String s2 = removeSuffix(shortId, ".feature");
-								cand.add(s2 + ".source.feature.group");
-								cand.add(s2 + ".source.feature.feature.group");
+								cand.add(s2 + ".source" + featureSuffix);
+								cand.add(s2 + ".source.feature" + featureSuffix);
 							}
 							for (String c : cand)
 								for (IInstallableUnit iu1 : sourceMetadataRepo
@@ -295,7 +295,7 @@ public class MirrorApplication implements IApplication {
 
 	}
 
-	final String featureSuffix = ".feature.group";
+	private final static String featureSuffix = ".feature.group";
 
 	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, Path path,
 			String name) {

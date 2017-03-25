@@ -3,8 +3,11 @@ package com.github.pms1.ldap;
 import java.util.Objects;
 import java.util.function.Function;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class SearchFilterEvaluator {
 
+	@SuppressFBWarnings("SIC_INNER_SHOULD_BE_STATIC_ANON")
 	public boolean evaluate(SearchFilter filter, Function<Attribute, String> dataProvider) {
 
 		return filter.accept(new SearchFilterVisitor<Boolean>() {

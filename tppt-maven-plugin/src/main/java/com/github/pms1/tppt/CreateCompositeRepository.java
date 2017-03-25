@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,8 +13,6 @@ import java.util.stream.StreamSupport;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
-import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
-import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
@@ -88,15 +85,8 @@ public class CreateCompositeRepository extends AbstractMojo {
 	@Component
 	private P2RepositoryFactory factory;
 
-	@Parameter
-	private ArtifactFilter exclusions = new ExclusionSetFilter(Collections.emptySet());
-
 	@Component(hint = "xml")
 	private DataCompression raw;
-
-	public void setExclusions(String[] exclusions) {
-		this.exclusions = new ExclusionSetFilter(exclusions);
-	}
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
 

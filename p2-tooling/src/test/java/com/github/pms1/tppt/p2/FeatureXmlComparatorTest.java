@@ -45,9 +45,9 @@ public class FeatureXmlComparatorTest {
 		lookup.compare(FileId.newRoot(p1), p1, FileId.newRoot(p2), p2, deltas::add);
 		Assertions.assertThat(deltas).containsExactlyInAnyOrder(
 				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2), "Plugin {0} attribute {1} changed {2} -> {3}",
-						"unpack", true, false),
+						"net.sf.jopt-simple.jopt-simple.source", "unpack", "true", "false"),
 				new FileDelta(FileId.newRoot(p1), FileId.newRoot(p2), "Plugin {0} attribute {1} changed {2} -> {3}",
-						"unpack", true, false),
+						"net.sf.jopt-simple.jopt-simple", "unpack", "true", "false"),
 				new FeaturePluginVersionDelta(FileId.newRoot(p1), FileId.newRoot(p2),
 						"net.sf.jopt-simple.jopt-simple.source", Version.parseVersion("5.0.1"),
 						Version.parseVersion("5.0.2")),
