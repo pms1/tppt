@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +39,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository;
 import org.eclipse.equinox.internal.p2.repository.AuthenticationFailedException;
 import org.eclipse.equinox.internal.p2.repository.DownloadStatus;
 import org.eclipse.equinox.internal.p2.repository.Transport;
@@ -105,7 +107,7 @@ public class MyTransport extends Transport {
 				if (offline == OfflineType.offline)
 					return OFFLINE_STATUS;
 
-				System.err.println("Mirroring: " + uri + " -> " + path);
+				System.out.println("Mirroring: " + uri + " -> " + path);
 
 				try (CloseableHttpResponse response = httpClient.execute(get)) {
 
@@ -272,7 +274,7 @@ public class MyTransport extends Transport {
 		}
 
 		if (!found)
-			System.err.println("Not a recogized mirror: " + toDownload);
+			throw new Error("Not a recogized mirror: " + toDownload + " [mirrorFiles=" + mirrorFiles.values() + "]");
 
 		try {
 			return Files.newInputStream(p);
@@ -397,11 +399,19 @@ public class MyTransport extends Transport {
 	private Map<URI, RepoMirror> mirrorFiles = new HashMap<>();
 
 	public void addRepositories(Collection<IArtifactRepository> repositories) {
-		for (IArtifactRepository repo : repositories) {
+		LinkedList<IArtifactRepository> todo = new LinkedList<>(repositories);
+		while (!todo.isEmpty()) {
+			IArtifactRepository repo = todo.removeFirst();
 			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);
 			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);
 			String stats = repo.getProperties().get("p2.statsURI"); // no public
 																	// constant
+
+			CompositeArtifactRepository composite = repo.getAdapter(CompositeArtifactRepository.class);
+			if (composite != null)
+				todo.addAll(composite.getLoadedChildren());
+
+			// constant
 			if (mirror == null)
 				continue;
 
