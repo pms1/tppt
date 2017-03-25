@@ -16,10 +16,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -244,12 +246,47 @@ public class MirrorApplication implements IApplication {
 
 			MultiStatus multiStatus = mirroring.run(true, false);
 			if (!multiStatus.isOK()) {
-				System.err.println("STATUS=" + multiStatus);
+				print(multiStatus, "");
 				return 1;
 			}
 		}
 
 		return null;
+	}
+
+	static void print(IStatus s, String indent) {
+		List<String> severities = new LinkedList<>();
+		int sev = s.getSeverity();
+		if ((sev & IStatus.OK) != 0) {
+			severities.add("OK");
+			sev &= ~IStatus.OK;
+		}
+		if ((sev & IStatus.ERROR) != 0) {
+			severities.add("ERROR");
+			sev &= ~IStatus.ERROR;
+		}
+		if ((sev & IStatus.WARNING) != 0) {
+			severities.add("WARNING");
+			sev &= ~IStatus.WARNING;
+		}
+		if ((sev & IStatus.INFO) != 0) {
+			severities.add("INFO");
+			sev &= ~IStatus.INFO;
+		}
+		if ((sev & IStatus.CANCEL) != 0) {
+			severities.add("CANCEL");
+			sev &= ~IStatus.CANCEL;
+		}
+		if (sev != 0)
+			severities.add(String.valueOf(sev));
+
+		System.err.print(indent + "[" + severities.stream().collect(Collectors.joining(",")) + "] " + s.getPlugin()
+				+ " " + s.getCode() + " " + s.getMessage());
+		if (s.getException() != null)
+			System.err.print(" " + s.getException());
+		System.err.println();
+		for (IStatus c : s.getChildren())
+			print(c, indent + "  ");
 	}
 
 	static IProvisioningAgent getAgent() throws ProvisionException {
