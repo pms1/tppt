@@ -38,6 +38,7 @@ import org.eclipse.equinox.p2.internal.repository.tools.SlicingOptions;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
+import org.eclipse.equinox.p2.query.IQuery;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
@@ -156,10 +157,15 @@ public class MirrorApplication implements IApplication {
 
 				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
-					// TODO: allow version to be specified, only latest version,
-					// ...
-					for (IInstallableUnit iu1 : sourceMetadataRepo.query(QueryUtil.createIUQuery(iu), monitor))
-						root.add(iu1);
+					// TODO: allow version to be specified...
+
+					IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
+
+					Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
+					if (queryResult.isEmpty())
+						throw new RuntimeException("IU not found: " + iu);
+
+					root.addAll(queryResult);
 				}
 
 				for (;;) {
