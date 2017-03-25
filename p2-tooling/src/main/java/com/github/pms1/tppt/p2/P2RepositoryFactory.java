@@ -145,7 +145,7 @@ public class P2RepositoryFactory {
 				P2IndexType t = P2IndexType.fromFilePrefix(e.substring(0, idx));
 				if (result == null)
 					result = t;
-				else if (result != null)
+				else if (t != null)
 					throw new IllegalArgumentException("Mixed types for '" + artifact + "'");
 			}
 
@@ -615,7 +615,7 @@ public class P2RepositoryFactory {
 		}
 	}
 
-	public class NoRepositoryFoundException extends RuntimeException {
+	public static class NoRepositoryFoundException extends RuntimeException {
 		public NoRepositoryFoundException(String message, Throwable cause) {
 			super(message, cause);
 		}
