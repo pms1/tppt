@@ -5,7 +5,7 @@ import org.osgi.framework.Version;
 
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
-import com.github.pms1.tppt.p2.jaxb.composite.Properties;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
 
 @Component(role = CompositeArtifactRepositoryFactory.class)
 public class CompositeArtifactRepositoryFactory extends CompositeRepositoryFactory {
@@ -19,7 +19,7 @@ public class CompositeArtifactRepositoryFactory extends CompositeRepositoryFacto
 		repository.setType("org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository");
 		repository.setVersion(Version.parseVersion("1.0.0"));
 		repository.setChildren(new Children());
-		repository.setProperties(new Properties());
+		repository.setProperties(new CompositeProperties());
 		return repository;
 	}
 

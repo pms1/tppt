@@ -5,7 +5,7 @@ import javax.xml.bind.JAXBException;
 
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
-import com.github.pms1.tppt.p2.jaxb.composite.Properties;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
 import com.google.common.base.Throwables;
 
 public abstract class CompositeRepositoryFactory extends AbstractRepositoryFactory<CompositeRepository> {
@@ -30,7 +30,7 @@ public abstract class CompositeRepositoryFactory extends AbstractRepositoryFacto
 	}
 
 	protected void normalize(CompositeRepository t) {
-		Properties properties = t.getProperties();
+		CompositeProperties properties = t.getProperties();
 		if (properties != null)
 			properties.setSize(properties.getProperty().size());
 

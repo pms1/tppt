@@ -6,7 +6,7 @@ import javax.xml.bind.JAXBException;
 import org.codehaus.plexus.component.annotations.Component;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.github.pms1.tppt.p2.jaxb.metadata.Units;
 import com.google.common.base.Throwables;
@@ -35,7 +35,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 
 	@Override
 	protected void normalize(MetadataRepository t) {
-		Properties properties = t.getProperties();
+		MetadataProperties properties = t.getProperties();
 		if (properties != null)
 			properties.setSize(properties.getProperty().size());
 
@@ -62,7 +62,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 		MetadataRepository repository = new MetadataRepository();
 		repository.setType("org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository");
 		repository.setVersion("1");
-		repository.setProperties(new Properties());
+		repository.setProperties(new MetadataProperties());
 		repository.setUnits(new Units());
 		return repository;
 	}

@@ -13,7 +13,7 @@ import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
-import com.github.pms1.tppt.p2.jaxb.artifact.Property;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperty;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
@@ -26,7 +26,7 @@ class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade<ArtifactRepo
 	private final Path path;
 
 	public ArtifactRepositoryFacadeImpl(Path path, ArtifactRepository foo) {
-		super(Property::new);
+		super(ArtifactProperty::new);
 		// Preconditions.checkNotNull(root);
 		Preconditions.checkNotNull(foo);
 		this.data = foo;
@@ -74,7 +74,7 @@ class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade<ArtifactRepo
 		@Override
 		public String getPropertyString(String key) {
 			return data.getProperties().getProperty().stream().filter(p -> p.getName().equals(key))
-					.map(Property::getValue).findAny().orElse(null);
+					.map(ArtifactProperty::getValue).findAny().orElse(null);
 		}
 
 	}

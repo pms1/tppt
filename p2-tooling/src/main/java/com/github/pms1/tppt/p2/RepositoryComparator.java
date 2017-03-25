@@ -46,12 +46,14 @@ import com.github.pms1.ocomp.ObjectComparatorBuilder;
 import com.github.pms1.ocomp.ObjectDelta;
 import com.github.pms1.tppt.p2.P2RepositoryFactory.P2Kind;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperty;
 import com.github.pms1.tppt.p2.jaxb.composite.Child;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperty;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.Property;
 import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
@@ -258,11 +260,9 @@ public class RepositoryComparator {
 
 				}) //
 				.addDecomposer("//artifacts/artifact[*]/properties/property",
-						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.artifact.Property>listToMapDecomposer(
-								p -> p.getName())) //
+						ObjectComparator.<ArtifactProperty>listToMapDecomposer(p -> p.getName())) //
 				.addDecomposer("//properties/property",
-						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.artifact.Property>listToMapDecomposer(
-								p -> p.getName()));
+						ObjectComparator.<ArtifactProperty>listToMapDecomposer(p -> p.getName()));
 	}
 
 	static ObjectComparatorBuilder<ObjectDelta> createMetadataComparator() {
@@ -331,7 +331,7 @@ public class RepositoryComparator {
 						ObjectComparator
 								.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
 				.addDecomposer("//properties/property",
-						ObjectComparator.<Property>listToMapDecomposer(p -> p.getName()));
+						ObjectComparator.<MetadataProperty>listToMapDecomposer(p -> p.getName()));
 	}
 
 	static class MetadataDelta extends FileDelta {
@@ -435,8 +435,7 @@ public class RepositoryComparator {
 
 		ObjectComparator<FileDelta> oc = ObjectComparatorBuilder.newBuilder() //
 				.addDecomposer("//properties/property",
-						ObjectComparator.<com.github.pms1.tppt.p2.jaxb.composite.Property>listToMapDecomposer(
-								com.github.pms1.tppt.p2.jaxb.composite.Property::getName)) //
+						ObjectComparator.<CompositeProperty>listToMapDecomposer(CompositeProperty::getName)) //
 				.addDecomposer("//children/child", ObjectComparator.<Child>listToMapDecomposer(Child::getLocation)) //
 				.setDeltaCreator(new DeltaCreator<FileDelta>() {
 

@@ -20,4 +20,13 @@
 		</bindings>
 	</bindings>
 
+	<bindings schemaLocation="shared.xsd">
+		<bindings node="//xs:complexType[@name='property']">
+			<class name="MetadataProperty" />
+		</bindings>
+		<bindings node="//xs:complexType[@name='properties']">
+			<class name="MetadataProperties" />
+		</bindings>
+	</bindings>
+
 </bindings>

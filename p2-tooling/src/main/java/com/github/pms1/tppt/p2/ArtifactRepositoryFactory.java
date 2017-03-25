@@ -8,7 +8,7 @@ import org.codehaus.plexus.component.annotations.Component;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifacts;
 import com.github.pms1.tppt.p2.jaxb.artifact.Mappings;
-import com.github.pms1.tppt.p2.jaxb.artifact.Properties;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperties;
 import com.google.common.base.Throwables;
 
 @Component(role = ArtifactRepositoryFactory.class)
@@ -35,7 +35,7 @@ public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<Artifac
 
 	@Override
 	protected void normalize(ArtifactRepository t) {
-		Properties properties = t.getProperties();
+		ArtifactProperties properties = t.getProperties();
 		if (properties != null)
 			properties.setSize(properties.getProperty().size());
 

@@ -11,7 +11,15 @@
 		<bindings node="//xs:complexType[@name='artifactRepository']">
 			<inheritance:implements>com.github.pms1.tppt.p2.jaxb.Repository</inheritance:implements>
 		</bindings>
-
 	</bindings>
 
+	<bindings schemaLocation="shared.xsd">
+		<bindings node="//xs:complexType[@name='property']">
+			<class name="ArtifactProperty" />
+		</bindings>
+		<bindings node="//xs:complexType[@name='properties']">
+			<class name="ArtifactProperties" />
+		</bindings>
+	</bindings>
+ 	
 </bindings>

@@ -47,8 +47,8 @@ import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.P2RepositoryFactory.P2Kind;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
-import com.github.pms1.tppt.p2.jaxb.metadata.Property;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.Provides;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
@@ -229,7 +229,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 					.parseVersion(qualifiedVersion.toString());
 			u.setVersion(osgiVersion);
 
-			u.setProperties(new Properties());
+			u.setProperties(new MetadataProperties());
 			u.getProperties().getProperty().add(createProperty("org.eclipse.equinox.p2.name", project.getName()));
 			u.getProperties().getProperty().add(createProperty("org.eclipse.equinox.p2.type.category", "true"));
 
@@ -264,8 +264,8 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	}
 
-	private Property createProperty(String name, String value) {
-		Property p = new Property();
+	private MetadataProperty createProperty(String name, String value) {
+		MetadataProperty p = new MetadataProperty();
 		p.setName(name);
 		p.setValue(value);
 		return p;

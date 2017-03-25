@@ -14,4 +14,13 @@
 
 	</bindings>
 
+	<bindings schemaLocation="shared.xsd">
+		<bindings node="//xs:complexType[@name='property']">
+			<class name="CompositeProperty" />
+		</bindings>
+		<bindings node="//xs:complexType[@name='properties']">
+			<class name="CompositeProperties" />
+		</bindings>
+	</bindings>
+
 </bindings>
