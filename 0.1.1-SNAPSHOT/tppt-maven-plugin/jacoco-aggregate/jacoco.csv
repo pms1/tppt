@@ -13,7 +13,7 @@ tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,Activator,
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.OfflineType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter.Entry,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.new IProgressMonitor() {...},15,0,0,0,10,0,9,0,9,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1034,0,133,0,180,0,85,0,15,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1058,0,135,0,185,0,86,0,15,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter,46,0,0,0,7,0,7,0,7,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.StatsType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.Type,70,0,0,0,3,0,4,0,4,0
@@ -197,8 +197,8 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2.jaxb,VersionRangeAdapter,13
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,InterpolatedString,202,0,31,0,58,0,22,0,3,0
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper.new RepositoryPathPattern() {...},18,0,0,0,2,0,2,0,2,0
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,InterpolatedString.Text,6,0,0,0,3,0,1,0,1,0
-tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper.new InterpolatedString.Visitor() {...},123,0,12,0,19,0,10,0,4,0
-tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper,411,0,22,0,76,0,24,0,13,0
+tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper.new InterpolatedString.Visitor() {...},135,0,12,0,21,0,10,0,4,0
+tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper,538,0,52,0,89,0,43,0,14,0
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,InterpolatedString.State,68,0,0,0,2,0,4,0,4,0
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper.new P2RepositoryVisitor() {...},162,0,10,0,18,0,8,0,3,0
 tppt-maven-plugin/tppt-core,com.github.pms1.tppt.core,DeploymentHelper.3.new RepositoryPathMatcher() {...},44,0,2,0,6,0,4,0,3,0

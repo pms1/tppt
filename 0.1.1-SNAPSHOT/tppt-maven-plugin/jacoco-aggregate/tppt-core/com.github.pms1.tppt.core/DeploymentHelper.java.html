@@ -158,65 +158,73 @@ import com.google.common.io.ByteSource;
 <span class="nc" id="L158">	static private final DateTimeFormatter defaultFormatter = new DateTimeFormatterBuilder()</span>
 <span class="nc" id="L159">			.appendPattern(&quot;yyyyMMddHHmmss&quot;).appendValue(ChronoField.MILLI_OF_SECOND, 3).toFormatter();</span>
 
+	static private final String defaultFormatterRegexp = &quot;\\d{17}&quot;;
+
 	private RepositoryPathPattern interpolatePattern(InterpolatedString layout1, Map&lt;String, Object&gt; context) {
-<span class="nc" id="L162">		StringBuilder b = new StringBuilder();</span>
+<span class="nc" id="L164">		StringBuilder b = new StringBuilder();</span>
 
-<span class="nc" id="L164">		Map&lt;String, Function&lt;String, Object&gt;&gt; postProcessors = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L166">		Map&lt;String, Function&lt;String, Object&gt;&gt; postProcessors = new HashMap&lt;&gt;();</span>
 
-<span class="nc" id="L166">		layout1.accept(new Visitor() {</span>
+<span class="nc" id="L168">		layout1.accept(new Visitor() {</span>
 
 			@Override
 			public void visitText(String text) {
-<span class="nc" id="L170">				b.append(Pattern.quote(text));</span>
-<span class="nc" id="L171">			}</span>
+<span class="nc" id="L172">				b.append(Pattern.quote(text));</span>
+<span class="nc" id="L173">			}</span>
 
 			@Override
 			public void visitVariable(List&lt;String&gt; variable) {
-<span class="nc" id="L175">				Object o = context.get(variable.get(0));</span>
+<span class="nc" id="L177">				Object o = context.get(variable.get(0));</span>
 
-<span class="nc bnc" id="L177" title="All 2 branches missed.">				if (o == null) {</span>
-<span class="nc" id="L178">					throw new IllegalArgumentException(&quot;No variable: &quot; + variable.get(0));</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">				} else if (o.getClass() == String.class) {</span>
-<span class="nc" id="L180">					b.append(Pattern.quote((String) o));</span>
-<span class="nc bnc" id="L181" title="All 2 branches missed.">				} else if (o == LocalDateTime.class) {</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">				if (o == null) {</span>
+<span class="nc" id="L180">					throw new IllegalArgumentException(&quot;No variable: &quot; + variable.get(0));</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">				} else if (o.getClass() == String.class) {</span>
+<span class="nc" id="L182">					b.append(Pattern.quote((String) o));</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">				} else if (o == LocalDateTime.class) {</span>
 					DateTimeFormatter formatter;
-<span class="nc bnc" id="L183" title="All 2 branches missed.">					if (variable.size() == 1)</span>
-<span class="nc" id="L184">						formatter = defaultFormatter;</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">					else if (variable.size() == 2)</span>
-<span class="nc" id="L186">						formatter = DateTimeFormatter.ofPattern(variable.get(1));</span>
-					else
-<span class="nc" id="L188">						throw new IllegalArgumentException();</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">					postProcessors.put(variable.get(0), p -&gt; p == null ? null : LocalDateTime.parse(p, formatter));</span>
-<span class="nc" id="L190">					b.append(&quot;(?&lt;&quot; + variable.get(0) + &quot;&gt;.*)&quot;);</span>
-<span class="nc" id="L191">				} else {</span>
-<span class="nc" id="L192">					throw new IllegalArgumentException();</span>
+					String regexp;
+
+<span class="nc bnc" id="L187" title="All 2 branches missed.">					if (variable.size() == 1) {</span>
+<span class="nc" id="L188">						formatter = defaultFormatter;</span>
+<span class="nc" id="L189">						regexp = defaultFormatterRegexp;</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">					} else if (variable.size() == 2) {</span>
+<span class="nc" id="L191">						formatter = DateTimeFormatter.ofPattern(variable.get(1));</span>
+<span class="nc" id="L192">						regexp = asRegularExpression(variable.get(1));</span>
+					} else {
+<span class="nc" id="L194">						throw new IllegalArgumentException();</span>
+					}
+
+<span class="nc bnc" id="L197" title="All 2 branches missed.">					postProcessors.put(variable.get(0), p -&gt; p == null ? null : LocalDateTime.parse(p, formatter));</span>
+<span class="nc" id="L198">					b.append(&quot;(?&lt;&quot; + variable.get(0) + &quot;&gt;&quot; + regexp + &quot;)&quot;);</span>
+<span class="nc" id="L199">				} else {</span>
+<span class="nc" id="L200">					throw new IllegalArgumentException();</span>
 				}
-<span class="nc" id="L194">			}</span>
+<span class="nc" id="L202">			}</span>
 
 		});
 
-<span class="nc" id="L198">		Pattern pattern = Pattern.compile(b.toString());</span>
+<span class="nc" id="L206">		Pattern pattern = Pattern.compile(b.toString());</span>
 
-<span class="nc" id="L200">		return new RepositoryPathPattern() {</span>
+<span class="nc" id="L208">		return new RepositoryPathPattern() {</span>
 
 			@Override
 			public RepositoryPathMatcher matcher(Path path) {
 
-<span class="nc" id="L205">				return new RepositoryPathMatcher() {</span>
+<span class="nc" id="L213">				return new RepositoryPathMatcher() {</span>
 
 					java.util.regex.Matcher m;
 
 					@Override
 					public boolean matches() {
-<span class="nc" id="L211">						m = pattern.matcher(pathJoiner.join(path));</span>
-<span class="nc" id="L212">						return m.matches();</span>
+<span class="nc" id="L219">						m = pattern.matcher(pathJoiner.join(path));</span>
+<span class="nc" id="L220">						return m.matches();</span>
 					}
 
 					@Override
 					public &lt;T&gt; T get(String variable, Class&lt;T&gt; type) {
-<span class="nc bnc" id="L217" title="All 2 branches missed.">						if (m == null)</span>
-<span class="nc" id="L218">							throw new IllegalStateException();</span>
-<span class="nc" id="L219">						return type.cast(postProcessors.get(variable).apply(m.group(variable)));</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">						if (m == null)</span>
+<span class="nc" id="L226">							throw new IllegalStateException();</span>
+<span class="nc" id="L227">						return type.cast(postProcessors.get(variable).apply(m.group(variable)));</span>
 					}
 
 				};
@@ -226,97 +234,123 @@ import com.google.common.io.ByteSource;
 	}
 
 	private Set&lt;String&gt; getFiles(CommonP2Repository repo) throws IOException {
-<span class="nc" id="L229">		Set&lt;String&gt; files = new TreeSet&lt;&gt;();</span>
+<span class="nc" id="L237">		Set&lt;String&gt; files = new TreeSet&lt;&gt;();</span>
 
-<span class="nc" id="L231">		files.add(P2RepositoryFactory.P2INDEX);</span>
+<span class="nc" id="L239">		files.add(P2RepositoryFactory.P2INDEX);</span>
 
-<span class="nc" id="L233">		repo.accept(new P2RepositoryVisitor&lt;Void&gt;() {</span>
+<span class="nc" id="L241">		repo.accept(new P2RepositoryVisitor&lt;Void&gt;() {</span>
 
 			@Override
 			public Void visit(P2CompositeRepository repo) {
-<span class="nc bnc" id="L237" title="All 2 branches missed.">				for (DataCompression dc : repo.getArtifactDataCompressions())</span>
-<span class="nc" id="L238">					files.add(P2IndexType.compositeArtifacts.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">				for (DataCompression dc : repo.getArtifactDataCompressions())</span>
+<span class="nc" id="L246">					files.add(P2IndexType.compositeArtifacts.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
 
-<span class="nc bnc" id="L240" title="All 2 branches missed.">				for (DataCompression dc : repo.getMetadataDataCompressions())</span>
-<span class="nc" id="L241">					files.add(P2IndexType.compositeMetadata.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">				for (DataCompression dc : repo.getMetadataDataCompressions())</span>
+<span class="nc" id="L249">					files.add(P2IndexType.compositeMetadata.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
 
-<span class="nc" id="L243">				return null;</span>
+<span class="nc" id="L251">				return null;</span>
 			}
 
 			@Override
 			public Void visit(P2Repository repo) {
-<span class="nc bnc" id="L248" title="All 2 branches missed.">				for (DataCompression dc : repo.getArtifactDataCompressions())</span>
-<span class="nc" id="L249">					files.add(P2IndexType.artifacts.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">				for (DataCompression dc : repo.getArtifactDataCompressions())</span>
+<span class="nc" id="L257">					files.add(P2IndexType.artifacts.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
 
-<span class="nc bnc" id="L251" title="All 2 branches missed.">				for (DataCompression dc : repo.getMetadataDataCompressions())</span>
-<span class="nc" id="L252">					files.add(P2IndexType.metadata.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">				for (DataCompression dc : repo.getMetadataDataCompressions())</span>
+<span class="nc" id="L260">					files.add(P2IndexType.metadata.getFilePrefix() + &quot;.&quot; + dc.getFileSuffix());</span>
 
 				try {
 					ArtifactRepositoryFacade facade;
-<span class="nc" id="L256">					facade = repo.getArtifactRepositoryFacade();</span>
-<span class="nc bnc" id="L257" title="All 2 branches missed.">					for (ArtifactId e : facade.getArtifacts().keySet())</span>
-<span class="nc" id="L258">						files.add(repo.getPath().relativize(facade.getArtifactUri(e)).toString()</span>
-<span class="nc" id="L259">								.replace(File.separatorChar, '/'));</span>
-<span class="nc" id="L260">				} catch (IOException e1) {</span>
-<span class="nc" id="L261">					throw new RuntimeException(e1);</span>
-<span class="nc" id="L262">				}</span>
+<span class="nc" id="L264">					facade = repo.getArtifactRepositoryFacade();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">					for (ArtifactId e : facade.getArtifacts().keySet())</span>
+<span class="nc" id="L266">						files.add(repo.getPath().relativize(facade.getArtifactUri(e)).toString()</span>
+<span class="nc" id="L267">								.replace(File.separatorChar, '/'));</span>
+<span class="nc" id="L268">				} catch (IOException e1) {</span>
+<span class="nc" id="L269">					throw new RuntimeException(e1);</span>
+<span class="nc" id="L270">				}</span>
 
-<span class="nc" id="L264">				return null;</span>
+<span class="nc" id="L272">				return null;</span>
 			}
 		});
 
-<span class="nc" id="L268">		return files;</span>
+<span class="nc" id="L276">		return files;</span>
 	}
 
 	private void doInstall(Path sourcePath, Set&lt;String&gt; sourceFiles, Path targetPath, Set&lt;String&gt; targetFiles)
 			throws IOException {
 
-<span class="nc" id="L274">		TreeSet&lt;Path&gt; toRemove = new TreeSet&lt;&gt;();</span>
+<span class="nc" id="L282">		TreeSet&lt;Path&gt; toRemove = new TreeSet&lt;&gt;();</span>
 
-<span class="nc bnc" id="L276" title="All 2 branches missed.">		for (String p : Sets.union(sourceFiles, targetFiles)) {</span>
-<span class="nc" id="L277">			Path p1 = sourcePath.resolve(p);</span>
-<span class="nc" id="L278">			Path p2 = targetPath.resolve(p);</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		for (String p : Sets.union(sourceFiles, targetFiles)) {</span>
+<span class="nc" id="L285">			Path p1 = sourcePath.resolve(p);</span>
+<span class="nc" id="L286">			Path p2 = targetPath.resolve(p);</span>
 
-<span class="nc" id="L280">			Files.createDirectories(p2.getParent());</span>
+<span class="nc" id="L288">			Files.createDirectories(p2.getParent());</span>
 
-<span class="nc bnc" id="L282" title="All 4 branches missed.">			if (sourceFiles.contains(p) &amp;&amp; targetFiles.contains(p)) {</span>
-<span class="nc" id="L283">				ByteSource bs1 = new PathByteSource(p1);</span>
-<span class="nc" id="L284">				ByteSource bs2 = new PathByteSource(p2);</span>
+<span class="nc bnc" id="L290" title="All 4 branches missed.">			if (sourceFiles.contains(p) &amp;&amp; targetFiles.contains(p)) {</span>
+<span class="nc" id="L291">				ByteSource bs1 = new PathByteSource(p1);</span>
+<span class="nc" id="L292">				ByteSource bs2 = new PathByteSource(p2);</span>
 
-<span class="nc bnc" id="L286" title="All 2 branches missed.">				if (!bs1.contentEquals(bs2)) {</span>
-<span class="nc" id="L287">					Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">				if (!bs1.contentEquals(bs2)) {</span>
+<span class="nc" id="L295">					Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);</span>
 				} else {
 					// System.out.println(&quot;UNMODIFIED &quot; + p);
 				}
-<span class="nc bnc" id="L291" title="All 2 branches missed.">			} else if (sourceFiles.contains(p)) {</span>
-<span class="nc" id="L292">				Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES);</span>
+<span class="nc bnc" id="L299" title="All 2 branches missed.">			} else if (sourceFiles.contains(p)) {</span>
+<span class="nc" id="L300">				Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES);</span>
 			} else {
-<span class="nc" id="L294">				Files.delete(p2);</span>
-<span class="nc" id="L295">				toRemove.add(p2.getParent());</span>
+<span class="nc" id="L302">				Files.delete(p2);</span>
+<span class="nc" id="L303">				toRemove.add(p2.getParent());</span>
 			}
-<span class="nc" id="L297">		}</span>
+<span class="nc" id="L305">		}</span>
 
 		// TODO: remove directories that got empty // toRemove
-<span class="nc" id="L300">	}</span>
+<span class="nc" id="L308">	}</span>
 
 	public void replace(CommonP2Repository source, CommonP2Repository target) throws IOException {
-<span class="nc" id="L303">		Preconditions.checkNotNull(source);</span>
-<span class="nc" id="L304">		Preconditions.checkNotNull(target);</span>
+<span class="nc" id="L311">		Preconditions.checkNotNull(source);</span>
+<span class="nc" id="L312">		Preconditions.checkNotNull(target);</span>
 
-<span class="nc" id="L306">		Set&lt;String&gt; f1 = getFiles(source);</span>
-<span class="nc" id="L307">		Set&lt;String&gt; f2 = getFiles(target);</span>
+<span class="nc" id="L314">		Set&lt;String&gt; f1 = getFiles(source);</span>
+<span class="nc" id="L315">		Set&lt;String&gt; f2 = getFiles(target);</span>
 
-<span class="nc" id="L309">		doInstall(source.getPath(), f1, target.getPath(), f2);</span>
-<span class="nc" id="L310">	}</span>
+<span class="nc" id="L317">		doInstall(source.getPath(), f1, target.getPath(), f2);</span>
+<span class="nc" id="L318">	}</span>
 
 	public void install(CommonP2Repository source, Path target) throws IOException {
-<span class="nc" id="L313">		Preconditions.checkNotNull(source);</span>
-<span class="nc" id="L314">		Preconditions.checkNotNull(target);</span>
+<span class="nc" id="L321">		Preconditions.checkNotNull(source);</span>
+<span class="nc" id="L322">		Preconditions.checkNotNull(target);</span>
 
-<span class="nc" id="L316">		Set&lt;String&gt; f1 = getFiles(source);</span>
+<span class="nc" id="L324">		Set&lt;String&gt; f1 = getFiles(source);</span>
 
-<span class="nc" id="L318">		doInstall(source.getPath(), f1, target, Collections.emptySet());</span>
+<span class="nc" id="L326">		doInstall(source.getPath(), f1, target, Collections.emptySet());</span>
 
-<span class="nc" id="L320">	}</span>
+<span class="nc" id="L328">	}</span>
+
+	static String asRegularExpression(String pattern) {
+<span class="nc" id="L331">		StringBuilder regex = new StringBuilder();</span>
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">		for (int i = 0; i != pattern.length();) {</span>
+<span class="nc" id="L334">			int start = i;</span>
+<span class="nc" id="L335">			char c = pattern.charAt(i++);</span>
+<span class="nc bnc" id="L336" title="All 4 branches missed.">			while (i != pattern.length() &amp;&amp; pattern.charAt(i) == c)</span>
+<span class="nc" id="L337">				++i;</span>
+<span class="nc" id="L338">			String part = pattern.substring(start, i);</span>
+<span class="nc bnc" id="L339" title="All 24 branches missed.">			switch (part) {</span>
+			case &quot;yyyy&quot;:
+			case &quot;yy&quot;:
+			case &quot;MM&quot;:
+			case &quot;dd&quot;:
+			case &quot;HH&quot;:
+			case &quot;mm&quot;:
+			case &quot;ss&quot;:
+<span class="nc" id="L347">				regex.append(&quot;\\d{&quot; + part.length() + &quot;}&quot;);</span>
+<span class="nc" id="L348">				break;</span>
+			default:
+<span class="nc" id="L350">				throw new IllegalArgumentException(&quot;Unhandled part '&quot; + part + &quot;' of pattern '&quot; + pattern + &quot;'&quot;);</span>
+			}
+<span class="nc" id="L352">		}</span>
+<span class="nc" id="L353">		return regex.toString();</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
