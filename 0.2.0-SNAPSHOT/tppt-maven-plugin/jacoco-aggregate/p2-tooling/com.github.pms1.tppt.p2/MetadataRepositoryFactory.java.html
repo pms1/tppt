@@ -6,7 +6,7 @@ import javax.xml.bind.JAXBException;
 import org.codehaus.plexus.component.annotations.Component;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.Properties;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.github.pms1.tppt.p2.jaxb.metadata.Units;
 import com.google.common.base.Throwables;
@@ -35,7 +35,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory&lt;Meta
 
 	@Override
 	protected void normalize(MetadataRepository t) {
-<span class="nc" id="L38">		Properties properties = t.getProperties();</span>
+<span class="nc" id="L38">		MetadataProperties properties = t.getProperties();</span>
 <span class="nc bnc" id="L39" title="All 2 branches missed.">		if (properties != null)</span>
 <span class="nc" id="L40">			properties.setSize(properties.getProperty().size());</span>
 
@@ -62,7 +62,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory&lt;Meta
 <span class="nc" id="L62">		MetadataRepository repository = new MetadataRepository();</span>
 <span class="nc" id="L63">		repository.setType(&quot;org.eclipse.equinox.internal.p2.metadata.repository.LocalMetadataRepository&quot;);</span>
 <span class="nc" id="L64">		repository.setVersion(&quot;1&quot;);</span>
-<span class="nc" id="L65">		repository.setProperties(new Properties());</span>
+<span class="nc" id="L65">		repository.setProperties(new MetadataProperties());</span>
 <span class="nc" id="L66">		repository.setUnits(new Units());</span>
 <span class="nc" id="L67">		return repository;</span>
 	}

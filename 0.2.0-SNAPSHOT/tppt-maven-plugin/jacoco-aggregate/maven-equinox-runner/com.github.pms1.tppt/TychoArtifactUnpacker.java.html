@@ -52,12 +52,14 @@ import com.github.pms1.tppt.TychoUnpackLocker.Lock;
 								e);
 <span class="nc" id="L53">					}</span>
 
-<span class="nc" id="L55">					eclipseDir.setLastModified(artifact.getFile().lastModified());</span>
+<span class="nc" id="L55">					boolean ok = eclipseDir.setLastModified(artifact.getFile().lastModified());</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">					if (!ok)</span>
+<span class="nc" id="L57">						logger.warn(&quot;Failed to set last-modified timestamp of Tycho's OSGi runtime: &quot; + eclipseDir);</span>
 				}
 			}
-<span class="nc bnc" id="L58" title="All 8 branches missed.">		}</span>
+<span class="nc bnc" id="L60" title="All 8 branches missed.">		}</span>
 
-<span class="nc" id="L60">		return eclipseDir.toPath();</span>
+<span class="nc" id="L62">		return eclipseDir.toPath();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>

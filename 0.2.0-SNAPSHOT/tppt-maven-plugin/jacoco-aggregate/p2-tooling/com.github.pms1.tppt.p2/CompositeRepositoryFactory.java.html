@@ -5,7 +5,7 @@ import javax.xml.bind.JAXBException;
 
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
-import com.github.pms1.tppt.p2.jaxb.composite.Properties;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
 import com.google.common.base.Throwables;
 
 public abstract class CompositeRepositoryFactory extends AbstractRepositoryFactory&lt;CompositeRepository&gt; {
@@ -30,7 +30,7 @@ public abstract class CompositeRepositoryFactory extends AbstractRepositoryFacto
 	}
 
 	protected void normalize(CompositeRepository t) {
-<span class="nc" id="L33">		Properties properties = t.getProperties();</span>
+<span class="nc" id="L33">		CompositeProperties properties = t.getProperties();</span>
 <span class="nc bnc" id="L34" title="All 2 branches missed.">		if (properties != null)</span>
 <span class="nc" id="L35">			properties.setSize(properties.getProperty().size());</span>
 

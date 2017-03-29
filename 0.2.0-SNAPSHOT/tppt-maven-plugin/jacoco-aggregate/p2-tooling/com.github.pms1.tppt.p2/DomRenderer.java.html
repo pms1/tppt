@@ -234,32 +234,35 @@ import com.google.common.base.Throwables;
 <span class="nc bnc" id="L234" title="All 2 branches missed.">				if (options.indent != null)</span>
 <span class="nc" id="L235">					b.append(&quot;\n&quot;);</span>
 			}
+			break;
+		default:
+			break;
 		}
-<span class="nc" id="L238">	}</span>
+<span class="nc" id="L241">	}</span>
 
 	public String jaxbRender(JAXBContext context, Object o, String name, Options... options) {
 		try {
-<span class="nc" id="L242">			Marshaller jaxbMarshaller = context.createMarshaller();</span>
+<span class="nc" id="L245">			Marshaller jaxbMarshaller = context.createMarshaller();</span>
 
 			@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
-<span class="nc" id="L245">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(name), o.getClass(), o);</span>
+<span class="nc" id="L248">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(name), o.getClass(), o);</span>
 
-<span class="nc" id="L247">			DOMResult r = new DOMResult();</span>
+<span class="nc" id="L250">			DOMResult r = new DOMResult();</span>
 
-<span class="nc" id="L249">			jaxbMarshaller.marshal(root, r);</span>
+<span class="nc" id="L252">			jaxbMarshaller.marshal(root, r);</span>
 
-<span class="nc" id="L251">			return render(((Document) r.getNode()).getDocumentElement(), options);</span>
-<span class="nc" id="L252">		} catch (JAXBException e) {</span>
-<span class="nc" id="L253">			throw Throwables.propagate(e);</span>
+<span class="nc" id="L254">			return render(((Document) r.getNode()).getDocumentElement(), options);</span>
+<span class="nc" id="L255">		} catch (JAXBException e) {</span>
+<span class="nc" id="L256">			throw Throwables.propagate(e);</span>
 		}
 	}
 
 	public String jaxbRender(JAXBContext context, Object o, Options... options) {
-<span class="nc" id="L258">		Preconditions.checkNotNull(o);</span>
-<span class="nc" id="L259">		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));</span>
-<span class="nc bnc" id="L260" title="All 2 branches missed.">		Preconditions.checkArgument(!annotation.namespace().isEmpty());</span>
+<span class="nc" id="L261">		Preconditions.checkNotNull(o);</span>
+<span class="nc" id="L262">		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">		Preconditions.checkArgument(!annotation.namespace().isEmpty());</span>
 
-<span class="nc" id="L262">		return jaxbRender(context, o, annotation.name(), options);</span>
+<span class="nc" id="L265">		return jaxbRender(context, o, annotation.name(), options);</span>
 
 	}
 

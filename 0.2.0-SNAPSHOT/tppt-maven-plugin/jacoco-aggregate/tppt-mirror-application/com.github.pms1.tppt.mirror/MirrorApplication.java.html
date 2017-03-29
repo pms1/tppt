@@ -16,10 +16,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -38,6 +40,7 @@ import org.eclipse.equinox.p2.internal.repository.tools.SlicingOptions;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
+import org.eclipse.equinox.p2.query.IQuery;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
@@ -48,275 +51,315 @@ import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
 import org.osgi.framework.ServiceReference;
 
 @SuppressWarnings(&quot;restriction&quot;)
-<span class="nc" id="L51">public class MirrorApplication implements IApplication {</span>
+<span class="nc" id="L54">public class MirrorApplication implements IApplication {</span>
 
-<span class="nc" id="L53">	private static boolean debug = false;</span>
+<span class="nc" id="L56">	private static boolean debug = false;</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L56">	private static final Map&lt;String, String&gt;[] emptyFilters = new Map[] { Collections.emptyMap() };</span>
+<span class="nc" id="L59">	private static final Map&lt;String, String&gt;[] emptyFilters = new Map[] { Collections.emptyMap() };</span>
 
 	@Override
 	public Object start(IApplicationContext context) throws Exception {
-<span class="nc" id="L60">		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
+<span class="nc" id="L63">		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);</span>
 
-<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (debug)</span>
-<span class="nc" id="L63">			System.out.println(&quot;MirrorApplication.commandLine        = &quot; + Arrays.asList((String[]) args));</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (debug)</span>
+<span class="nc" id="L66">			System.out.println(&quot;MirrorApplication.commandLine        = &quot; + Arrays.asList((String[]) args));</span>
 
-<span class="nc bnc" id="L65" title="All 2 branches missed.">		for (String s : Arrays.asList((String[]) args)) {</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		for (String s : Arrays.asList((String[]) args)) {</span>
 			MirrorSpec ms;
-<span class="nc bnc" id="L67" title="All 2 branches missed.">			if (s.equals(&quot;-&quot;)) {</span>
-<span class="nc" id="L68">				ms = JAXB.unmarshal(System.in, MirrorSpec.class);</span>
-<span class="nc" id="L69">			} else {</span>
-<span class="nc" id="L70">				try (InputStream is = Files.newInputStream(Paths.get(s))) {</span>
-<span class="nc" id="L71">					ms = JAXB.unmarshal(is, MirrorSpec.class);</span>
-<span class="nc bnc" id="L72" title="All 8 branches missed.">				}</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">			if (s.equals(&quot;-&quot;)) {</span>
+<span class="nc" id="L71">				ms = JAXB.unmarshal(System.in, MirrorSpec.class);</span>
+<span class="nc" id="L72">			} else {</span>
+<span class="nc" id="L73">				try (InputStream is = Files.newInputStream(Paths.get(s))) {</span>
+<span class="nc" id="L74">					ms = JAXB.unmarshal(is, MirrorSpec.class);</span>
+<span class="nc bnc" id="L75" title="All 8 branches missed.">				}</span>
 			}
 
-<span class="nc bnc" id="L75" title="All 2 branches missed.">			if (debug) {</span>
-<span class="nc" id="L76">				System.out.println(&quot;MirrorApplication.mirrorRepository   = &quot; + ms.mirrorRepository);</span>
-<span class="nc" id="L77">				System.out.println(&quot;MirrorApplication.sourceRepositories = &quot; + Arrays.toString(ms.sourceRepositories));</span>
-<span class="nc" id="L78">				System.out.println(&quot;MirrorApplication.targetRepository   = &quot; + ms.targetRepository);</span>
-<span class="nc" id="L79">				System.out.println(&quot;MirrorApplication.installableUnit    = &quot; + Arrays.toString(ms.ius));</span>
-<span class="nc" id="L80">				System.out.println(&quot;MirrorApplication.offline            = &quot; + ms.offline);</span>
-<span class="nc" id="L81">				System.out.println(&quot;MirrorApplication.stats              = &quot; + ms.stats);</span>
-<span class="nc" id="L82">				System.out.println(&quot;MirrorApplication.filter             = &quot; + Arrays.toString(ms.filters));</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">			if (debug) {</span>
+<span class="nc" id="L79">				System.out.println(&quot;MirrorApplication.mirrorRepository   = &quot; + ms.mirrorRepository);</span>
+<span class="nc" id="L80">				System.out.println(&quot;MirrorApplication.sourceRepositories = &quot; + Arrays.toString(ms.sourceRepositories));</span>
+<span class="nc" id="L81">				System.out.println(&quot;MirrorApplication.targetRepository   = &quot; + ms.targetRepository);</span>
+<span class="nc" id="L82">				System.out.println(&quot;MirrorApplication.installableUnit    = &quot; + Arrays.toString(ms.ius));</span>
+<span class="nc" id="L83">				System.out.println(&quot;MirrorApplication.offline            = &quot; + ms.offline);</span>
+<span class="nc" id="L84">				System.out.println(&quot;MirrorApplication.stats              = &quot; + ms.stats);</span>
+<span class="nc" id="L85">				System.out.println(&quot;MirrorApplication.filter             = &quot; + Arrays.toString(ms.filters));</span>
 			}
 
-<span class="nc" id="L85">			IProgressMonitor monitor = new IProgressMonitor() {</span>
+<span class="nc" id="L88">			IProgressMonitor monitor = new IProgressMonitor() {</span>
 
 				@Override
 				public void worked(int work) {
 					// TODO Auto-generated method stub
 
-<span class="nc" id="L91">				}</span>
+<span class="nc" id="L94">				}</span>
 
 				@Override
 				public void subTask(String name) {
 					// System.err.println(&quot;ST &quot; + name);
-<span class="nc" id="L96">				}</span>
+<span class="nc" id="L99">				}</span>
 
 				@Override
 				public void setTaskName(String name) {
 					// System.err.println(&quot;STN &quot; + name);
-<span class="nc" id="L101">				}</span>
+<span class="nc" id="L104">				}</span>
 
 				@Override
 				public void setCanceled(boolean value) {
 					// TODO Auto-generated method stub
 
-<span class="nc" id="L107">				}</span>
+<span class="nc" id="L110">				}</span>
 
 				@Override
 				public boolean isCanceled() {
 					// TODO Auto-generated method stub
-<span class="nc" id="L112">					return false;</span>
+<span class="nc" id="L115">					return false;</span>
 				}
 
 				@Override
 				public void internalWorked(double work) {
 					// TODO Auto-generated method stub
 
-<span class="nc" id="L119">				}</span>
+<span class="nc" id="L122">				}</span>
 
 				@Override
 				public void done() {
 					// System.err.println(&quot;DONE&quot;);
-<span class="nc" id="L124">				}</span>
+<span class="nc" id="L127">				}</span>
 
 				@Override
 				public void beginTask(String name, int totalWork) {
 					// System.err.println(&quot;BT &quot; + name);
-<span class="nc" id="L129">				}</span>
+<span class="nc" id="L132">				}</span>
 			};
 
-<span class="nc" id="L132">			IProvisioningAgent ourAgent = getAgent();</span>
+<span class="nc" id="L135">			IProvisioningAgent ourAgent = getAgent();</span>
 
-<span class="nc" id="L134">			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);</span>
-<span class="nc" id="L135">			ourAgent.registerService(Transport.SERVICE_NAME, transport);</span>
+<span class="nc" id="L137">			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);</span>
+<span class="nc" id="L138">			ourAgent.registerService(Transport.SERVICE_NAME, transport);</span>
 
-<span class="nc" id="L137">			CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository</span>
-<span class="nc" id="L138">					.createMemoryComposite(ourAgent);</span>
-<span class="nc bnc" id="L139" title="All 2 branches missed.">			for (URI sr : ms.sourceRepositories)</span>
-<span class="nc" id="L140">				sourceArtifactRepo.addChild(sr);</span>
-<span class="nc" id="L141">			transport.addRepositories(sourceArtifactRepo.getLoadedChildren());</span>
+<span class="nc" id="L140">			CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository</span>
+<span class="nc" id="L141">					.createMemoryComposite(ourAgent);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">			for (URI sr : ms.sourceRepositories)</span>
+<span class="nc" id="L143">				sourceArtifactRepo.addChild(sr);</span>
+<span class="nc" id="L144">			transport.addRepositories(sourceArtifactRepo.getLoadedChildren());</span>
 
-<span class="nc" id="L143">			CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository</span>
-<span class="nc" id="L144">					.createMemoryComposite(ourAgent);</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">			for (URI sr : ms.sourceRepositories)</span>
-<span class="nc" id="L146">				sourceMetadataRepo.addChild(sr);</span>
+<span class="nc" id="L146">			CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository</span>
+<span class="nc" id="L147">					.createMemoryComposite(ourAgent);</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">			for (URI sr : ms.sourceRepositories)</span>
+<span class="nc" id="L149">				sourceMetadataRepo.addChild(sr);</span>
 
-<span class="nc" id="L148">			Set&lt;IInstallableUnit&gt; finalIus = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L151">			Set&lt;IInstallableUnit&gt; finalIus = new HashSet&lt;&gt;();</span>
 
-<span class="nc bnc" id="L150" title="All 4 branches missed.">			for (Map&lt;String, String&gt; basicFilter : ms.filters != null ? ms.filters : emptyFilters) {</span>
-<span class="nc" id="L151">				SlicingOptions slicingOptions = new SlicingOptions();</span>
-<span class="nc" id="L152">				Map&lt;String, String&gt; filter = new HashMap&lt;String, String&gt;(basicFilter);</span>
-<span class="nc" id="L153">				filter.put(IProfile.PROP_INSTALL_FEATURES, &quot;true&quot;);</span>
-<span class="nc" id="L154">				slicingOptions.setFilter(filter);</span>
-<span class="nc" id="L155">				slicingOptions.considerStrictDependencyOnly(false);</span>
+<span class="nc bnc" id="L153" title="All 4 branches missed.">			for (Map&lt;String, String&gt; basicFilter : ms.filters != null ? ms.filters : emptyFilters) {</span>
+<span class="nc" id="L154">				SlicingOptions slicingOptions = new SlicingOptions();</span>
+<span class="nc" id="L155">				Map&lt;String, String&gt; filter = new HashMap&lt;String, String&gt;(basicFilter);</span>
+<span class="nc" id="L156">				filter.put(IProfile.PROP_INSTALL_FEATURES, &quot;true&quot;);</span>
+<span class="nc" id="L157">				slicingOptions.setFilter(filter);</span>
+<span class="nc" id="L158">				slicingOptions.considerStrictDependencyOnly(false);</span>
 
-<span class="nc" id="L157">				Set&lt;IInstallableUnit&gt; root = new HashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">				for (String iu : ms.ius) {</span>
-					// TODO: allow version to be specified, only latest version,
-					// ...
-<span class="nc bnc" id="L161" title="All 2 branches missed.">					for (IInstallableUnit iu1 : sourceMetadataRepo.query(QueryUtil.createIUQuery(iu), monitor))</span>
-<span class="nc" id="L162">						root.add(iu1);</span>
+<span class="nc" id="L160">				Set&lt;IInstallableUnit&gt; root = new HashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">				for (String iu : ms.ius) {</span>
+					// TODO: allow version to be specified...
+
+<span class="nc" id="L164">					IQuery&lt;IInstallableUnit&gt; q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));</span>
+
+<span class="nc" id="L166">					Set&lt;IInstallableUnit&gt; queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">					if (queryResult.isEmpty())</span>
+<span class="nc" id="L168">						throw new RuntimeException(&quot;IU not found: &quot; + iu);</span>
+
+<span class="nc" id="L170">					root.addAll(queryResult);</span>
 				}
 
 				for (;;) {
-<span class="nc" id="L166">					int oldRootSize = root.size();</span>
+<span class="nc" id="L174">					int oldRootSize = root.size();</span>
 
-<span class="nc" id="L168">					PermissiveSlicer slicer = new PermissiveSlicer(sourceMetadataRepo, slicingOptions.getFilter(),</span>
-<span class="nc" id="L169">							slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),</span>
-<span class="nc" id="L170">							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),</span>
-<span class="nc" id="L171">							slicingOptions.followOnlyFilteredRequirements());</span>
+<span class="nc" id="L176">					PermissiveSlicer slicer = new PermissiveSlicer(sourceMetadataRepo, slicingOptions.getFilter(),</span>
+<span class="nc" id="L177">							slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),</span>
+<span class="nc" id="L178">							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),</span>
+<span class="nc" id="L179">							slicingOptions.followOnlyFilteredRequirements());</span>
 
-<span class="nc" id="L173">					IQueryable&lt;IInstallableUnit&gt; slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new),</span>
-<span class="nc" id="L174">							monitor);</span>
+<span class="nc" id="L181">					IQueryable&lt;IInstallableUnit&gt; slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new),</span>
+<span class="nc" id="L182">							monitor);</span>
 
-<span class="nc" id="L176">					LinkedList&lt;IInstallableUnit&gt; todo = new LinkedList&lt;&gt;();</span>
-<span class="nc bnc" id="L177" title="All 2 branches missed.">					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))</span>
-<span class="nc" id="L178">						todo.add(iu);</span>
+<span class="nc" id="L184">					LinkedList&lt;IInstallableUnit&gt; todo = new LinkedList&lt;&gt;();</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))</span>
+<span class="nc" id="L186">						todo.add(iu);</span>
 
-<span class="nc bnc" id="L180" title="All 2 branches missed.">					while (!todo.isEmpty()) {</span>
-<span class="nc" id="L181">						IInstallableUnit iu = todo.removeFirst();</span>
-<span class="nc bnc" id="L182" title="All 2 branches missed.">						if (!finalIus.add(iu))</span>
-<span class="nc" id="L183">							continue;</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">					while (!todo.isEmpty()) {</span>
+<span class="nc" id="L189">						IInstallableUnit iu = todo.removeFirst();</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">						if (!finalIus.add(iu))</span>
+<span class="nc" id="L191">							continue;</span>
 
-<span class="nc bnc" id="L185" title="All 3 branches missed.">						switch (getType(iu)) {</span>
+<span class="nc bnc" id="L193" title="All 3 branches missed.">						switch (getType(iu)) {</span>
 						case bundle:
-<span class="nc bnc" id="L187" title="All 2 branches missed.">							for (IInstallableUnit iu1 : sourceMetadataRepo</span>
-<span class="nc" id="L188">									.query(QueryUtil.createIUQuery(iu.getId() + &quot;.source&quot;, iu.getVersion()), monitor))</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">								if (getType(iu1) == Type.source_bundle) {</span>
-<span class="nc bnc" id="L190" title="All 4 branches missed.">									if (!finalIus.contains(iu1) &amp;&amp; todo.add(iu1))</span>
-<span class="nc" id="L191">										System.out.println(&quot;Adding &quot; + iu1 + &quot; as source of &quot; + iu);</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">							for (IInstallableUnit iu1 : sourceMetadataRepo</span>
+<span class="nc" id="L196">									.query(QueryUtil.createIUQuery(iu.getId() + &quot;.source&quot;, iu.getVersion()), monitor))</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">								if (getType(iu1) == Type.source_bundle) {</span>
+<span class="nc bnc" id="L198" title="All 4 branches missed.">									if (!finalIus.contains(iu1) &amp;&amp; todo.add(iu1))</span>
+<span class="nc" id="L199">										System.out.println(&quot;Adding &quot; + iu1 + &quot; as source of &quot; + iu);</span>
 								}
-<span class="nc" id="L193">							break;</span>
+<span class="nc" id="L201">							break;</span>
 						case feature:
-<span class="nc bnc" id="L195" title="All 2 branches missed.">							if (!iu.getId().endsWith(&quot;.feature.jar&quot;))</span>
-<span class="nc" id="L196">								throw new Error(&quot;&quot;);</span>
-<span class="nc" id="L197">							String shortId = removeSuffix(iu.getId(), &quot;.feature.jar&quot;);</span>
-<span class="nc" id="L198">							List&lt;String&gt; cand = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L199">							cand.add(shortId + &quot;.source.feature.group&quot;);</span>
-<span class="nc bnc" id="L200" title="All 2 branches missed.">							if (shortId.endsWith(&quot;.feature&quot;)) {</span>
-<span class="nc" id="L201">								String s2 = removeSuffix(shortId, &quot;.feature&quot;);</span>
-<span class="nc" id="L202">								cand.add(s2 + &quot;.source.feature.group&quot;);</span>
-<span class="nc" id="L203">								cand.add(s2 + &quot;.source.feature.feature.group&quot;);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">							if (!iu.getId().endsWith(&quot;.feature.jar&quot;))</span>
+<span class="nc" id="L204">								throw new Error(&quot;&quot;);</span>
+<span class="nc" id="L205">							String shortId = removeSuffix(iu.getId(), &quot;.feature.jar&quot;);</span>
+<span class="nc" id="L206">							List&lt;String&gt; cand = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L207">							cand.add(shortId + &quot;.source&quot; + featureSuffix);</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">							if (shortId.endsWith(&quot;.feature&quot;)) {</span>
+<span class="nc" id="L209">								String s2 = removeSuffix(shortId, &quot;.feature&quot;);</span>
+<span class="nc" id="L210">								cand.add(s2 + &quot;.source&quot; + featureSuffix);</span>
+<span class="nc" id="L211">								cand.add(s2 + &quot;.source.feature&quot; + featureSuffix);</span>
 							}
-<span class="nc bnc" id="L205" title="All 2 branches missed.">							for (String c : cand)</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">								for (IInstallableUnit iu1 : sourceMetadataRepo</span>
-<span class="nc" id="L207">										.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))</span>
-<span class="nc bnc" id="L208" title="All 2 branches missed.">									if (root.add(iu1))</span>
-<span class="nc" id="L209">										System.out.println(&quot;Adding &quot; + iu1 + &quot; as source of &quot; + iu);</span>
-<span class="nc" id="L210">							break;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">							for (String c : cand)</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">								for (IInstallableUnit iu1 : sourceMetadataRepo</span>
+<span class="nc" id="L215">										.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))</span>
+<span class="nc bnc" id="L216" title="All 2 branches missed.">									if (root.add(iu1))</span>
+<span class="nc" id="L217">										System.out.println(&quot;Adding &quot; + iu1 + &quot; as source of &quot; + iu);</span>
+<span class="nc" id="L218">							break;</span>
 						default:
 							break;
 						}
 					}
 
-<span class="nc bnc" id="L216" title="All 2 branches missed.">					if (oldRootSize == root.size())</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">					if (oldRootSize == root.size())</span>
 						break;
 				}
 			}
 
 			// mirror metadata
-<span class="nc" id="L222">			IMetadataRepository destinationMetadataRepo = createDestinationMetadataRepository(</span>
-<span class="nc" id="L223">					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),</span>
-<span class="nc" id="L224">					ms.targetRepository, &quot;&quot;);</span>
+<span class="nc" id="L230">			IMetadataRepository destinationMetadataRepo = createDestinationMetadataRepository(</span>
+<span class="nc" id="L231">					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),</span>
+<span class="nc" id="L232">					ms.targetRepository, &quot;&quot;);</span>
 
-<span class="nc" id="L226">			destinationMetadataRepo.addInstallableUnits(finalIus);</span>
+<span class="nc" id="L234">			destinationMetadataRepo.addInstallableUnits(finalIus);</span>
 
 			// mirror artifacts
-<span class="nc" id="L229">			IArtifactRepository destinationArtifactRepo = createDestinationArtifactRepository(</span>
-<span class="nc" id="L230">					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),</span>
-<span class="nc" id="L231">					ms.targetRepository, &quot;&quot;);</span>
+<span class="nc" id="L237">			IArtifactRepository destinationArtifactRepo = createDestinationArtifactRepository(</span>
+<span class="nc" id="L238">					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),</span>
+<span class="nc" id="L239">					ms.targetRepository, &quot;&quot;);</span>
 
-<span class="nc" id="L233">			Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);</span>
-<span class="nc" id="L234">			mirroring.setTransport(transport);</span>
-<span class="nc" id="L235">			mirroring.setIncludePacked(false);</span>
-<span class="nc" id="L236">			mirroring.setArtifactKeys(</span>
-<span class="nc" id="L237">					finalIus.stream().flatMap(p -&gt; p.getArtifacts().stream()).toArray(IArtifactKey[]::new));</span>
+<span class="nc" id="L241">			Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);</span>
+<span class="nc" id="L242">			mirroring.setTransport(transport);</span>
+<span class="nc" id="L243">			mirroring.setIncludePacked(false);</span>
+<span class="nc" id="L244">			mirroring.setArtifactKeys(</span>
+<span class="nc" id="L245">					finalIus.stream().flatMap(p -&gt; p.getArtifacts().stream()).toArray(IArtifactKey[]::new));</span>
 
-<span class="nc" id="L239">			MultiStatus multiStatus = mirroring.run(true, false);</span>
-<span class="nc bnc" id="L240" title="All 2 branches missed.">			if (!multiStatus.isOK()) {</span>
-<span class="nc" id="L241">				System.err.println(&quot;STATUS=&quot; + multiStatus);</span>
-<span class="nc" id="L242">				return 1;</span>
+<span class="nc" id="L247">			MultiStatus multiStatus = mirroring.run(true, false);</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">			if (!multiStatus.isOK()) {</span>
+<span class="nc" id="L249">				print(multiStatus, &quot;&quot;);</span>
+<span class="nc" id="L250">				return 1;</span>
 			}
 		}
 
-<span class="nc" id="L246">		return null;</span>
+<span class="nc" id="L254">		return null;</span>
 	}
 
+	static void print(IStatus s, String indent) {
+<span class="nc" id="L258">		List&lt;String&gt; severities = new LinkedList&lt;&gt;();</span>
+<span class="nc" id="L259">		int sev = s.getSeverity();</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">		if ((sev &amp; IStatus.OK) != 0) {</span>
+<span class="nc" id="L261">			severities.add(&quot;OK&quot;);</span>
+<span class="nc" id="L262">			sev &amp;= ~IStatus.OK;</span>
+		}
+<span class="nc bnc" id="L264" title="All 2 branches missed.">		if ((sev &amp; IStatus.ERROR) != 0) {</span>
+<span class="nc" id="L265">			severities.add(&quot;ERROR&quot;);</span>
+<span class="nc" id="L266">			sev &amp;= ~IStatus.ERROR;</span>
+		}
+<span class="nc bnc" id="L268" title="All 2 branches missed.">		if ((sev &amp; IStatus.WARNING) != 0) {</span>
+<span class="nc" id="L269">			severities.add(&quot;WARNING&quot;);</span>
+<span class="nc" id="L270">			sev &amp;= ~IStatus.WARNING;</span>
+		}
+<span class="nc bnc" id="L272" title="All 2 branches missed.">		if ((sev &amp; IStatus.INFO) != 0) {</span>
+<span class="nc" id="L273">			severities.add(&quot;INFO&quot;);</span>
+<span class="nc" id="L274">			sev &amp;= ~IStatus.INFO;</span>
+		}
+<span class="nc bnc" id="L276" title="All 2 branches missed.">		if ((sev &amp; IStatus.CANCEL) != 0) {</span>
+<span class="nc" id="L277">			severities.add(&quot;CANCEL&quot;);</span>
+<span class="nc" id="L278">			sev &amp;= ~IStatus.CANCEL;</span>
+		}
+<span class="nc bnc" id="L280" title="All 2 branches missed.">		if (sev != 0)</span>
+<span class="nc" id="L281">			severities.add(String.valueOf(sev));</span>
+
+<span class="nc" id="L283">		System.err.print(indent + &quot;[&quot; + severities.stream().collect(Collectors.joining(&quot;,&quot;)) + &quot;] &quot; + s.getPlugin()</span>
+<span class="nc" id="L284">				+ &quot; &quot; + s.getCode() + &quot; &quot; + s.getMessage());</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">		if (s.getException() != null)</span>
+<span class="nc" id="L286">			System.err.print(&quot; &quot; + s.getException());</span>
+<span class="nc" id="L287">		System.err.println();</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">		for (IStatus c : s.getChildren())</span>
+<span class="nc" id="L289">			print(c, indent + &quot;  &quot;);</span>
+<span class="nc" id="L290">	}</span>
+
 	static IProvisioningAgent getAgent() throws ProvisionException {
-<span class="nc" id="L250">		ServiceReference&lt;?&gt; serviceReference = Activator.getContext()</span>
-<span class="nc" id="L251">				.getServiceReference(IProvisioningAgentProvider.SERVICE_NAME);</span>
-<span class="nc" id="L252">		IProvisioningAgentProvider agentFactory = (IProvisioningAgentProvider) Activator.getContext()</span>
-<span class="nc" id="L253">				.getService(serviceReference);</span>
+<span class="nc" id="L293">		ServiceReference&lt;?&gt; serviceReference = Activator.getContext()</span>
+<span class="nc" id="L294">				.getServiceReference(IProvisioningAgentProvider.SERVICE_NAME);</span>
+<span class="nc" id="L295">		IProvisioningAgentProvider agentFactory = (IProvisioningAgentProvider) Activator.getContext()</span>
+<span class="nc" id="L296">				.getService(serviceReference);</span>
 		IProvisioningAgent ourAgent;
 		try {
-<span class="nc" id="L256">			ourAgent = agentFactory.createAgent(null); // targetDirectory.getChild(&quot;p2agent&quot;).toURI());</span>
-<span class="nc" id="L257">		} catch (ProvisionException e) {</span>
-<span class="nc" id="L258">			throw e;</span>
-<span class="nc" id="L259">		} finally {</span>
-<span class="nc" id="L260">			Activator.getContext().ungetService(serviceReference);</span>
-<span class="nc" id="L261">		}</span>
-<span class="nc" id="L262">		return ourAgent;</span>
+<span class="nc" id="L299">			ourAgent = agentFactory.createAgent(null); // targetDirectory.getChild(&quot;p2agent&quot;).toURI());</span>
+<span class="nc" id="L300">		} catch (ProvisionException e) {</span>
+<span class="nc" id="L301">			throw e;</span>
+<span class="nc" id="L302">		} finally {</span>
+<span class="nc" id="L303">			Activator.getContext().ungetService(serviceReference);</span>
+<span class="nc" id="L304">		}</span>
+<span class="nc" id="L305">		return ourAgent;</span>
 	}
 
 	private String removeSuffix(String id, String suffix) {
-<span class="nc" id="L266">		Objects.requireNonNull(id);</span>
-<span class="nc" id="L267">		Objects.requireNonNull(suffix);</span>
-<span class="nc bnc" id="L268" title="All 2 branches missed.">		if (!id.endsWith(suffix))</span>
-<span class="nc" id="L269">			throw new IllegalArgumentException(&quot;'&quot; + id + &quot;' does not end with '&quot; + suffix + &quot;'&quot;);</span>
-<span class="nc" id="L270">		return id.substring(0, id.length() - suffix.length());</span>
+<span class="nc" id="L309">		Objects.requireNonNull(id);</span>
+<span class="nc" id="L310">		Objects.requireNonNull(suffix);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">		if (!id.endsWith(suffix))</span>
+<span class="nc" id="L312">			throw new IllegalArgumentException(&quot;'&quot; + id + &quot;' does not end with '&quot; + suffix + &quot;'&quot;);</span>
+<span class="nc" id="L313">		return id.substring(0, id.length() - suffix.length());</span>
 	}
 
-<span class="nc" id="L273">	static enum Type {</span>
-<span class="nc" id="L274">		feature, bundle, source_bundle, other</span>
+<span class="nc" id="L316">	static enum Type {</span>
+<span class="nc" id="L317">		feature, bundle, source_bundle, other</span>
 	}
 
 	private Type getType(IInstallableUnit iu) {
 
-<span class="nc" id="L279">		Optional&lt;IProvidedCapability&gt; cap = iu.getProvidedCapabilities().stream()</span>
-<span class="nc" id="L280">				.filter(p -&gt; p.getNamespace().equals(PublisherHelper.NAMESPACE_ECLIPSE_TYPE)).findAny();</span>
+<span class="nc" id="L322">		Optional&lt;IProvidedCapability&gt; cap = iu.getProvidedCapabilities().stream()</span>
+<span class="nc" id="L323">				.filter(p -&gt; p.getNamespace().equals(PublisherHelper.NAMESPACE_ECLIPSE_TYPE)).findAny();</span>
 
-<span class="nc bnc" id="L282" title="All 2 branches missed.">		if (!cap.isPresent())</span>
-<span class="nc" id="L283">			return Type.other;</span>
-<span class="nc bnc" id="L284" title="All 10 branches missed.">		switch (cap.get().getName()) {</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">		if (!cap.isPresent())</span>
+<span class="nc" id="L326">			return Type.other;</span>
+<span class="nc bnc" id="L327" title="All 10 branches missed.">		switch (cap.get().getName()) {</span>
 		case &quot;source&quot;:
-<span class="nc" id="L286">			return Type.source_bundle;</span>
+<span class="nc" id="L329">			return Type.source_bundle;</span>
 		case &quot;bundle&quot;:
-<span class="nc" id="L288">			return Type.bundle;</span>
+<span class="nc" id="L331">			return Type.bundle;</span>
 		case &quot;feature&quot;:
-<span class="nc" id="L290">			return Type.feature;</span>
+<span class="nc" id="L333">			return Type.feature;</span>
 		default:
-<span class="nc" id="L292">			System.err.println(&quot;UNHANDLED &quot; + cap.get());</span>
-<span class="nc" id="L293">			return Type.other;</span>
+<span class="nc" id="L335">			System.err.println(&quot;UNHANDLED &quot; + cap.get());</span>
+<span class="nc" id="L336">			return Type.other;</span>
 		}
 
 	}
 
-<span class="nc" id="L298">	final String featureSuffix = &quot;.feature.group&quot;;</span>
+<span class="nc" id="L341">	private final static String featureSuffix = &quot;.feature.group&quot;;</span>
 
 	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, Path path,
 			String name) {
 		try {
 			try {
-<span class="nc" id="L304">				return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,</span>
-<span class="nc" id="L305">						new NullProgressMonitor());</span>
-<span class="nc" id="L306">			} catch (ProvisionException e) {</span>
+<span class="nc" id="L347">				return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,</span>
+<span class="nc" id="L348">						new NullProgressMonitor());</span>
+<span class="nc" id="L349">			} catch (ProvisionException e) {</span>
 				// assume that repository does not exist
 			}
 
 			IArtifactRepository dest;
 			try {
-<span class="nc" id="L312">				dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY,</span>
-<span class="nc" id="L313">						null);</span>
-<span class="nc" id="L314">				return dest;</span>
-<span class="nc" id="L315">			} catch (ProvisionException e) {</span>
-<span class="nc" id="L316">				throw new RuntimeException(e);</span>
+<span class="nc" id="L355">				dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY,</span>
+<span class="nc" id="L356">						null);</span>
+<span class="nc" id="L357">				return dest;</span>
+<span class="nc" id="L358">			} catch (ProvisionException e) {</span>
+<span class="nc" id="L359">				throw new RuntimeException(e);</span>
 			}
-<span class="nc" id="L318">		} catch (OperationCanceledException e) {</span>
-<span class="nc" id="L319">			throw new RuntimeException(e);</span>
+<span class="nc" id="L361">		} catch (OperationCanceledException e) {</span>
+<span class="nc" id="L362">			throw new RuntimeException(e);</span>
 		}
 	}
 
@@ -324,28 +367,28 @@ import org.osgi.framework.ServiceReference;
 			String string) {
 		try {
 			try {
-<span class="nc" id="L327">				return mgr.loadRepository(path.toUri(), IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,</span>
-<span class="nc" id="L328">						new NullProgressMonitor());</span>
-<span class="nc" id="L329">			} catch (ProvisionException e) {</span>
+<span class="nc" id="L370">				return mgr.loadRepository(path.toUri(), IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,</span>
+<span class="nc" id="L371">						new NullProgressMonitor());</span>
+<span class="nc" id="L372">			} catch (ProvisionException e) {</span>
 				// assume that repository does not exist
 			}
 
 			IMetadataRepository dest;
 			try {
-<span class="nc" id="L335">				dest = mgr.createRepository(path.toUri(), string, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY,</span>
-<span class="nc" id="L336">						null);</span>
-<span class="nc" id="L337">				return dest;</span>
-<span class="nc" id="L338">			} catch (ProvisionException e) {</span>
-<span class="nc" id="L339">				throw new RuntimeException(e);</span>
+<span class="nc" id="L378">				dest = mgr.createRepository(path.toUri(), string, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY,</span>
+<span class="nc" id="L379">						null);</span>
+<span class="nc" id="L380">				return dest;</span>
+<span class="nc" id="L381">			} catch (ProvisionException e) {</span>
+<span class="nc" id="L382">				throw new RuntimeException(e);</span>
 			}
-<span class="nc" id="L341">		} catch (OperationCanceledException e) {</span>
-<span class="nc" id="L342">			throw new RuntimeException(e);</span>
+<span class="nc" id="L384">		} catch (OperationCanceledException e) {</span>
+<span class="nc" id="L385">			throw new RuntimeException(e);</span>
 		}
 	}
 
 	@Override
 	public void stop() {
-<span class="nc" id="L348">	}</span>
+<span class="nc" id="L391">	}</span>
 
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
