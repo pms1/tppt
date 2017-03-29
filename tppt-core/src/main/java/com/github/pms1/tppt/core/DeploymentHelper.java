@@ -158,6 +158,8 @@ public class DeploymentHelper {
 	static private final DateTimeFormatter defaultFormatter = new DateTimeFormatterBuilder()
 			.appendPattern("yyyyMMddHHmmss").appendValue(ChronoField.MILLI_OF_SECOND, 3).toFormatter();
 
+	static private final String defaultFormatterRegexp = "\\d{17}";
+
 	private RepositoryPathPattern interpolatePattern(InterpolatedString layout1, Map<String, Object> context) {
 		StringBuilder b = new StringBuilder();
 
@@ -180,14 +182,20 @@ public class DeploymentHelper {
 					b.append(Pattern.quote((String) o));
 				} else if (o == LocalDateTime.class) {
 					DateTimeFormatter formatter;
-					if (variable.size() == 1)
+					String regexp;
+
+					if (variable.size() == 1) {
 						formatter = defaultFormatter;
-					else if (variable.size() == 2)
+						regexp = defaultFormatterRegexp;
+					} else if (variable.size() == 2) {
 						formatter = DateTimeFormatter.ofPattern(variable.get(1));
-					else
+						regexp = asRegularExpression(variable.get(1));
+					} else {
 						throw new IllegalArgumentException();
+					}
+
 					postProcessors.put(variable.get(0), p -> p == null ? null : LocalDateTime.parse(p, formatter));
-					b.append("(?<" + variable.get(0) + ">.*)");
+					b.append("(?<" + variable.get(0) + ">" + regexp + ")");
 				} else {
 					throw new IllegalArgumentException();
 				}
@@ -317,5 +325,31 @@ public class DeploymentHelper {
 
 		doInstall(source.getPath(), f1, target, Collections.emptySet());
 
+	}
+
+	static String asRegularExpression(String pattern) {
+		StringBuilder regex = new StringBuilder();
+
+		for (int i = 0; i != pattern.length();) {
+			int start = i;
+			char c = pattern.charAt(i++);
+			while (i != pattern.length() && pattern.charAt(i) == c)
+				++i;
+			String part = pattern.substring(start, i);
+			switch (part) {
+			case "yyyy":
+			case "yy":
+			case "MM":
+			case "dd":
+			case "HH":
+			case "mm":
+			case "ss":
+				regex.append("\\d{" + part.length() + "}");
+				break;
+			default:
+				throw new IllegalArgumentException("Unhandled part '" + part + "' of pattern '" + pattern + "'");
+			}
+		}
+		return regex.toString();
 	}
 }
