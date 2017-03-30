@@ -14,12 +14,18 @@ public class SearchFilterAdapter extends XmlAdapter<String, SearchFilter> {
 
 	@Override
 	public SearchFilter unmarshal(String v) throws Exception {
-		return parser.parse(v.trim());
+		if (v == null)
+			return null;
+		else
+			return parser.parse(v.trim());
 	}
 
 	@Override
 	public String marshal(SearchFilter v) throws Exception {
-		return printer.print(v);
+		if (v == null)
+			return null;
+		else
+			return printer.print(v);
 	}
 
 }

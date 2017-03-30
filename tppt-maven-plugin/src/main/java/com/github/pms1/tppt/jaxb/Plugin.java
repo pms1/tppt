@@ -1,6 +1,10 @@
 package com.github.pms1.tppt.jaxb;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+
+import com.github.pms1.ldap.SearchFilter;
+import com.github.pms1.tppt.p2.jaxb.SearchFilterAdapter;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -9,6 +13,22 @@ public class Plugin {
 
 	@XmlAttribute
 	public String id;
+
+	@XmlAttribute
+	@XmlJavaTypeAdapter(SearchFilterAdapter.class)
+	public SearchFilter filter;
+
+	@XmlAttribute
+	public String os;
+
+	@XmlAttribute
+	public String ws;
+
+	@XmlAttribute
+	public String nl;
+
+	@XmlAttribute
+	public String arch;
 
 	@XmlAttribute(name = "download-size")
 	public Long download_size;

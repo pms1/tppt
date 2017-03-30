@@ -185,6 +185,8 @@ public class CreateFeaturesMojo extends AbstractMojo {
 				if (!provided.isPresent())
 					continue;
 
+				u.getFilter();
+
 				Optional<Provided> fragment = u.getProvides().getProvided().stream()
 						.filter(p -> p.getNamespace().equals("osgi.fragment")).findAny();
 
@@ -201,6 +203,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 				if (fragment.isPresent())
 					p.fragment = true;
 				p.unpack = false;
+				p.filter = u.getFilter();
 				plugins.add(p);
 			}
 
