@@ -60,7 +60,6 @@ import com.google.common.io.ByteStreams;
 import aQute.bnd.osgi.Builder;
 import aQute.bnd.osgi.Jar;
 import aQute.bnd.version.MavenVersion;
-import aQute.bnd.version.Version;
 
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
@@ -245,7 +244,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				Path receipe = findReceipe(a);
 
 				if (plugin == null || receipe != null) {
-					plugin = createPlugin(a, receipe,
+					plugin = createPlugin(a, plugin, receipe,
 							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 				} else {
 					Files.copy(a.getFile().toPath(),
@@ -406,7 +405,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		return null;
 	}
 
-	private Plugin createPlugin(Artifact a, Path receipe, Path target) throws Exception {
+	private Plugin createPlugin(Artifact a, Plugin plugin, Path receipe, Path target) throws Exception {
 		try (Builder builder = new Builder()) {
 			builder.setTrace(getLog().isDebugEnabled());
 
@@ -421,21 +420,24 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				getLog().info(a + ": Creating an OSGi bundle");
 
 			if (builder.getProperty(Constants.BUNDLE_SYMBOLICNAME) == null)
-				builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
+				if (plugin != null)
+					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, plugin.id);
+				else
+					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
 
-			if (builder.getProperty(Constants.BUNDLE_VERSION) == null) {
-				Version version = MavenVersion.parseString(a.getVersion()).getOSGiVersion();
-				builder.setProperty(Constants.BUNDLE_VERSION, version.toString());
-			}
+			if (builder.getProperty(Constants.BUNDLE_VERSION) == null)
+				if (plugin != null)
+					builder.setProperty(Constants.BUNDLE_VERSION, plugin.version);
+				else
+					builder.setProperty(Constants.BUNDLE_VERSION,
+							MavenVersion.parseString(a.getVersion()).getOSGiVersion().toString());
 
-			if (builder.getProperty(Constants.EXPORT_PACKAGE) == null) {
+			if (builder.getProperty(Constants.EXPORT_PACKAGE) == null)
 				builder.setProperty(Constants.EXPORT_PACKAGE, "*");
-			}
 
 			builder.setJar(classesDirJar);
 
 			Jar j = builder.build();
-
 			j.write(target.toFile());
 
 			return scanPlugin(target);
