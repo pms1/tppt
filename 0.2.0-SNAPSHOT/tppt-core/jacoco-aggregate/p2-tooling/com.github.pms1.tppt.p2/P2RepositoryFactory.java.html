@@ -145,7 +145,7 @@ import com.google.common.base.Preconditions;
 <span class="nc" id="L145">				P2IndexType t = P2IndexType.fromFilePrefix(e.substring(0, idx));</span>
 <span class="nc bnc" id="L146" title="All 2 branches missed.">				if (result == null)</span>
 <span class="nc" id="L147">					result = t;</span>
-<span class="nc bnc" id="L148" title="All 2 branches missed.">				else if (result != null)</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">				else if (t != null)</span>
 <span class="nc" id="L149">					throw new IllegalArgumentException(&quot;Mixed types for '&quot; + artifact + &quot;'&quot;);</span>
 			}
 
@@ -615,8 +615,8 @@ import com.google.common.base.Preconditions;
 		}
 	}
 
-<span class="nc" id="L618">	public class NoRepositoryFoundException extends RuntimeException {</span>
-<span class="nc" id="L619">		public NoRepositoryFoundException(String message, Throwable cause) {</span>
+<span class="nc" id="L618">	public static class NoRepositoryFoundException extends RuntimeException {</span>
+		public NoRepositoryFoundException(String message, Throwable cause) {
 <span class="nc" id="L620">			super(message, cause);</span>
 <span class="nc" id="L621">		}</span>
 	}

@@ -3,7 +3,7 @@
 import java.nio.file.Path;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
-import com.github.pms1.tppt.p2.jaxb.metadata.Property;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperty;
 import com.google.common.base.Preconditions;
 
 public class MetadataRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;MetadataRepository&gt;
@@ -13,7 +13,7 @@ public class MetadataRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;Me
 	private final Path path;
 
 	public MetadataRepositoryFacadeImpl(Path path, MetadataRepository foo) {
-<span class="nc" id="L16">		super(Property::new);</span>
+<span class="nc" id="L16">		super(MetadataProperty::new);</span>
 <span class="nc" id="L17">		Preconditions.checkNotNull(path);</span>
 <span class="nc" id="L18">		Preconditions.checkNotNull(foo);</span>
 <span class="nc" id="L19">		this.data = foo;</span>

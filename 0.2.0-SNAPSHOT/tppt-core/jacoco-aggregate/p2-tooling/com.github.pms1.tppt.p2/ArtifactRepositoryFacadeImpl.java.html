@@ -13,7 +13,7 @@ import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
-import com.github.pms1.tppt.p2.jaxb.artifact.Property;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperty;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
@@ -26,7 +26,7 @@ class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;ArtifactR
 	private final Path path;
 
 	public ArtifactRepositoryFacadeImpl(Path path, ArtifactRepository foo) {
-<span class="nc" id="L29">		super(Property::new);</span>
+<span class="nc" id="L29">		super(ArtifactProperty::new);</span>
 		// Preconditions.checkNotNull(root);
 <span class="nc" id="L31">		Preconditions.checkNotNull(foo);</span>
 <span class="nc" id="L32">		this.data = foo;</span>
@@ -74,7 +74,7 @@ class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade&lt;ArtifactR
 		@Override
 		public String getPropertyString(String key) {
 <span class="nc" id="L76">			return data.getProperties().getProperty().stream().filter(p -&gt; p.getName().equals(key))</span>
-<span class="nc" id="L77">					.map(Property::getValue).findAny().orElse(null);</span>
+<span class="nc" id="L77">					.map(ArtifactProperty::getValue).findAny().orElse(null);</span>
 		}
 
 	}
