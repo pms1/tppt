@@ -59,6 +59,7 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
+import aQute.bnd.version.MavenVersion;
 import aQute.bnd.version.Version;
 
 /**
@@ -86,6 +87,9 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
+
+	@Parameter
+	private String osgiVersion;
 
 	@Component
 	private EquinoxRunnerFactory runnerFactory;
@@ -130,7 +134,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		return plugin;
 	}
 
-	static Version createOsgiVersion(String mavenVersion, String buildQualifier) {
+	static Version createOsgiVersion(String mavenVersion) {
 		Version qualifiedVersion;
 
 		Pattern pattern = Pattern.compile(
@@ -139,16 +143,15 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		if (m.matches())
 			if (m.group("m11") != null)
 				qualifiedVersion = new Version(Integer.parseInt(m.group("m11")), Integer.parseInt(m.group("m12")),
-						Integer.parseInt(m.group("m13")), buildQualifier);
+						Integer.parseInt(m.group("m13")));
 			else if (m.group("m21") != null)
-				qualifiedVersion = new Version(Integer.parseInt(m.group("m21")), Integer.parseInt(m.group("m22")), 0,
-						buildQualifier);
+				qualifiedVersion = new Version(Integer.parseInt(m.group("m21")), Integer.parseInt(m.group("m22")), 0);
 			else if (m.group("m31") != null)
-				qualifiedVersion = new Version(Integer.parseInt(m.group("m31")), 0, 0, buildQualifier);
+				qualifiedVersion = new Version(Integer.parseInt(m.group("m31")), 0, 0);
 			else
 				throw new Error();
 		else
-			qualifiedVersion = new Version(1, 0, 0, buildQualifier);
+			qualifiedVersion = new Version(1, 0, 0);
 
 		return qualifiedVersion;
 	}
@@ -159,11 +162,18 @@ public class CreateFeaturesMojo extends AbstractMojo {
 			if (project.getName() == null)
 				throw new MojoExecutionException("Not supposed to happen: ${project.name} is null");
 
+			Version unqualified;
+			if (osgiVersion != null)
+				unqualified = MavenVersion.parseMavenString(osgiVersion).getOSGiVersion();
+			else
+				unqualified = createOsgiVersion(project.getVersion());
+
 			final String buildQualifier = project.getProperties().getProperty("buildQualifier");
 			if (Strings.isNullOrEmpty(buildQualifier))
 				throw new MojoExecutionException("Project does not have build qualifier set");
 
-			Version qualifiedVersion = createOsgiVersion(project.getVersion(), buildQualifier);
+			Version qualifiedVersion = new Version(unqualified.getMajor(), unqualified.getMinor(),
+					unqualified.getMicro(), buildQualifier);
 			getLog().info("Feature version is " + qualifiedVersion);
 
 			final Path repoFeatures = target.toPath().resolve("repository-features");
