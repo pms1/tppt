@@ -14,12 +14,18 @@ import com.github.pms1.ldap.SearchFilterPrinter;
 
 	@Override
 	public SearchFilter unmarshal(String v) throws Exception {
-<span class="nc" id="L17">		return parser.parse(v.trim());</span>
+<span class="nc bnc" id="L17" title="All 2 branches missed.">		if (v == null)</span>
+<span class="nc" id="L18">			return null;</span>
+		else
+<span class="nc" id="L20">			return parser.parse(v.trim());</span>
 	}
 
 	@Override
 	public String marshal(SearchFilter v) throws Exception {
-<span class="nc" id="L22">		return printer.print(v);</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">		if (v == null)</span>
+<span class="nc" id="L26">			return null;</span>
+		else
+<span class="nc" id="L28">			return printer.print(v);</span>
 	}
 
 }
