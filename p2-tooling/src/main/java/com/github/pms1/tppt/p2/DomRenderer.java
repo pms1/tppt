@@ -132,7 +132,7 @@ public class DomRenderer {
 	}
 
 	private void render(Node node, Appendable b, DomRendererOptions options, String indent) throws IOException {
-		boolean children = options.recurse;
+		boolean children;
 
 		switch (node.getNodeType()) {
 		case Node.TEXT_NODE:
@@ -217,12 +217,17 @@ public class DomRenderer {
 			throw new Error("Unhandled node " + node.getNodeType() + " " + node);
 		}
 
-		if (children) {
-			for (int i = 0; i != node.getChildNodes().getLength(); ++i)
-				render(node.getChildNodes().item(i), b, options,
-						options.indent != null && !(node instanceof Document) ? indent + options.indent : indent);
-		} else if (node.getChildNodes().getLength() != 0) {
-			throw new IllegalStateException("No children expected for nodeType=" + node.getNodeType() + " " + node);
+		if (options.recurse) {
+			if (children) {
+				for (int i = 0; i != node.getChildNodes().getLength(); ++i)
+					render(node.getChildNodes().item(i), b, options,
+							options.indent != null && !(node instanceof Document) ? indent + options.indent : indent);
+			} else if (node.getChildNodes().getLength() != 0) {
+				throw new IllegalStateException("No children expected for nodeType=" + node.getNodeType() + " " + node);
+			}
+		} else {
+			if (children)
+				b.append("...");
 		}
 
 		switch (node.getNodeType()) {
