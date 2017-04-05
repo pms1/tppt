@@ -195,7 +195,14 @@ public class CreateFeaturesMojo extends AbstractMojo {
 				if (!provided.isPresent())
 					continue;
 
-				u.getFilter();
+				// filter requirements on feature iu's since eclipse does not
+				// resolve them in the
+				// target editor
+				if (u.getRequires() != null && u.getRequires().getRequired() != null)
+					if (u.getRequires().getRequired().stream()
+							.anyMatch(r -> r.getNamespace().equals("org.eclipse.equinox.p2.iu")
+									&& r.getName().endsWith(".feature.group")))
+						continue;
 
 				Optional<Provided> fragment = u.getProvides().getProvided().stream()
 						.filter(p -> p.getNamespace().equals("osgi.fragment")).findAny();
