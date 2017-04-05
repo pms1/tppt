@@ -393,6 +393,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 	private Path findReceipe(Artifact a) {
 		Path noVersionPath = sourceDir.toPath().resolve(a.getGroupId()).resolve(a.getArtifactId());
+		if (a.hasClassifier())
+			noVersionPath = noVersionPath.resolve(a.getClassifier());
 		Path versionPath = noVersionPath.resolve(a.getVersion());
 
 		for (Path path : new Path[] { versionPath, noVersionPath }) {
