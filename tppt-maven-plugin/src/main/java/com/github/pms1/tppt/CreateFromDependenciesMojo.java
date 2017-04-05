@@ -405,6 +405,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		return null;
 	}
 
+	private String createSymbolicName(Artifact a) {
+		if (a.hasClassifier())
+			return a.getArtifactId() + "." + a.getClassifier();
+		else
+			return a.getArtifactId();
+	}
+
 	private Plugin createPlugin(Artifact a, Plugin plugin, Path receipe, Path target) throws Exception {
 		try (Builder builder = new Builder()) {
 			builder.setTrace(getLog().isDebugEnabled());
@@ -423,7 +430,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				if (plugin != null)
 					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, plugin.id);
 				else
-					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, a.getArtifactId());
+					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, createSymbolicName(a));
 
 			if (builder.getProperty(Constants.BUNDLE_VERSION) == null)
 				if (plugin != null)
