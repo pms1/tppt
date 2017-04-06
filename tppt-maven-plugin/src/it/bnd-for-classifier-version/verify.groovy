@@ -1,6 +1,6 @@
 import java.util.zip.ZipFile
 
-def zf = new ZipFile(new File(basedir,"target/bnd-for-version-0.0.0-SNAPSHOT.zip"));
+def zf = new ZipFile(new File(basedir,"target/bnd-for-classifier-version-0.0.0-SNAPSHOT.zip"));
 try {
 	assert zf.getEntry("plugins/foo_1.0.0.jar")
 } finally {
