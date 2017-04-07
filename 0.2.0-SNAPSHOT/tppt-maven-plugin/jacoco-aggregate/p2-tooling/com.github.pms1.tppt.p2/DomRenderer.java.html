@@ -132,7 +132,7 @@ import com.google.common.base.Throwables;
 	}
 
 	private void render(Node node, Appendable b, DomRendererOptions options, String indent) throws IOException {
-<span class="nc" id="L135">		boolean children = options.recurse;</span>
+		boolean children;
 
 <span class="nc bnc" id="L137" title="All 6 branches missed.">		switch (node.getNodeType()) {</span>
 		case Node.TEXT_NODE:
@@ -217,52 +217,57 @@ import com.google.common.base.Throwables;
 <span class="nc" id="L217">			throw new Error(&quot;Unhandled node &quot; + node.getNodeType() + &quot; &quot; + node);</span>
 		}
 
-<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (children) {</span>
-<span class="nc bnc" id="L221" title="All 2 branches missed.">			for (int i = 0; i != node.getChildNodes().getLength(); ++i)</span>
-<span class="nc bnc" id="L222" title="All 4 branches missed.">				render(node.getChildNodes().item(i), b, options,</span>
-						options.indent != null &amp;&amp; !(node instanceof Document) ? indent + options.indent : indent);
-<span class="nc bnc" id="L224" title="All 2 branches missed.">		} else if (node.getChildNodes().getLength() != 0) {</span>
-<span class="nc" id="L225">			throw new IllegalStateException(&quot;No children expected for nodeType=&quot; + node.getNodeType() + &quot; &quot; + node);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">		if (options.recurse) {</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">			if (children) {</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">				for (int i = 0; i != node.getChildNodes().getLength(); ++i)</span>
+<span class="nc bnc" id="L223" title="All 4 branches missed.">					render(node.getChildNodes().item(i), b, options,</span>
+							options.indent != null &amp;&amp; !(node instanceof Document) ? indent + options.indent : indent);
+<span class="nc bnc" id="L225" title="All 2 branches missed.">			} else if (node.getChildNodes().getLength() != 0) {</span>
+<span class="nc" id="L226">				throw new IllegalStateException(&quot;No children expected for nodeType=&quot; + node.getNodeType() + &quot; &quot; + node);</span>
+			}
+		} else {
+<span class="nc bnc" id="L229" title="All 2 branches missed.">			if (children)</span>
+<span class="nc" id="L230">				b.append(&quot;...&quot;);</span>
 		}
 
-<span class="nc bnc" id="L228" title="All 2 branches missed.">		switch (node.getNodeType()) {</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">		switch (node.getNodeType()) {</span>
 		case Node.ELEMENT_NODE:
-<span class="nc" id="L230">			Element e = (Element) node;</span>
-<span class="nc bnc" id="L231" title="All 2 branches missed.">			if (e.getChildNodes().getLength() != 0) {</span>
-<span class="nc" id="L232">				b.append(indent);</span>
-<span class="nc" id="L233">				b.append(&quot;&lt;/&quot; + node.getNodeName() + &quot;&gt;&quot;);</span>
-<span class="nc bnc" id="L234" title="All 2 branches missed.">				if (options.indent != null)</span>
-<span class="nc" id="L235">					b.append(&quot;\n&quot;);</span>
+<span class="nc" id="L235">			Element e = (Element) node;</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">			if (e.getChildNodes().getLength() != 0) {</span>
+<span class="nc" id="L237">				b.append(indent);</span>
+<span class="nc" id="L238">				b.append(&quot;&lt;/&quot; + node.getNodeName() + &quot;&gt;&quot;);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">				if (options.indent != null)</span>
+<span class="nc" id="L240">					b.append(&quot;\n&quot;);</span>
 			}
 			break;
 		default:
 			break;
 		}
-<span class="nc" id="L241">	}</span>
+<span class="nc" id="L246">	}</span>
 
 	public String jaxbRender(JAXBContext context, Object o, String name, Options... options) {
 		try {
-<span class="nc" id="L245">			Marshaller jaxbMarshaller = context.createMarshaller();</span>
+<span class="nc" id="L250">			Marshaller jaxbMarshaller = context.createMarshaller();</span>
 
 			@SuppressWarnings({ &quot;rawtypes&quot;, &quot;unchecked&quot; })
-<span class="nc" id="L248">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(name), o.getClass(), o);</span>
+<span class="nc" id="L253">			JAXBElement&lt;?&gt; root = new JAXBElement(new QName(name), o.getClass(), o);</span>
 
-<span class="nc" id="L250">			DOMResult r = new DOMResult();</span>
+<span class="nc" id="L255">			DOMResult r = new DOMResult();</span>
 
-<span class="nc" id="L252">			jaxbMarshaller.marshal(root, r);</span>
+<span class="nc" id="L257">			jaxbMarshaller.marshal(root, r);</span>
 
-<span class="nc" id="L254">			return render(((Document) r.getNode()).getDocumentElement(), options);</span>
-<span class="nc" id="L255">		} catch (JAXBException e) {</span>
-<span class="nc" id="L256">			throw Throwables.propagate(e);</span>
+<span class="nc" id="L259">			return render(((Document) r.getNode()).getDocumentElement(), options);</span>
+<span class="nc" id="L260">		} catch (JAXBException e) {</span>
+<span class="nc" id="L261">			throw Throwables.propagate(e);</span>
 		}
 	}
 
 	public String jaxbRender(JAXBContext context, Object o, Options... options) {
-<span class="nc" id="L261">		Preconditions.checkNotNull(o);</span>
-<span class="nc" id="L262">		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));</span>
-<span class="nc bnc" id="L263" title="All 2 branches missed.">		Preconditions.checkArgument(!annotation.namespace().isEmpty());</span>
+<span class="nc" id="L266">		Preconditions.checkNotNull(o);</span>
+<span class="nc" id="L267">		XmlType annotation = Preconditions.checkNotNull(o.getClass().getAnnotation(XmlType.class));</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">		Preconditions.checkArgument(!annotation.namespace().isEmpty());</span>
 
-<span class="nc" id="L265">		return jaxbRender(context, o, annotation.name(), options);</span>
+<span class="nc" id="L270">		return jaxbRender(context, o, annotation.name(), options);</span>
 
 	}
 
