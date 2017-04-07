@@ -2,7 +2,7 @@ import java.util.zip.ZipFile
 
 def zf = new ZipFile(new File(basedir,"target/mavenrepo-nonbundle-dependency-0.0.0-SNAPSHOT.zip"));
 try {
-	assert zf.getEntry("plugins/antlr_2.7.7.jar")
+	assert zf.getEntry("plugins/antlr_2.7.7.100.jar")
 } finally {
 	zf.close();
 }

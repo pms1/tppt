@@ -54,12 +54,13 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
 import com.github.pms1.tppt.jaxb.Plugin;
+import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
 
 import aQute.bnd.osgi.Builder;
 import aQute.bnd.osgi.Jar;
-import aQute.bnd.version.MavenVersion;
+import aQute.bnd.version.Version;
 
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
@@ -239,12 +240,16 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				}
 			});
 
+			final String buildQualifier = project.getProperties().getProperty("buildQualifier");
+			if (Strings.isNullOrEmpty(buildQualifier))
+				throw new MojoExecutionException("Project does not have build qualifier set");
+
 			for (Artifact a : artifacts) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				Path receipe = findReceipe(a);
 
 				if (plugin == null || receipe != null) {
-					plugin = createPlugin(a, plugin, receipe,
+					plugin = createPlugin(a, plugin, buildQualifier, receipe,
 							repoDependenciesPlugins.resolve(a.getFile().toPath().getFileName()));
 				} else {
 					Files.copy(a.getFile().toPath(),
@@ -414,7 +419,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			return a.getArtifactId();
 	}
 
-	private Plugin createPlugin(Artifact a, Plugin plugin, Path receipe, Path target) throws Exception {
+	private Plugin createPlugin(Artifact a, Plugin plugin, String buildQualifer, Path receipe, Path target)
+			throws Exception {
 		try (Builder builder = new Builder()) {
 			builder.setTrace(getLog().isDebugEnabled());
 
@@ -434,12 +440,15 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				else
 					builder.setProperty(Constants.BUNDLE_SYMBOLICNAME, createSymbolicName(a));
 
-			if (builder.getProperty(Constants.BUNDLE_VERSION) == null)
+			if (builder.getProperty(Constants.BUNDLE_VERSION) == null) {
+				Version v;
 				if (plugin != null)
-					builder.setProperty(Constants.BUNDLE_VERSION, plugin.version);
+					v = Version.parseVersion(plugin.version);
 				else
-					builder.setProperty(Constants.BUNDLE_VERSION,
-							MavenVersion.parseString(a.getVersion()).getOSGiVersion().toString());
+					v = CreateFeaturesMojo.createOsgiVersion(a.getVersion());
+				v = new Version(v.getMajor(), v.getMinor(), v.getMicro(), buildQualifer);
+				builder.setProperty(Constants.BUNDLE_VERSION, v.toString());
+			}
 
 			if (builder.getProperty(Constants.EXPORT_PACKAGE) == null)
 				builder.setProperty(Constants.EXPORT_PACKAGE, "*");
