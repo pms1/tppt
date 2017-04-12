@@ -484,6 +484,16 @@ public class RepositoryComparator {
 		return incompatibleChanges.isEmpty();
 	}
 
+	private boolean acceptableVersionChange(Version v1, Version v2) {
+		if (v1.getMajor() != v2.getMajor())
+			return false;
+		if (v1.getMinor() != v2.getMinor())
+			return false;
+		if (v1.getMicro() != v2.getMicro())
+			return false;
+		return (v1.getQualifier() == null) == (v2.getQualifier() == null);
+	}
+
 	private void compareArtifacts(ArtifactRepositoryFacade r1, FileId r1id, ArtifactFacade a1,
 			ArtifactRepositoryFacade r2, FileId r2id, ArtifactFacade a2, List<FileDelta> dest, List<Change> changes)
 			throws IOException {
@@ -505,13 +515,15 @@ public class RepositoryComparator {
 		switch (classifier1) {
 		case "osgi.bundle":
 			comparator = comparators.get(BundleComparator.HINT);
-			changes.add(new BundleVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
-					a2.getId().getVersion()));
+			if (acceptableVersionChange(a1.getId().getVersion(), a2.getId().getVersion()))
+				changes.add(new BundleVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
+						a2.getId().getVersion()));
 			break;
 		case "org.eclipse.update.feature":
 			comparator = comparators.get(FeatureComparator.HINT);
-			changes.add(new FeatureVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
-					a2.getId().getVersion()));
+			if (acceptableVersionChange(a1.getId().getVersion(), a2.getId().getVersion()))
+				changes.add(new FeatureVersionChange(a1.getId().getId(), file1, a1.getId().getVersion(), file2,
+						a2.getId().getVersion()));
 			break;
 		case "binary":
 			comparator = comparators.get(BinaryComparator.HINT);
