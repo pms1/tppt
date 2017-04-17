@@ -5,9 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -102,21 +102,21 @@ public class CreateCompositeRepository extends AbstractMojo {
 
 			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);
 
-			Set<File> dependentFiles = new HashSet<>();
+			Map<File, Boolean> dependentFiles = new HashMap<>();
 
 			n.accept(new DependencyNodeVisitor() {
 				@Override
 				public boolean visit(DependencyNode node) {
+					// ourselfves
 					if (node.getParent() == null)
 						return true;
 
 					if (node.getArtifact().getFile() == null)
 						throw new Error();
 
-					if (!dependentFiles.add(node.getArtifact().getFile()))
-						throw new Error();
+					dependentFiles.put(node.getArtifact().getFile(), node.getParent().getParent() == null);
 
-					return false;
+					return true;
 				}
 
 				@Override
@@ -141,8 +141,23 @@ public class CreateCompositeRepository extends AbstractMojo {
 			Path localPath = deployHelp.getPath(project, LocalDateTime.now());
 
 			for (MavenProject p : session.getProjects()) {
-				if (!dependentFiles.contains(p.getArtifact().getFile()))
+
+				Boolean b = dependentFiles.get(p.getArtifact().getFile());
+				if (b == null)
 					continue;
+
+				switch (p.getPackaging()) {
+				case "tppt-repository":
+				case "tppt-composite-repository":
+					break;
+				default:
+					if (b)
+						throw new MojoExecutionException(
+								"Direct dependencies must have packaging 'tppt-repository' or 'tppt-composite-repository': "
+										+ p.getArtifact());
+					else
+						continue;
+				}
 
 				String rel = relativize(localPath, deployHelp.getPath(p));
 

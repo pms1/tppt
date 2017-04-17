@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -113,6 +114,13 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		this.exclusionTransitives = new ExclusionSetFilter(exclusionTransitives);
 	}
 
+	enum RepositoryDependenciesBehaviour {
+		failure, ignore;
+	}
+
+	@Parameter(defaultValue = "failure")
+	private RepositoryDependenciesBehaviour repositoryDependencies;
+
 	@Parameter
 	private ArtifactFilter exclusions = new ExclusionSetFilter(Collections.emptySet());
 
@@ -202,6 +210,17 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	// Specification-Version: 5.2.3.Final
 	// Implementation-Url: http://hibernate.org
 
+	private static class WrappedMojoExecutionException extends RuntimeException {
+		WrappedMojoExecutionException(MojoExecutionException cause) {
+			super(cause);
+		}
+
+		@Override
+		public synchronized MojoExecutionException getCause() {
+			return (MojoExecutionException) super.getCause();
+		}
+	}
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
 
 		final Path repoDependencies = target.toPath().resolve("repository-source");
@@ -211,6 +230,24 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 		try {
 			Files.createDirectories(repoDependenciesPlugins);
+
+			Map<File, Artifact> reactorRepositories = new HashMap<>();
+
+			for (MavenProject p : session.getProjects()) {
+				switch (p.getPackaging()) {
+				case "tppt-repository":
+				case "tppt-composite-repository":
+					break;
+				default:
+					continue;
+				}
+
+				// We can safely ignore artifacts that are not build yet
+				if (p.getArtifact() == null || p.getArtifact().getFile() == null)
+					continue;
+
+				reactorRepositories.put(p.getArtifact().getFile(), p.getArtifact());
+			}
 
 			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
 			pbRequest.setLocalRepository(localRepository);
@@ -227,6 +264,19 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			n.accept(new DependencyNodeVisitor() {
 				@Override
 				public boolean visit(DependencyNode node) {
+					Artifact reactorDependency = reactorRepositories.get(node.getArtifact().getFile());
+					if (reactorDependency != null) {
+						switch (repositoryDependencies) {
+						case failure:
+							throw new WrappedMojoExecutionException(
+									new MojoExecutionException("Repository dependency to " + reactorDependency));
+						case ignore:
+							return false;
+						default:
+							throw new UnsupportedOperationException();
+						}
+					}
+
 					if (node.getArtifact() != project.getArtifact() && exclusions.include(node.getArtifact())) {
 						artifacts.add(node.getArtifact());
 					}
@@ -247,6 +297,10 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			for (Artifact a : artifacts) {
 				Plugin plugin = scanPlugin(a.getFile().toPath());
 				Path receipe = findReceipe(a);
+
+				if (!a.getFile().getName().endsWith(".jar"))
+					throw new MojoExecutionException(
+							"Unhandled dependency to non JAR file: " + a.getFile() + " from " + a);
 
 				if (plugin == null || receipe != null) {
 					plugin = createPlugin(a, plugin, buildQualifier, receipe,
@@ -302,6 +356,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					"version = 1\rmetadata.repository.factory.order = content.xml,\\!\rartifact.repository.factory.order = artifacts.xml,\\!\r"
 							.getBytes(StandardCharsets.US_ASCII));
 
+		} catch (WrappedMojoExecutionException e) {
+			throw e.getCause();
 		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (Exception e) {
