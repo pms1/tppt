@@ -50,12 +50,10 @@ public class DeploymentTarget {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				if (Files.exists(dir.resolve("p2.index"))) {
+				if (Files.exists(dir.resolve("p2.index")))
 					result.add(path.relativize(dir));
-					return FileVisitResult.SKIP_SUBTREE;
-				} else {
-					return super.preVisitDirectory(dir, attrs);
-				}
+
+				return super.preVisitDirectory(dir, attrs);
 			}
 		});
 
