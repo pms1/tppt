@@ -1371,10 +1371,17 @@ public class RepositoryComparator {
 					return false;
 				if (!d.getCurrentFile().getParent().equals(file2))
 					return false;
-				if (!d.getKey().equals("Bnd-LastModified"))
-					return false;
 
-				return true;
+				if (d.getKey().equals("Bnd-LastModified"))
+					return true;
+				if (d.getKey().equals("Created-By"))
+					return true;
+				if (d.getKey().equals("Build-Jdk"))
+					return true;
+				if (d.getKey().equals("Built-By"))
+					return true;
+
+				return false;
 			} else if (delta instanceof FeaturePluginVersionDelta) {
 				FeaturePluginVersionDelta d = (FeaturePluginVersionDelta) delta;
 				if (!d.getPluginId().equals(bundleId))
