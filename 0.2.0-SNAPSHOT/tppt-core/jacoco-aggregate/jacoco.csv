@@ -163,7 +163,7 @@ tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RequiredAdded,
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,VersionRangeParser,43,0,4,0,7,0,4,0,2,0
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,FileId,166,0,24,0,38,0,20,0,8,0
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,SemanticException,27,0,0,0,4,0,2,0,2,0
-tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.BundleVersionChange,889,0,152,0,184,0,84,0,7,0
+tppt-core/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.BundleVersionChange,910,0,158,0,190,0,87,0,7,0
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,ManifestHeaderDelta,42,0,2,0,8,0,3,0,2,0
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,DataCompression,5,0,0,0,2,0,1,0,1,0
 tppt-core/p2-tooling,com.github.pms1.tppt.p2,AbstractRepositoryFactory.new ValidationEventHandler() {...},8,0,0,0,2,0,2,0,2,0
