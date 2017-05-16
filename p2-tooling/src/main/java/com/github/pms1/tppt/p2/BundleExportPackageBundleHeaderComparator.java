@@ -32,7 +32,7 @@ public class BundleExportPackageBundleHeaderComparator extends AbstractManifestH
 		for (ManifestElement e : headers2) {
 			ManifestElement old = package2.put(e.getValue(), e);
 			if (old != null)
-				throw new UnparseableManifestException(file1, "Duplicate Export-Package " + e.getValue());
+				throw new UnparseableManifestException(file2, "Duplicate Export-Package " + e.getValue());
 		}
 
 		for (String p : Sets.union(package1.keySet(), package2.keySet())) {
