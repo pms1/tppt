@@ -15,9 +15,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -196,12 +196,12 @@ public class MyTransport extends Transport {
 
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
-<span class="nc" id="L199">		List&lt;String&gt; collect = mirrorFiles.values().stream().flatMap(p -&gt; Arrays.stream(p.mirrors).map(p1 -&gt; {</span>
+<span class="nc" id="L199">		Set&lt;String&gt; collect = mirrorFiles.values().stream().flatMap(p -&gt; Arrays.stream(p.mirrors).map(p1 -&gt; {</span>
 <span class="nc bnc" id="L200" title="All 2 branches missed.">			if (toDownload.toString().startsWith(p1.url.toString()))</span>
 <span class="nc" id="L201">				return p.base + toDownload.toString().substring(p1.url.toString().length());</span>
 			else
 <span class="nc" id="L203">				return null;</span>
-<span class="nc bnc" id="L204" title="All 2 branches missed.">		}).filter(p1 -&gt; p1 != null)).collect(Collectors.toList());</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">		}).filter(p1 -&gt; p1 != null)).collect(Collectors.toSet());</span>
 
 		Path p;
 <span class="nc bnc" id="L207" title="All 3 branches missed.">		switch (collect.size()) {</span>
@@ -212,7 +212,7 @@ public class MyTransport extends Transport {
 <span class="nc" id="L212">			p = toPath(URI.create(collect.iterator().next()));</span>
 <span class="nc" id="L213">			break;</span>
 		default:
-<span class="nc" id="L215">			throw new Error(&quot;collect=&quot; + collect);</span>
+<span class="nc" id="L215">			throw new Error(&quot;URI '&quot; + toDownload + &quot;' was de-mirrored to different URIs: &quot; + collect);</span>
 		}
 
 <span class="nc" id="L218">		IStatus result = mirror(toDownload, p, monitor);</span>

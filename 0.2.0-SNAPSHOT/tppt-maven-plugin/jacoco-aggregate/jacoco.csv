@@ -13,7 +13,7 @@ tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,Activator,
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.OfflineType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter.Entry,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.new IProgressMonitor() {...},15,0,0,0,10,0,9,0,9,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1058,0,135,0,185,0,86,0,15,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1062,0,135,0,185,0,86,0,15,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter,46,0,0,0,7,0,7,0,7,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.StatsType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.Type,70,0,0,0,3,0,4,0,4,0
