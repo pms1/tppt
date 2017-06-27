@@ -15,9 +15,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -196,12 +196,12 @@ public class MyTransport extends Transport {
 
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
-		List<String> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
+		Set<String> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
 			if (toDownload.toString().startsWith(p1.url.toString()))
 				return p.base + toDownload.toString().substring(p1.url.toString().length());
 			else
 				return null;
-		}).filter(p1 -> p1 != null)).collect(Collectors.toList());
+		}).filter(p1 -> p1 != null)).collect(Collectors.toSet());
 
 		Path p;
 		switch (collect.size()) {
@@ -212,7 +212,7 @@ public class MyTransport extends Transport {
 			p = toPath(URI.create(collect.iterator().next()));
 			break;
 		default:
-			throw new Error("collect=" + collect);
+			throw new Error("URI '" + toDownload + "' was de-mirrored to different URIs: " + collect);
 		}
 
 		IStatus result = mirror(toDownload, p, monitor);
