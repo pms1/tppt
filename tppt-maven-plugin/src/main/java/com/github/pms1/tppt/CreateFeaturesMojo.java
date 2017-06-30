@@ -207,8 +207,12 @@ public class CreateFeaturesMojo extends AbstractMojo {
 				Optional<Provided> fragment = u.getProvides().getProvided().stream()
 						.filter(p -> p.getNamespace().equals("osgi.fragment")).findAny();
 
+				// if this unit has no artifacts, ignore it (#28)
+				if (u.getArtifacts() == null)
+					continue;
+
 				if (u.getArtifacts().getArtifact().size() != 1)
-					throw new Error();
+					throw new Error("Unit with multiple artifacts: " + u.getId() + " " + u.getVersion());
 
 				MetadataArtifact a = Iterables.getOnlyElement(u.getArtifacts().getArtifact());
 				Path path = p2.getArtifactRepositoryFacade().getArtifactUri(new ArtifactId(a.getId(), a.getVersion()));
