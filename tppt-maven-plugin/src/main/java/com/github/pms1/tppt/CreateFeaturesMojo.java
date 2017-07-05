@@ -56,6 +56,7 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Provides;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
 import com.github.pms1.tppt.p2.jaxb.metadata.Requires;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
@@ -114,19 +115,24 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	private static Plugin scanPlugin(Path path, Plugin plugin)
 			throws IOException, BundleException, MojoExecutionException {
+		Preconditions.checkArgument(Files.isRegularFile(path), "Not a regular file: " + path);
+
 		long uncompressedSize = 0;
 
 		// Cannot use ZipInputStream since that leaves getCompressedSize() and
 		// getSize() of ZipEntry unfilled
-		try (ZipFile zf = new ZipFile(path.toFile())) {
-			for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
-				ZipEntry entry = e.nextElement();
+		if (!Files.isReadable(path))
+			try (ZipFile zf = new ZipFile(path.toFile())) {
+				for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
+					ZipEntry entry = e.nextElement();
 
-				if (entry.getSize() == -1)
-					throw new Error();
-				uncompressedSize += entry.getSize();
+					if (entry.getSize() == -1)
+						throw new Error();
+					uncompressedSize += entry.getSize();
+				}
+			} catch (java.util.zip.ZipException e) {
+				throw new RuntimeException("While opening " + path + ": " + e.getMessage());
 			}
-		}
 
 		plugin.download_size = Files.size(path) / 1024;
 		plugin.install_size = uncompressedSize / 1024;
