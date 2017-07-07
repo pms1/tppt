@@ -43,8 +43,11 @@ import org.eclipse.equinox.p2.metadata.IProvidedCapability;
 import org.eclipse.equinox.p2.query.IQuery;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
+import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepositoryManager;
+import org.eclipse.equinox.p2.repository.artifact.IProcessingStepDescriptor;
+import org.eclipse.equinox.p2.repository.artifact.spi.ArtifactDescriptor;
 import org.eclipse.equinox.p2.repository.metadata.IMetadataRepository;
 import org.eclipse.equinox.p2.repository.metadata.IMetadataRepositoryManager;
 import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
@@ -238,6 +241,7 @@ public class MirrorApplication implements IApplication {
 					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
 					ms.targetRepository, "");
 
+			// mirror all artifacts that have a non-packed descriptor
 			Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);
 			mirroring.setTransport(transport);
 			mirroring.setIncludePacked(false);
@@ -249,9 +253,62 @@ public class MirrorApplication implements IApplication {
 				print(multiStatus, "");
 				return 1;
 			}
+
+			// additionally mirror packed-only artifacts, unpacking them in the
+			// process
+			for (IArtifactKey a : finalIus.stream().flatMap(p -> p.getArtifacts().stream())
+					.toArray(IArtifactKey[]::new)) {
+
+				IArtifactDescriptor[] ad = sourceArtifactRepo.getArtifactDescriptors(a);
+				if (Arrays.stream(ad).anyMatch(
+						d -> !IArtifactDescriptor.FORMAT_PACKED.equals(d.getProperty(IArtifactDescriptor.FORMAT))))
+					continue;
+
+				if (ad.length != 1)
+					throw new Error();
+
+				ArtifactDescriptor d = new ArtifactDescriptor(a);
+
+				for (Map.Entry<String, String> e : ad[0].getProperties().entrySet()) {
+					switch (e.getKey()) {
+					case IArtifactDescriptor.FORMAT:
+					case IArtifactDescriptor.DOWNLOAD_MD5:
+					case IArtifactDescriptor.DOWNLOAD_SIZE:
+						break;
+					case IArtifactDescriptor.ARTIFACT_MD5:
+					case IArtifactDescriptor.ARTIFACT_SIZE:
+						// the unpacked jar does not necessarily match those,
+						// so we remove them
+						break;
+					default:
+						// this could be other checksums that potentially are
+						// wrong after unpacking. But it could also
+						// be use full metadata like maven coordinates. For the
+						// moment, we keep those properties
+						// to avoid loosing useful data
+						d.setProperty(e.getKey(), e.getValue());
+						break;
+					}
+				}
+
+				// copy all processing steps but the unpacking
+				d.setProcessingSteps(Arrays.stream(ad[0].getProcessingSteps())
+						.filter(e -> !e.getProcessorId().equals("org.eclipse.equinox.p2.processing.Pack200Unpacker"))
+						.toArray(IProcessingStepDescriptor[]::new));
+
+				try (java.io.OutputStream os = destinationArtifactRepo.getOutputStream(d)) {
+					IStatus status = sourceArtifactRepo.getArtifact(ad[0], os, new NullProgressMonitor());
+					if (!status.isOK()) {
+						print(status, "");
+						return 1;
+					}
+				}
+
+			}
 		}
 
 		return null;
+
 	}
 
 	static void print(IStatus s, String indent) {
