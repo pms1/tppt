@@ -15,7 +15,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 <span class="nc bnc" id="L15" title="All 2 branches missed.">		if (p.equals(&quot;/feature.xml&quot;)) {</span>
 <span class="nc" id="L16">			return featureXmlComparator;</span>
 		} else {
-<span class="nc" id="L18">			throw new Error(&quot;no comparator &quot; + p);</span>
+<span class="nc" id="L18">			return null;</span>
 		}
 	}
 
