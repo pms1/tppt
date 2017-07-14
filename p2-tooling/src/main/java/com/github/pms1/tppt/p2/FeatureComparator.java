@@ -15,7 +15,7 @@ public class FeatureComparator extends AbstractZipComparator {
 		if (p.equals("/feature.xml")) {
 			return featureXmlComparator;
 		} else {
-			throw new Error("no comparator " + p);
+			return null;
 		}
 	}
 
