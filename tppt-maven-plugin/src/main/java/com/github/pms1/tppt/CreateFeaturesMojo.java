@@ -8,7 +8,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.regex.Matcher;
@@ -162,6 +164,9 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		return qualifiedVersion;
 	}
 
+	private static Predicate<Required> isFeatureRequirement = r -> Objects.equals(r.getNamespace(),
+			"org.eclipse.equinox.p2.iu") && r.getName() != null && r.getName().endsWith(".feature.group");
+
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		try {
@@ -202,12 +207,9 @@ public class CreateFeaturesMojo extends AbstractMojo {
 					continue;
 
 				// filter requirements on feature iu's since eclipse does not
-				// resolve them in the
-				// target editor
+				// resolve them in the target editor
 				if (u.getRequires() != null && u.getRequires().getRequired() != null)
-					if (u.getRequires().getRequired().stream()
-							.anyMatch(r -> r.getNamespace().equals("org.eclipse.equinox.p2.iu")
-									&& r.getName().endsWith(".feature.group")))
+					if (u.getRequires().getRequired().stream().anyMatch(isFeatureRequirement))
 						continue;
 
 				Optional<Provided> fragment = u.getProvides().getProvided().stream()
