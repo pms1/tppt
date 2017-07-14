@@ -629,204 +629,203 @@ import com.google.common.reflect.TypeToken;
 <span class="nc" id="L629">		dest.addAll(oc.compare(md1, md2));</span>
 
 		{
-<span class="nc" id="L632">			Map&lt;ArtifactId, Unit&gt; c1 = getCategories(md1);</span>
-<span class="nc" id="L633">			Map&lt;ArtifactId, Unit&gt; c2 = getCategories(md2);</span>
-<span class="nc" id="L634">			Multimap&lt;String, ArtifactId&gt; id1 = HashMultimap.create();</span>
-<span class="nc" id="L635">			Multimap&lt;String, ArtifactId&gt; id2 = HashMultimap.create();</span>
+<span class="nc" id="L632">			Map&lt;UnitId, Unit&gt; c1 = getCategories(md1);</span>
+<span class="nc" id="L633">			Map&lt;UnitId, Unit&gt; c2 = getCategories(md2);</span>
+<span class="nc" id="L634">			Multimap&lt;String, UnitId&gt; id1 = HashMultimap.create();</span>
+<span class="nc" id="L635">			Multimap&lt;String, UnitId&gt; id2 = HashMultimap.create();</span>
 
 <span class="nc" id="L637">			c1.keySet().forEach(a -&gt; id1.put(a.getId(), a));</span>
 <span class="nc" id="L638">			c2.keySet().forEach(a -&gt; id2.put(a.getId(), a));</span>
 
 <span class="nc bnc" id="L640" title="All 2 branches missed.">			for (String a : Sets.union(id1.keySet(), id2.keySet())) {</span>
-<span class="nc" id="L641">				Set&lt;ArtifactId&gt; i1 = new HashSet&lt;&gt;(id1.get(a));</span>
-<span class="nc" id="L642">				Set&lt;ArtifactId&gt; i2 = new HashSet&lt;&gt;(id2.get(a));</span>
+<span class="nc" id="L641">				Set&lt;UnitId&gt; i1 = new HashSet&lt;&gt;(id1.get(a));</span>
+<span class="nc" id="L642">				Set&lt;UnitId&gt; i2 = new HashSet&lt;&gt;(id2.get(a));</span>
 
-<span class="nc" id="L644">				Set&lt;ArtifactId&gt; intersection = new HashSet&lt;&gt;(i1);</span>
+<span class="nc" id="L644">				Set&lt;UnitId&gt; intersection = new HashSet&lt;&gt;(i1);</span>
 <span class="nc" id="L645">				intersection.retainAll(i2);</span>
 
-<span class="nc bnc" id="L647" title="All 2 branches missed.">				for (ArtifactId id : intersection) {</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">				for (UnitId id : intersection) {</span>
 <span class="nc" id="L648">					i1.remove(id);</span>
 <span class="nc" id="L649">					i2.remove(id);</span>
 <span class="nc" id="L650">				}</span>
 
 <span class="nc bnc" id="L652" title="All 4 branches missed.">				if (i1.size() == 1 &amp;&amp; i2.size() == 1) {</span>
-
-<span class="nc" id="L654">					changes.add(new CategoryVersionChange(c1.get(Iterables.getOnlyElement(i1)),</span>
-<span class="nc" id="L655">							c2.get(Iterables.getOnlyElement(i2))));</span>
+<span class="nc" id="L653">					changes.add(new CategoryVersionChange(c1.get(Iterables.getOnlyElement(i1)),</span>
+<span class="nc" id="L654">							c2.get(Iterables.getOnlyElement(i2))));</span>
 				}
-<span class="nc" id="L657">			}</span>
+<span class="nc" id="L656">			}</span>
 
 		}
 
-<span class="nc" id="L661">		ObjectComparator&lt;FileDelta&gt; oc2 = createArtifactComparator().setDeltaCreator(new DeltaCreator&lt;FileDelta&gt;() {</span>
+<span class="nc" id="L660">		ObjectComparator&lt;FileDelta&gt; oc2 = createArtifactComparator().setDeltaCreator(new DeltaCreator&lt;FileDelta&gt;() {</span>
 
 			@Override
 			public FileDelta changed(OPath2 p, ChangeType change, Object m1, Object m2) {
 
-<span class="nc bnc" id="L666" title="All 2 branches missed.">				if (p.size() &gt; 3) {</span>
-<span class="nc" id="L667">					OPath2 unitPath = p.subPath(0, 3);</span>
-<span class="nc bnc" id="L668" title="All 2 branches missed.">					if (unitPath.getPath().equals(&quot;//artifacts/artifact&quot;)) {</span>
+<span class="nc bnc" id="L665" title="All 2 branches missed.">				if (p.size() &gt; 3) {</span>
+<span class="nc" id="L666">					OPath2 unitPath = p.subPath(0, 3);</span>
+<span class="nc bnc" id="L667" title="All 2 branches missed.">					if (unitPath.getPath().equals(&quot;//artifacts/artifact&quot;)) {</span>
 
-<span class="nc" id="L670">						OPath2 rel = p.subPath(4);</span>
-<span class="nc bnc" id="L671" title="All 2 branches missed.">						if (rel == null) {</span>
-<span class="nc" id="L672">							return new ArtifactsDelta(r1id, r2id, p, change);</span>
+<span class="nc" id="L669">						OPath2 rel = p.subPath(4);</span>
+<span class="nc bnc" id="L670" title="All 2 branches missed.">						if (rel == null) {</span>
+<span class="nc" id="L671">							return new ArtifactsDelta(r1id, r2id, p, change);</span>
 						} else {
-<span class="nc" id="L674">							Artifact uleft = (Artifact) p.subPath(3, 4).getLeft();</span>
-<span class="nc" id="L675">							Artifact uright = (Artifact) p.subPath(3, 4).getRight();</span>
+<span class="nc" id="L673">							Artifact uleft = (Artifact) p.subPath(3, 4).getLeft();</span>
+<span class="nc" id="L674">							Artifact uright = (Artifact) p.subPath(3, 4).getRight();</span>
 
-<span class="nc bnc" id="L677" title="All 2 branches missed.">							switch (change) {</span>
+<span class="nc bnc" id="L676" title="All 2 branches missed.">							switch (change) {</span>
 							case ADDED:
 							case REMOVED:
 							case CHANGED:
-<span class="nc" id="L681">								return new ArtifactDelta(r1id, uleft, r2id, uright, rel);</span>
+<span class="nc" id="L680">								return new ArtifactDelta(r1id, uleft, r2id, uright, rel);</span>
 							default:
-<span class="nc" id="L683">								throw new Error(change + &quot; &quot; + rel.getPath());</span>
+<span class="nc" id="L682">								throw new Error(change + &quot; &quot; + rel.getPath());</span>
 							}
 
 						}
 					}
 				}
 
-<span class="nc bnc" id="L690" title="All 6 branches missed.">				switch (p.getPath()) {</span>
+<span class="nc bnc" id="L689" title="All 6 branches missed.">				switch (p.getPath()) {</span>
 				case &quot;//properties/property[p2.timestamp]/value&quot;:
-<span class="nc" id="L692">					return new RepositoryTimestampDelta(r1id, Long.parseLong((String) m1), r2id,</span>
-<span class="nc" id="L693">							Long.parseLong((String) m2));</span>
+<span class="nc" id="L691">					return new RepositoryTimestampDelta(r1id, Long.parseLong((String) m1), r2id,</span>
+<span class="nc" id="L692">							Long.parseLong((String) m2));</span>
 				}
 
-<span class="nc" id="L696">				return new ArtifactsDelta(r1id, r2id, p, change);</span>
+<span class="nc" id="L695">				return new ArtifactsDelta(r1id, r2id, p, change);</span>
 			}
 
-<span class="nc" id="L699">		}).build();</span>
+<span class="nc" id="L698">		}).build();</span>
 
-<span class="nc" id="L701">		dest.addAll(oc2.compare(pr1.getArtifactRepositoryFacade().getRepository(),</span>
-<span class="nc" id="L702">				pr2.getArtifactRepositoryFacade().getRepository()));</span>
+<span class="nc" id="L700">		dest.addAll(oc2.compare(pr1.getArtifactRepositoryFacade().getRepository(),</span>
+<span class="nc" id="L701">				pr2.getArtifactRepositoryFacade().getRepository()));</span>
 
-<span class="nc" id="L704">		Multimap&lt;String, ArtifactId&gt; id1 = HashMultimap.create();</span>
-<span class="nc" id="L705">		Multimap&lt;String, ArtifactId&gt; id2 = HashMultimap.create();</span>
+<span class="nc" id="L703">		Multimap&lt;String, ArtifactId&gt; id1 = HashMultimap.create();</span>
+<span class="nc" id="L704">		Multimap&lt;String, ArtifactId&gt; id2 = HashMultimap.create();</span>
 
-<span class="nc" id="L707">		r1.getArtifacts().values().forEach(a -&gt; id1.put(a.getId().getId(), a.getId()));</span>
-<span class="nc" id="L708">		r2.getArtifacts().values().forEach(a -&gt; id2.put(a.getId().getId(), a.getId()));</span>
+<span class="nc" id="L706">		r1.getArtifacts().values().forEach(a -&gt; id1.put(a.getId().getId(), a.getId()));</span>
+<span class="nc" id="L707">		r2.getArtifacts().values().forEach(a -&gt; id2.put(a.getId().getId(), a.getId()));</span>
 
-<span class="nc bnc" id="L710" title="All 2 branches missed.">		for (String a : Sets.union(id1.keySet(), id2.keySet())) {</span>
-<span class="nc" id="L711">			Set&lt;ArtifactId&gt; i1 = new HashSet&lt;&gt;(id1.get(a));</span>
-<span class="nc" id="L712">			Set&lt;ArtifactId&gt; i2 = new HashSet&lt;&gt;(id2.get(a));</span>
+<span class="nc bnc" id="L709" title="All 2 branches missed.">		for (String a : Sets.union(id1.keySet(), id2.keySet())) {</span>
+<span class="nc" id="L710">			Set&lt;ArtifactId&gt; i1 = new HashSet&lt;&gt;(id1.get(a));</span>
+<span class="nc" id="L711">			Set&lt;ArtifactId&gt; i2 = new HashSet&lt;&gt;(id2.get(a));</span>
 
-<span class="nc" id="L714">			Set&lt;ArtifactId&gt; intersection = new HashSet&lt;&gt;(i1);</span>
-<span class="nc" id="L715">			intersection.retainAll(i2);</span>
+<span class="nc" id="L713">			Set&lt;ArtifactId&gt; intersection = new HashSet&lt;&gt;(i1);</span>
+<span class="nc" id="L714">			intersection.retainAll(i2);</span>
 
-<span class="nc bnc" id="L717" title="All 2 branches missed.">			for (ArtifactId id : intersection) {</span>
-<span class="nc" id="L718">				compareArtifacts(r1, r1id, r1.getArtifacts().get(id), r2, r2id, r2.getArtifacts().get(id), dest,</span>
+<span class="nc bnc" id="L716" title="All 2 branches missed.">			for (ArtifactId id : intersection) {</span>
+<span class="nc" id="L717">				compareArtifacts(r1, r1id, r1.getArtifacts().get(id), r2, r2id, r2.getArtifacts().get(id), dest,</span>
 						changes);
 
-<span class="nc" id="L721">				i1.remove(id);</span>
-<span class="nc" id="L722">				i2.remove(id);</span>
-<span class="nc" id="L723">			}</span>
+<span class="nc" id="L720">				i1.remove(id);</span>
+<span class="nc" id="L721">				i2.remove(id);</span>
+<span class="nc" id="L722">			}</span>
 
-<span class="nc bnc" id="L725" title="All 4 branches missed.">			if (i1.size() == 1 &amp;&amp; i2.size() == 1) {</span>
-<span class="nc" id="L726">				compareArtifacts(r1, r1id, r1.getArtifacts().get(Iterables.getOnlyElement(i1)), r2, r2id,</span>
-<span class="nc" id="L727">						r2.getArtifacts().get(Iterables.getOnlyElement(i2)), dest, changes);</span>
+<span class="nc bnc" id="L724" title="All 4 branches missed.">			if (i1.size() == 1 &amp;&amp; i2.size() == 1) {</span>
+<span class="nc" id="L725">				compareArtifacts(r1, r1id, r1.getArtifacts().get(Iterables.getOnlyElement(i1)), r2, r2id,</span>
+<span class="nc" id="L726">						r2.getArtifacts().get(Iterables.getOnlyElement(i2)), dest, changes);</span>
 			} else {
-<span class="nc bnc" id="L729" title="All 2 branches missed.">				for (ArtifactId id : i1)</span>
-<span class="nc" id="L730">					dest.add(new ArtifactRemovedDelta(r1id, r2id, render(r1.getArtifacts().get(id)), id));</span>
-<span class="nc bnc" id="L731" title="All 2 branches missed.">				for (ArtifactId id : i2)</span>
-<span class="nc" id="L732">					dest.add(new ArtifactAddedDelta(r1id, r2id, id, render(r2.getArtifacts().get(id))));</span>
+<span class="nc bnc" id="L728" title="All 2 branches missed.">				for (ArtifactId id : i1)</span>
+<span class="nc" id="L729">					dest.add(new ArtifactRemovedDelta(r1id, r2id, render(r1.getArtifacts().get(id)), id));</span>
+<span class="nc bnc" id="L730" title="All 2 branches missed.">				for (ArtifactId id : i2)</span>
+<span class="nc" id="L731">					dest.add(new ArtifactAddedDelta(r1id, r2id, id, render(r2.getArtifacts().get(id))));</span>
 			}
-<span class="nc" id="L734">		}</span>
+<span class="nc" id="L733">		}</span>
 
-<span class="nc" id="L736">		List&lt;String&gt; incompatibleChanges = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L735">		List&lt;String&gt; incompatibleChanges = new ArrayList&lt;&gt;();</span>
 
-<span class="nc bnc" id="L738" title="All 2 branches missed.">		for (FileDelta d : dest)</span>
-<span class="nc bnc" id="L739" title="All 2 branches missed.">			if (!changes.stream().anyMatch(c -&gt; c.accept(d)))</span>
-<span class="nc" id="L740">				incompatibleChanges.add(render(d));</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">		for (FileDelta d : dest)</span>
+<span class="nc bnc" id="L738" title="All 2 branches missed.">			if (!changes.stream().anyMatch(c -&gt; c.accept(d)))</span>
+<span class="nc" id="L739">				incompatibleChanges.add(render(d));</span>
 
-<span class="nc bnc" id="L742" title="All 2 branches missed.">		for (Change c : changes)</span>
-<span class="nc" id="L743">			c.check(incompatibleChanges::add);</span>
+<span class="nc bnc" id="L741" title="All 2 branches missed.">		for (Change c : changes)</span>
+<span class="nc" id="L742">			c.check(incompatibleChanges::add);</span>
 
-<span class="nc" id="L745">		incompatibleChanges.forEach(p -&gt; logger.info(&quot;Incompatible change: &quot; + p));</span>
+<span class="nc" id="L744">		incompatibleChanges.forEach(p -&gt; logger.info(&quot;Incompatible change: &quot; + p));</span>
 
-<span class="nc" id="L747">		return incompatibleChanges.isEmpty();</span>
+<span class="nc" id="L746">		return incompatibleChanges.isEmpty();</span>
 	}
 
-<span class="nc bnc" id="L750" title="All 2 branches missed.">	private static Predicate&lt;Unit&gt; isCategory = p -&gt; p.getProperties() != null</span>
-<span class="nc bnc" id="L751" title="All 2 branches missed.">			&amp;&amp; p.getProperties().getProperty().stream().anyMatch(</span>
-<span class="nc bnc" id="L752" title="All 4 branches missed.">					p1 -&gt; p1.getName().equals(&quot;org.eclipse.equinox.p2.type.category&quot;) &amp;&amp; p1.getValue().equals(&quot;true&quot;));</span>
+<span class="nc bnc" id="L749" title="All 2 branches missed.">	private static Predicate&lt;Unit&gt; isCategory = p -&gt; p.getProperties() != null</span>
+<span class="nc bnc" id="L750" title="All 2 branches missed.">			&amp;&amp; p.getProperties().getProperty().stream().anyMatch(</span>
+<span class="nc bnc" id="L751" title="All 4 branches missed.">					p1 -&gt; p1.getName().equals(&quot;org.eclipse.equinox.p2.type.category&quot;) &amp;&amp; p1.getValue().equals(&quot;true&quot;));</span>
 
-	private static Map&lt;ArtifactId, Unit&gt; getCategories(MetadataRepository md1) {
+	private static Map&lt;UnitId, Unit&gt; getCategories(MetadataRepository md1) {
 
-<span class="nc bnc" id="L756" title="All 2 branches missed.">		if (md1.getUnits() == null)</span>
-<span class="nc" id="L757">			return Collections.emptyMap();</span>
+<span class="nc bnc" id="L755" title="All 2 branches missed.">		if (md1.getUnits() == null)</span>
+<span class="nc" id="L756">			return Collections.emptyMap();</span>
 
-<span class="nc" id="L759">		return md1.getUnits().getUnit().stream().filter(isCategory)</span>
-<span class="nc" id="L760">				.collect(Collectors.toMap(u -&gt; new ArtifactId(u.getId(), u.getVersion()), Function.identity()));</span>
+<span class="nc" id="L758">		return md1.getUnits().getUnit().stream().filter(isCategory)</span>
+<span class="nc" id="L759">				.collect(Collectors.toMap(u -&gt; new UnitId(u.getId(), u.getVersion()), Function.identity()));</span>
 
 	}
 
 	private String render(FileDelta d1) {
-<span class="nc" id="L765">		MessageFormat messageFormat = new MessageFormat(d1.getDescription());</span>
+<span class="nc" id="L764">		MessageFormat messageFormat = new MessageFormat(d1.getDescription());</span>
 
-<span class="nc" id="L767">		Object[] o1 = d1.getParameters().clone();</span>
-<span class="nc bnc" id="L768" title="All 2 branches missed.">		for (int i = o1.length; i-- &gt; 0;)</span>
-<span class="nc" id="L769">			o1[i] = render(o1[i]);</span>
-<span class="nc" id="L770">		return d1.getBaselineFile() + &quot; -&gt; &quot; + d1.getCurrentFile() + &quot;: &quot; + messageFormat.format(o1);</span>
+<span class="nc" id="L766">		Object[] o1 = d1.getParameters().clone();</span>
+<span class="nc bnc" id="L767" title="All 2 branches missed.">		for (int i = o1.length; i-- &gt; 0;)</span>
+<span class="nc" id="L768">			o1[i] = render(o1[i]);</span>
+<span class="nc" id="L769">		return d1.getBaselineFile() + &quot; -&gt; &quot; + d1.getCurrentFile() + &quot;: &quot; + messageFormat.format(o1);</span>
 	}
 
-<span class="nc" id="L773">	public static abstract class Change {</span>
+<span class="nc" id="L772">	public static abstract class Change {</span>
 		abstract boolean accept(FileDelta delta);
 
 		abstract void check(Consumer&lt;String&gt; change);
 	}
 
-<span class="nc bnc" id="L779" title="All 2 branches missed.">	private static final Predicate&lt;SearchFilter&gt; featureFilter = p -&gt; p != null</span>
-<span class="nc bnc" id="L780" title="All 2 branches missed.">			&amp;&amp; printer.print(p).equals(&quot;(org.eclipse.update.install.features=true)&quot;);</span>
+<span class="nc bnc" id="L778" title="All 2 branches missed.">	private static final Predicate&lt;SearchFilter&gt; featureFilter = p -&gt; p != null</span>
+<span class="nc bnc" id="L779" title="All 2 branches missed.">			&amp;&amp; printer.print(p).equals(&quot;(org.eclipse.update.install.features=true)&quot;);</span>
 
 	class CategoryVersionChange extends Change {
 		final Unit left;
 		final Unit right;
 
-<span class="nc" id="L786">		public CategoryVersionChange(Unit left, Unit right) {</span>
-<span class="nc" id="L787">			Preconditions.checkNotNull(left);</span>
-<span class="nc" id="L788">			Preconditions.checkNotNull(right);</span>
-<span class="nc" id="L789">			this.left = left;</span>
-<span class="nc" id="L790">			this.right = right;</span>
-<span class="nc" id="L791">		}</span>
+<span class="nc" id="L785">		public CategoryVersionChange(Unit left, Unit right) {</span>
+<span class="nc" id="L786">			Preconditions.checkNotNull(left);</span>
+<span class="nc" id="L787">			Preconditions.checkNotNull(right);</span>
+<span class="nc" id="L788">			this.left = left;</span>
+<span class="nc" id="L789">			this.right = right;</span>
+<span class="nc" id="L790">		}</span>
 
 		@Override
 		boolean accept(FileDelta delta) {
-<span class="nc bnc" id="L795" title="All 2 branches missed.">			if (!(delta instanceof AbstractUnitDelta))</span>
-<span class="nc" id="L796">				return false;</span>
+<span class="nc bnc" id="L794" title="All 2 branches missed.">			if (!(delta instanceof AbstractUnitDelta))</span>
+<span class="nc" id="L795">				return false;</span>
 
-<span class="nc" id="L798">			AbstractUnitDelta d1 = (AbstractUnitDelta) delta;</span>
-<span class="nc bnc" id="L799" title="All 4 branches missed.">			if (d1.left != left || d1.right != right)</span>
-<span class="nc" id="L800">				return false;</span>
+<span class="nc" id="L797">			AbstractUnitDelta d1 = (AbstractUnitDelta) delta;</span>
+<span class="nc bnc" id="L798" title="All 4 branches missed.">			if (d1.left != left || d1.right != right)</span>
+<span class="nc" id="L799">				return false;</span>
 
-<span class="nc bnc" id="L802" title="All 2 branches missed.">			if (delta instanceof ProvidedRemoved) {</span>
-<span class="nc" id="L803">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
+<span class="nc bnc" id="L801" title="All 2 branches missed.">			if (delta instanceof ProvidedRemoved) {</span>
+<span class="nc" id="L802">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
 
-<span class="nc bnc" id="L805" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, d.left.getId(), d.left.getVersion()))</span>
-<span class="nc" id="L806">					return true;</span>
-<span class="nc bnc" id="L807" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
-<span class="nc" id="L808">				ProvidedAdded d = (ProvidedAdded) delta;</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, d.left.getId(), d.left.getVersion()))</span>
+<span class="nc" id="L805">					return true;</span>
+<span class="nc bnc" id="L806" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
+<span class="nc" id="L807">				ProvidedAdded d = (ProvidedAdded) delta;</span>
 
-<span class="nc bnc" id="L810" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, d.right.getId(), d.right.getVersion()))</span>
-<span class="nc" id="L811">					return true;</span>
-<span class="nc bnc" id="L812" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
-<span class="nc" id="L813">				UnitDelta d = (UnitDelta) delta;</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, d.right.getId(), d.right.getVersion()))</span>
+<span class="nc" id="L810">					return true;</span>
+<span class="nc bnc" id="L811" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
+<span class="nc" id="L812">				UnitDelta d = (UnitDelta) delta;</span>
 
-<span class="nc bnc" id="L815" title="All 6 branches missed.">				switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L814" title="All 6 branches missed.">				switch (d.path.getPath()) {</span>
 				case &quot;/version&quot;:
-<span class="nc bnc" id="L817" title="All 2 branches missed.">					return d.path.getLeft().equals(d.left.getVersion())</span>
-<span class="nc bnc" id="L818" title="All 2 branches missed.">							&amp;&amp; d.path.getRight().equals(d.right.getVersion());</span>
+<span class="nc bnc" id="L816" title="All 2 branches missed.">					return d.path.getLeft().equals(d.left.getVersion())</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">							&amp;&amp; d.path.getRight().equals(d.right.getVersion());</span>
 				default:
-<span class="nc" id="L820">					return false;</span>
+<span class="nc" id="L819">					return false;</span>
 				}
 			}
 
-<span class="nc" id="L824">			return false;</span>
+<span class="nc" id="L823">			return false;</span>
 		}
 
 		@Override
 		void check(Consumer&lt;String&gt; change) {
-<span class="nc" id="L829">		}</span>
+<span class="nc" id="L828">		}</span>
 	}
 
 	static class FeatureVersionChange extends ArtifactVersionChange {
@@ -836,398 +835,340 @@ import com.google.common.reflect.TypeToken;
 		private final Version v1;
 		private final Version v2;
 
-<span class="nc" id="L839">		private Set&lt;Unit&gt; addedUnit = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L840">		private Set&lt;Unit&gt; removedUnit = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L838">		private Set&lt;Unit&gt; addedUnit = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L839">		private Set&lt;Unit&gt; removedUnit = new HashSet&lt;&gt;();</span>
 
 		@Override
 		void check(Consumer&lt;String&gt; incompatibleChanges) {
-<span class="nc" id="L844">			super.check(incompatibleChanges);</span>
+<span class="nc" id="L843">			super.check(incompatibleChanges);</span>
 
-<span class="nc bnc" id="L846" title="All 2 branches missed.">			for (Unit u : Sets.union(addedUnit, removedUnit)) {</span>
-<span class="nc" id="L847">				boolean a = addedUnit.contains(u);</span>
-<span class="nc" id="L848">				boolean r = removedUnit.contains(u);</span>
+<span class="nc bnc" id="L845" title="All 2 branches missed.">			for (Unit u : Sets.union(addedUnit, removedUnit)) {</span>
+<span class="nc" id="L846">				boolean a = addedUnit.contains(u);</span>
+<span class="nc" id="L847">				boolean r = removedUnit.contains(u);</span>
 
-<span class="nc bnc" id="L850" title="All 2 branches missed.">				if (!a)</span>
-<span class="nc" id="L851">					incompatibleChanges.accept(&quot;Only removed: &quot; + u + &quot; &quot; + featureId);</span>
-<span class="nc bnc" id="L852" title="All 2 branches missed.">				if (!r)</span>
-<span class="nc" id="L853">					incompatibleChanges.accept(&quot;Only added: &quot; + u + &quot; &quot; + featureId);</span>
-<span class="nc" id="L854">			}</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">				if (!a)</span>
+<span class="nc" id="L850">					incompatibleChanges.accept(&quot;Only removed: &quot; + u + &quot; &quot; + featureId);</span>
+<span class="nc bnc" id="L851" title="All 2 branches missed.">				if (!r)</span>
+<span class="nc" id="L852">					incompatibleChanges.accept(&quot;Only added: &quot; + u + &quot; &quot; + featureId);</span>
+<span class="nc" id="L853">			}</span>
 
-<span class="nc" id="L856">			return;</span>
+<span class="nc" id="L855">			return;</span>
 		}
 
-<span class="nc" id="L859">		public FeatureVersionChange(String featureId, FileId file1, Version v1, FileId file2, Version v2) {</span>
-<span class="nc" id="L860">			Preconditions.checkNotNull(featureId);</span>
-<span class="nc bnc" id="L861" title="All 2 branches missed.">			Preconditions.checkArgument(!featureId.isEmpty());</span>
-<span class="nc" id="L862">			this.featureId = featureId;</span>
-<span class="nc" id="L863">			Preconditions.checkNotNull(file1);</span>
-<span class="nc" id="L864">			this.file1 = file1;</span>
-<span class="nc" id="L865">			Preconditions.checkNotNull(v1);</span>
-<span class="nc" id="L866">			this.v1 = v1;</span>
-<span class="nc" id="L867">			Preconditions.checkNotNull(file2);</span>
-<span class="nc" id="L868">			this.file2 = file2;</span>
-<span class="nc" id="L869">			Preconditions.checkNotNull(v2);</span>
-<span class="nc" id="L870">			this.v2 = v2;</span>
-<span class="nc" id="L871">		}</span>
+<span class="nc" id="L858">		public FeatureVersionChange(String featureId, FileId file1, Version v1, FileId file2, Version v2) {</span>
+<span class="nc" id="L859">			Preconditions.checkNotNull(featureId);</span>
+<span class="nc bnc" id="L860" title="All 2 branches missed.">			Preconditions.checkArgument(!featureId.isEmpty());</span>
+<span class="nc" id="L861">			this.featureId = featureId;</span>
+<span class="nc" id="L862">			Preconditions.checkNotNull(file1);</span>
+<span class="nc" id="L863">			this.file1 = file1;</span>
+<span class="nc" id="L864">			Preconditions.checkNotNull(v1);</span>
+<span class="nc" id="L865">			this.v1 = v1;</span>
+<span class="nc" id="L866">			Preconditions.checkNotNull(file2);</span>
+<span class="nc" id="L867">			this.file2 = file2;</span>
+<span class="nc" id="L868">			Preconditions.checkNotNull(v2);</span>
+<span class="nc" id="L869">			this.v2 = v2;</span>
+<span class="nc" id="L870">		}</span>
 
 		@Override
 		boolean accept(FileDelta delta) {
-<span class="nc bnc" id="L875" title="All 2 branches missed.">			if (delta instanceof FeatureVersionDelta) {</span>
-<span class="nc" id="L876">				FeatureVersionDelta d = (FeatureVersionDelta) delta;</span>
-<span class="nc bnc" id="L877" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
-<span class="nc" id="L878">					return false;</span>
-<span class="nc bnc" id="L879" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
-<span class="nc" id="L880">					return false;</span>
-<span class="nc bnc" id="L881" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
-<span class="nc" id="L882">					return false;</span>
-<span class="nc bnc" id="L883" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
-<span class="nc" id="L884">					return false;</span>
-<span class="nc" id="L885">				return true;</span>
-<span class="nc bnc" id="L886" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
-<span class="nc" id="L887">				ProvidedAdded d = (ProvidedAdded) delta;</span>
+<span class="nc bnc" id="L874" title="All 2 branches missed.">			if (delta instanceof FeatureVersionDelta) {</span>
+<span class="nc" id="L875">				FeatureVersionDelta d = (FeatureVersionDelta) delta;</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
+<span class="nc" id="L877">					return false;</span>
+<span class="nc bnc" id="L878" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
+<span class="nc" id="L879">					return false;</span>
+<span class="nc bnc" id="L880" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
+<span class="nc" id="L881">					return false;</span>
+<span class="nc bnc" id="L882" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
+<span class="nc" id="L883">					return false;</span>
+<span class="nc" id="L884">				return true;</span>
+<span class="nc bnc" id="L885" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
+<span class="nc" id="L886">				ProvidedAdded d = (ProvidedAdded) delta;</span>
 
 				// check unit is our right feature
-<span class="nc bnc" id="L890" title="All 2 branches missed.">				if (hasOnlyArtifact(d.right, &quot;org.eclipse.update.feature&quot;, featureId, v2)) {</span>
-<span class="nc bnc" id="L891" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.jar&quot;, v2))</span>
-<span class="nc" id="L892">						return true;</span>
-<span class="nc bnc" id="L893" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.update.feature&quot;, featureId, v2))</span>
-<span class="nc" id="L894">						return true;</span>
+<span class="nc bnc" id="L889" title="All 2 branches missed.">				if (hasOnlyArtifact(d.right, &quot;org.eclipse.update.feature&quot;, featureId, v2)) {</span>
+<span class="nc bnc" id="L890" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.jar&quot;, v2))</span>
+<span class="nc" id="L891">						return true;</span>
+<span class="nc bnc" id="L892" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.update.feature&quot;, featureId, v2))</span>
+<span class="nc" id="L893">						return true;</span>
 				}
 
-<span class="nc bnc" id="L897" title="All 2 branches missed.">				if (is(d.right, featureId + &quot;.feature.group&quot;, v2)) {</span>
-<span class="nc bnc" id="L898" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.group&quot;, v2))</span>
-<span class="nc" id="L899">						return true;</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">				if (is(d.right, featureId + &quot;.feature.group&quot;, v2)) {</span>
+<span class="nc bnc" id="L897" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.group&quot;, v2))</span>
+<span class="nc" id="L898">						return true;</span>
 				}
 
-<span class="nc" id="L902">				return false;</span>
-<span class="nc bnc" id="L903" title="All 2 branches missed.">			} else if (delta instanceof ProvidedRemoved) {</span>
-<span class="nc" id="L904">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
+<span class="nc" id="L901">				return false;</span>
+<span class="nc bnc" id="L902" title="All 2 branches missed.">			} else if (delta instanceof ProvidedRemoved) {</span>
+<span class="nc" id="L903">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
 
 				// check unit is our left feature
-<span class="nc bnc" id="L907" title="All 2 branches missed.">				if (hasOnlyArtifact(d.left, &quot;org.eclipse.update.feature&quot;, featureId, v1)) {</span>
-<span class="nc bnc" id="L908" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.jar&quot;, v1))</span>
-<span class="nc" id="L909">						return true;</span>
-<span class="nc bnc" id="L910" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.update.feature&quot;, featureId, v1))</span>
-<span class="nc" id="L911">						return true;</span>
+<span class="nc bnc" id="L906" title="All 2 branches missed.">				if (hasOnlyArtifact(d.left, &quot;org.eclipse.update.feature&quot;, featureId, v1)) {</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.jar&quot;, v1))</span>
+<span class="nc" id="L908">						return true;</span>
+<span class="nc bnc" id="L909" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.update.feature&quot;, featureId, v1))</span>
+<span class="nc" id="L910">						return true;</span>
 				}
 
-<span class="nc bnc" id="L914" title="All 2 branches missed.">				if (is(d.left, featureId + &quot;.feature.group&quot;, v1)) {</span>
-<span class="nc bnc" id="L915" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.group&quot;, v1))</span>
-<span class="nc" id="L916">						return true;</span>
+<span class="nc bnc" id="L913" title="All 2 branches missed.">				if (is(d.left, featureId + &quot;.feature.group&quot;, v1)) {</span>
+<span class="nc bnc" id="L914" title="All 2 branches missed.">					if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, featureId + &quot;.feature.group&quot;, v1))</span>
+<span class="nc" id="L915">						return true;</span>
 				}
 
-<span class="nc" id="L919">				return false;</span>
-<span class="nc bnc" id="L920" title="All 2 branches missed.">			} else if (delta instanceof RequiredAdded) {</span>
-<span class="nc" id="L921">				RequiredAdded d = (RequiredAdded) delta;</span>
+<span class="nc" id="L918">				return false;</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">			} else if (delta instanceof RequiredAdded) {</span>
+<span class="nc" id="L920">				RequiredAdded d = (RequiredAdded) delta;</span>
 
-<span class="nc bnc" id="L923" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
-<span class="nc" id="L924">					if (new RequiredMatcher() //</span>
-<span class="nc" id="L925">							.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L926">							.withName((featureId + &quot;.feature.jar&quot;)::equals) //</span>
-<span class="nc" id="L927">							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2,</span>
+<span class="nc bnc" id="L922" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
+<span class="nc" id="L923">					if (new RequiredMatcher() //</span>
+<span class="nc" id="L924">							.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L925">							.withName((featureId + &quot;.feature.jar&quot;)::equals) //</span>
+<span class="nc" id="L926">							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2,</span>
 									VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc" id="L929">							.withFilter(featureFilter) //</span>
-<span class="nc bnc" id="L930" title="All 2 branches missed.">							.test(d.required))</span>
-<span class="nc" id="L931">						return true;</span>
+<span class="nc" id="L928">							.withFilter(featureFilter) //</span>
+<span class="nc bnc" id="L929" title="All 2 branches missed.">							.test(d.required))</span>
+<span class="nc" id="L930">						return true;</span>
 				}
 
-<span class="nc" id="L934">				if (new RequiredMatcher() //</span>
-<span class="nc" id="L935">						.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L936">						.withName((featureId + &quot;.feature.group&quot;)::equals) //</span>
-<span class="nc" id="L937">						.withRange(</span>
+<span class="nc" id="L933">				if (new RequiredMatcher() //</span>
+<span class="nc" id="L934">						.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L935">						.withName((featureId + &quot;.feature.group&quot;)::equals) //</span>
+<span class="nc" id="L936">						.withRange(</span>
 								new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc bnc" id="L939" title="All 2 branches missed.">						.test(d.required)) {</span>
-<span class="nc" id="L940">					addedUnit.add(d.right);</span>
-<span class="nc" id="L941">					return true;</span>
+<span class="nc bnc" id="L938" title="All 2 branches missed.">						.test(d.required)) {</span>
+<span class="nc" id="L939">					addedUnit.add(d.right);</span>
+<span class="nc" id="L940">					return true;</span>
 				}
 
-<span class="nc" id="L944">				return false;</span>
-<span class="nc bnc" id="L945" title="All 2 branches missed.">			} else if (delta instanceof RequiredRemoved) {</span>
-<span class="nc" id="L946">				RequiredRemoved d = (RequiredRemoved) delta;</span>
+<span class="nc" id="L943">				return false;</span>
+<span class="nc bnc" id="L944" title="All 2 branches missed.">			} else if (delta instanceof RequiredRemoved) {</span>
+<span class="nc" id="L945">				RequiredRemoved d = (RequiredRemoved) delta;</span>
 
-<span class="nc bnc" id="L948" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
-<span class="nc" id="L949">					if (new RequiredMatcher() //</span>
-<span class="nc" id="L950">							.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L951">							.withName((featureId + &quot;.feature.jar&quot;)::equals) //</span>
-<span class="nc" id="L952">							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1,</span>
+<span class="nc bnc" id="L947" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
+<span class="nc" id="L948">					if (new RequiredMatcher() //</span>
+<span class="nc" id="L949">							.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L950">							.withName((featureId + &quot;.feature.jar&quot;)::equals) //</span>
+<span class="nc" id="L951">							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v1, v1,</span>
 									VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc" id="L954">							.withFilter(featureFilter) //</span>
-<span class="nc bnc" id="L955" title="All 2 branches missed.">							.test(d.required))</span>
-<span class="nc" id="L956">						return true;</span>
+<span class="nc" id="L953">							.withFilter(featureFilter) //</span>
+<span class="nc bnc" id="L954" title="All 2 branches missed.">							.test(d.required))</span>
+<span class="nc" id="L955">						return true;</span>
 				}
 
-<span class="nc" id="L959">				if (new RequiredMatcher().withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L960">						.withName((featureId + &quot;.feature.group&quot;)::equals) //</span>
-<span class="nc" id="L961">						.withRange(</span>
+<span class="nc" id="L958">				if (new RequiredMatcher().withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L959">						.withName((featureId + &quot;.feature.group&quot;)::equals) //</span>
+<span class="nc" id="L960">						.withRange(</span>
 								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc bnc" id="L963" title="All 2 branches missed.">						.test(d.required)) {</span>
-<span class="nc" id="L964">					removedUnit.add(d.right);</span>
-<span class="nc" id="L965">					return true;</span>
+<span class="nc bnc" id="L962" title="All 2 branches missed.">						.test(d.required)) {</span>
+<span class="nc" id="L963">					removedUnit.add(d.right);</span>
+<span class="nc" id="L964">					return true;</span>
 				}
 
-<span class="nc" id="L968">				return false;</span>
-<span class="nc bnc" id="L969" title="All 2 branches missed.">			} else if (delta instanceof ArtifactDelta) {</span>
-<span class="nc" id="L970">				ArtifactDelta d = (ArtifactDelta) delta;</span>
+<span class="nc" id="L967">				return false;</span>
+<span class="nc bnc" id="L968" title="All 2 branches missed.">			} else if (delta instanceof ArtifactDelta) {</span>
+<span class="nc" id="L969">				ArtifactDelta d = (ArtifactDelta) delta;</span>
 
-<span class="nc bnc" id="L972" title="All 12 branches missed.">				switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L971" title="All 12 branches missed.">				switch (d.path.getPath()) {</span>
 				case &quot;/properties/property[download.md5]/value&quot;:
 				case &quot;/properties/property[artifact.size]/value&quot;:
 				case &quot;/properties/property[download.size]/value&quot;:
-<span class="nc" id="L976">					return true;</span>
+<span class="nc" id="L975">					return true;</span>
 				}
 
-<span class="nc bnc" id="L979" title="All 2 branches missed.">				if (isFeatureJar(d)) {</span>
-<span class="nc bnc" id="L980" title="All 6 branches missed.">					switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L978" title="All 2 branches missed.">				if (isFeatureJar(d)) {</span>
+<span class="nc bnc" id="L979" title="All 6 branches missed.">					switch (d.path.getPath()) {</span>
 					case &quot;/version&quot;:
-<span class="nc bnc" id="L982" title="All 4 branches missed.">						if (d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2)) {</span>
-<span class="nc" id="L983">							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));</span>
-<span class="nc" id="L984">							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));</span>
-<span class="nc" id="L985">							return true;</span>
+<span class="nc bnc" id="L981" title="All 4 branches missed.">						if (d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2)) {</span>
+<span class="nc" id="L982">							removedArtifactsArtifacts.add(createId(d.left));</span>
+<span class="nc" id="L983">							addedArtifactsArtifacts.add(createId(d.right));</span>
+<span class="nc" id="L984">							return true;</span>
 						}
 					}
 				}
 
-<span class="nc" id="L990">				return false;</span>
-<span class="nc bnc" id="L991" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
-<span class="nc" id="L992">				UnitDelta d = (UnitDelta) delta;</span>
+<span class="nc" id="L989">				return false;</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
+<span class="nc" id="L991">				UnitDelta d = (UnitDelta) delta;</span>
 
-<span class="nc bnc" id="L994" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
+<span class="nc bnc" id="L993" title="All 2 branches missed.">				if (isFeatureGroup(d)) {</span>
 
-<span class="nc bnc" id="L996" title="All 10 branches missed.">					switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L995" title="All 10 branches missed.">					switch (d.path.getPath()) {</span>
 					case &quot;/update/range&quot;:
-<span class="nc" id="L998">						return d.path.getLeft()</span>
-<span class="nc bnc" id="L999" title="All 2 branches missed.">								.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,</span>
+<span class="nc" id="L997">						return d.path.getLeft()</span>
+<span class="nc bnc" id="L998" title="All 2 branches missed.">								.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,</span>
 										VersionRange.RIGHT_OPEN))
-<span class="nc bnc" id="L1001" title="All 2 branches missed.">								&amp;&amp; d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED,</span>
+<span class="nc bnc" id="L1000" title="All 2 branches missed.">								&amp;&amp; d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED,</span>
 										Version.emptyVersion, v2, VersionRange.RIGHT_OPEN));
 					case &quot;/version&quot;:
-<span class="nc bnc" id="L1004" title="All 4 branches missed.">						return d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2);</span>
+<span class="nc bnc" id="L1003" title="All 4 branches missed.">						return d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2);</span>
 					default:
-<span class="nc" id="L1006">						return false;</span>
+<span class="nc" id="L1005">						return false;</span>
 					}
-<span class="nc bnc" id="L1008" title="All 2 branches missed.">				} else if (isFeatureJar(d)) {</span>
-<span class="nc bnc" id="L1009" title="All 2 branches missed.">					if (d.path.getPath().equals(&quot;/version&quot;))</span>
-<span class="nc bnc" id="L1010" title="All 4 branches missed.">						return d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2);</span>
-<span class="nc bnc" id="L1011" title="All 2 branches missed.">					else if (unitArtifactVersionMatcher.matches(d.path)) {</span>
-<span class="nc" id="L1012">						MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();</span>
-<span class="nc" id="L1013">						MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();</span>
+<span class="nc bnc" id="L1007" title="All 2 branches missed.">				} else if (isFeatureJar(d)) {</span>
+<span class="nc bnc" id="L1008" title="All 2 branches missed.">					if (d.path.getPath().equals(&quot;/version&quot;))</span>
+<span class="nc bnc" id="L1009" title="All 4 branches missed.">						return d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2);</span>
+<span class="nc bnc" id="L1010" title="All 2 branches missed.">					else if (unitArtifactVersionMatcher.matches(d.path)) {</span>
+<span class="nc" id="L1011">						MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();</span>
+<span class="nc" id="L1012">						MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();</span>
 
-<span class="nc bnc" id="L1015" title="All 2 branches missed.">						if (!l.getClassifier().equals(&quot;org.eclipse.update.feature&quot;))</span>
-<span class="nc" id="L1016">							return false;</span>
-<span class="nc bnc" id="L1017" title="All 2 branches missed.">						if (!l.getId().equals(featureId))</span>
-<span class="nc" id="L1018">							return false;</span>
-<span class="nc bnc" id="L1019" title="All 2 branches missed.">						if (!l.getVersion().equals(v1))</span>
-<span class="nc" id="L1020">							return false;</span>
-<span class="nc bnc" id="L1021" title="All 2 branches missed.">						if (!r.getClassifier().equals(&quot;org.eclipse.update.feature&quot;))</span>
-<span class="nc" id="L1022">							return false;</span>
-<span class="nc bnc" id="L1023" title="All 2 branches missed.">						if (!r.getId().equals(featureId))</span>
-<span class="nc" id="L1024">							return false;</span>
-<span class="nc bnc" id="L1025" title="All 2 branches missed.">						if (!r.getVersion().equals(v2))</span>
-<span class="nc" id="L1026">							return false;</span>
+<span class="nc bnc" id="L1014" title="All 2 branches missed.">						if (!l.getClassifier().equals(&quot;org.eclipse.update.feature&quot;))</span>
+<span class="nc" id="L1015">							return false;</span>
+<span class="nc bnc" id="L1016" title="All 2 branches missed.">						if (!l.getId().equals(featureId))</span>
+<span class="nc" id="L1017">							return false;</span>
+<span class="nc bnc" id="L1018" title="All 2 branches missed.">						if (!l.getVersion().equals(v1))</span>
+<span class="nc" id="L1019">							return false;</span>
+<span class="nc bnc" id="L1020" title="All 2 branches missed.">						if (!r.getClassifier().equals(&quot;org.eclipse.update.feature&quot;))</span>
+<span class="nc" id="L1021">							return false;</span>
+<span class="nc bnc" id="L1022" title="All 2 branches missed.">						if (!r.getId().equals(featureId))</span>
+<span class="nc" id="L1023">							return false;</span>
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">						if (!r.getVersion().equals(v2))</span>
+<span class="nc" id="L1025">							return false;</span>
 
-<span class="nc" id="L1028">						removedArtifactsMetadata.add(ArtifactKey.create(l));</span>
-<span class="nc" id="L1029">						addedArtifactsMetadata.add(ArtifactKey.create(r));</span>
-<span class="nc" id="L1030">						return true;</span>
+<span class="nc" id="L1027">						removedArtifactsMetadata.add(createId(l));</span>
+<span class="nc" id="L1028">						addedArtifactsMetadata.add(createId(r));</span>
+<span class="nc" id="L1029">						return true;</span>
 					}
 				}
 
-<span class="nc" id="L1034">				return false;</span>
+<span class="nc" id="L1033">				return false;</span>
 			} else {
-<span class="nc" id="L1036">				return false;</span>
+<span class="nc" id="L1035">				return false;</span>
 			}
 		}
 
 		boolean isFeatureJar(AbstractUnitDelta d) {
-<span class="nc bnc" id="L1041" title="All 4 branches missed.">			return is(d.left, featureId + &quot;.feature.jar&quot;, v1) &amp;&amp; is(d.right, featureId + &quot;.feature.jar&quot;, v2);</span>
+<span class="nc bnc" id="L1040" title="All 4 branches missed.">			return is(d.left, featureId + &quot;.feature.jar&quot;, v1) &amp;&amp; is(d.right, featureId + &quot;.feature.jar&quot;, v2);</span>
 		}
 
 		boolean isFeatureJar(ArtifactDelta d) {
-<span class="nc bnc" id="L1045" title="All 2 branches missed.">			return d.left.getClassifier().equals(&quot;org.eclipse.update.feature&quot;)</span>
-<span class="nc bnc" id="L1046" title="All 4 branches missed.">					&amp;&amp; d.right.getClassifier().equals(&quot;org.eclipse.update.feature&quot;) &amp;&amp; is(d.left, featureId, v1)</span>
-<span class="nc bnc" id="L1047" title="All 2 branches missed.">					&amp;&amp; is(d.right, featureId, v2);</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">			return d.left.getClassifier().equals(&quot;org.eclipse.update.feature&quot;)</span>
+<span class="nc bnc" id="L1045" title="All 4 branches missed.">					&amp;&amp; d.right.getClassifier().equals(&quot;org.eclipse.update.feature&quot;) &amp;&amp; is(d.left, featureId, v1)</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">					&amp;&amp; is(d.right, featureId, v2);</span>
 		}
 
 		boolean isFeatureGroup(AbstractUnitDelta d) {
-<span class="nc bnc" id="L1051" title="All 4 branches missed.">			return is(d.left, featureId + &quot;.feature.group&quot;, v1) &amp;&amp; is(d.right, featureId + &quot;.feature.group&quot;, v2);</span>
+<span class="nc bnc" id="L1050" title="All 4 branches missed.">			return is(d.left, featureId + &quot;.feature.group&quot;, v1) &amp;&amp; is(d.right, featureId + &quot;.feature.group&quot;, v2);</span>
 		}
 	}
 
-	static class ArtifactKey {
-		@Override
-		public int hashCode() {
-<span class="nc" id="L1058">			final int prime = 31;</span>
-<span class="nc" id="L1059">			int result = 1;</span>
-<span class="nc bnc" id="L1060" title="All 2 branches missed.">			result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());</span>
-<span class="nc bnc" id="L1061" title="All 2 branches missed.">			result = prime * result + ((id == null) ? 0 : id.hashCode());</span>
-<span class="nc bnc" id="L1062" title="All 2 branches missed.">			result = prime * result + ((version == null) ? 0 : version.hashCode());</span>
-<span class="nc" id="L1063">			return result;</span>
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-<span class="nc bnc" id="L1068" title="All 2 branches missed.">			if (this == obj)</span>
-<span class="nc" id="L1069">				return true;</span>
-<span class="nc bnc" id="L1070" title="All 2 branches missed.">			if (obj == null)</span>
-<span class="nc" id="L1071">				return false;</span>
-<span class="nc bnc" id="L1072" title="All 2 branches missed.">			if (getClass() != obj.getClass())</span>
-<span class="nc" id="L1073">				return false;</span>
-<span class="nc" id="L1074">			ArtifactKey other = (ArtifactKey) obj;</span>
-<span class="nc bnc" id="L1075" title="All 2 branches missed.">			if (classifier == null) {</span>
-<span class="nc bnc" id="L1076" title="All 2 branches missed.">				if (other.classifier != null)</span>
-<span class="nc" id="L1077">					return false;</span>
-<span class="nc bnc" id="L1078" title="All 2 branches missed.">			} else if (!classifier.equals(other.classifier))</span>
-<span class="nc" id="L1079">				return false;</span>
-<span class="nc bnc" id="L1080" title="All 2 branches missed.">			if (id == null) {</span>
-<span class="nc bnc" id="L1081" title="All 2 branches missed.">				if (other.id != null)</span>
-<span class="nc" id="L1082">					return false;</span>
-<span class="nc bnc" id="L1083" title="All 2 branches missed.">			} else if (!id.equals(other.id))</span>
-<span class="nc" id="L1084">				return false;</span>
-<span class="nc bnc" id="L1085" title="All 2 branches missed.">			if (version == null) {</span>
-<span class="nc bnc" id="L1086" title="All 2 branches missed.">				if (other.version != null)</span>
-<span class="nc" id="L1087">					return false;</span>
-<span class="nc bnc" id="L1088" title="All 2 branches missed.">			} else if (!version.equals(other.version))</span>
-<span class="nc" id="L1089">				return false;</span>
-<span class="nc" id="L1090">			return true;</span>
-		}
-
-		private final String id;
-		private final Version version;
-		private final String classifier;
-
-<span class="nc" id="L1097">		public ArtifactKey(String id, Version version, String classifier) {</span>
-<span class="nc" id="L1098">			Preconditions.checkNotNull(id);</span>
-<span class="nc" id="L1099">			Preconditions.checkNotNull(version);</span>
-<span class="nc" id="L1100">			Preconditions.checkNotNull(classifier);</span>
-<span class="nc" id="L1101">			this.id = id;</span>
-<span class="nc" id="L1102">			this.version = version;</span>
-<span class="nc" id="L1103">			this.classifier = classifier;</span>
-<span class="nc" id="L1104">		}</span>
-
-		public static ArtifactKey create(Artifact a) {
-<span class="nc" id="L1107">			return new ArtifactKey(a.getId(), a.getVersion(), a.getClassifier());</span>
-		}
-
-		public static ArtifactKey create(MetadataArtifact r) {
-<span class="nc" id="L1111">			return new ArtifactKey(r.getId(), r.getVersion(), r.getClassifier());</span>
-		}
-
-		@Override
-		public String toString() {
-<span class="nc" id="L1116">			return &quot;ArtifactKey(&quot; + id + &quot;,&quot; + version + &quot;,&quot; + classifier + &quot;)&quot;;</span>
-		}
-
+	private static ArtifactId createId(Artifact a) {
+<span class="nc" id="L1055">		return new ArtifactId(a.getId(), a.getVersion(), a.getClassifier());</span>
 	}
 
-<span class="nc" id="L1121">	final static private OPathMatcher unitArtifactVersionMatcher = OPathMatcher</span>
-<span class="nc" id="L1122">			.create(&quot;/artifacts/artifact[*]/version&quot;);</span>
+	private static ArtifactId createId(MetadataArtifact r) {
+<span class="nc" id="L1059">		return new ArtifactId(r.getId(), r.getVersion(), r.getClassifier());</span>
+	}
 
-<span class="nc" id="L1124">	final static private OPathMatcher unitTouchpointInstructionValueMatcher = OPathMatcher</span>
-<span class="nc" id="L1125">			.create(&quot;/touchpointData/instructions[*]/instruction[manifest]/value[Bundle-Version]&quot;);</span>
+<span class="nc" id="L1062">	final static private OPathMatcher unitArtifactVersionMatcher = OPathMatcher</span>
+<span class="nc" id="L1063">			.create(&quot;/artifacts/artifact[*]/version&quot;);</span>
 
-<span class="nc" id="L1127">	static class ProvidedMatcher implements Predicate&lt;Provided&gt; {</span>
-<span class="nc bnc" id="L1128" title="All 2 branches missed.">		Predicate&lt;String&gt; name = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1129" title="All 2 branches missed.">		Predicate&lt;String&gt; namespace = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1130" title="All 2 branches missed.">		Predicate&lt;Version&gt; version = p -&gt; p == null;</span>
+<span class="nc" id="L1065">	final static private OPathMatcher unitTouchpointInstructionValueMatcher = OPathMatcher</span>
+<span class="nc" id="L1066">			.create(&quot;/touchpointData/instructions[*]/instruction[manifest]/value[Bundle-Version]&quot;);</span>
+
+<span class="nc" id="L1068">	static class ProvidedMatcher implements Predicate&lt;Provided&gt; {</span>
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">		Predicate&lt;String&gt; name = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">		Predicate&lt;String&gt; namespace = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1071" title="All 2 branches missed.">		Predicate&lt;Version&gt; version = p -&gt; p == null;</span>
 
 		@Override
 		public boolean test(Provided t) {
-<span class="nc bnc" id="L1134" title="All 2 branches missed.">			return name.test(t.getName()) //</span>
-<span class="nc bnc" id="L1135" title="All 2 branches missed.">					&amp;&amp; namespace.test(t.getNamespace()) //</span>
-<span class="nc bnc" id="L1136" title="All 2 branches missed.">					&amp;&amp; version.test(t.getVersion());</span>
+<span class="nc bnc" id="L1075" title="All 2 branches missed.">			return name.test(t.getName()) //</span>
+<span class="nc bnc" id="L1076" title="All 2 branches missed.">					&amp;&amp; namespace.test(t.getNamespace()) //</span>
+<span class="nc bnc" id="L1077" title="All 2 branches missed.">					&amp;&amp; version.test(t.getVersion());</span>
 		}
 
 		public ProvidedMatcher withNamespace(Predicate&lt;String&gt; namespace) {
-<span class="nc" id="L1140">			Preconditions.checkNotNull(namespace);</span>
-<span class="nc" id="L1141">			this.namespace = namespace;</span>
-<span class="nc" id="L1142">			return this;</span>
+<span class="nc" id="L1081">			Preconditions.checkNotNull(namespace);</span>
+<span class="nc" id="L1082">			this.namespace = namespace;</span>
+<span class="nc" id="L1083">			return this;</span>
 		}
 
 		public ProvidedMatcher withName(Predicate&lt;String&gt; name) {
-<span class="nc" id="L1146">			Preconditions.checkNotNull(name);</span>
-<span class="nc" id="L1147">			this.name = name;</span>
-<span class="nc" id="L1148">			return this;</span>
+<span class="nc" id="L1087">			Preconditions.checkNotNull(name);</span>
+<span class="nc" id="L1088">			this.name = name;</span>
+<span class="nc" id="L1089">			return this;</span>
 		}
 
 		public ProvidedMatcher withVersion(Predicate&lt;Version&gt; version) {
-<span class="nc" id="L1152">			Preconditions.checkNotNull(version);</span>
-<span class="nc" id="L1153">			this.version = version;</span>
-<span class="nc" id="L1154">			return this;</span>
+<span class="nc" id="L1093">			Preconditions.checkNotNull(version);</span>
+<span class="nc" id="L1094">			this.version = version;</span>
+<span class="nc" id="L1095">			return this;</span>
 		}
 	}
 
-<span class="nc" id="L1158">	static class RequiredMatcher implements Predicate&lt;Required&gt; {</span>
+<span class="nc" id="L1099">	static class RequiredMatcher implements Predicate&lt;Required&gt; {</span>
 
-<span class="nc bnc" id="L1160" title="All 2 branches missed.">		Predicate&lt;SearchFilter&gt; filter = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1161" title="All 2 branches missed.">		Predicate&lt;String&gt; match = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1162" title="All 2 branches missed.">		Predicate&lt;String&gt; matchParameters = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1163" title="All 2 branches missed.">		Predicate&lt;Integer&gt; max = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1164" title="All 2 branches missed.">		Predicate&lt;Integer&gt; min = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1165" title="All 2 branches missed.">		Predicate&lt;String&gt; name = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1166" title="All 2 branches missed.">		Predicate&lt;String&gt; namespace = p -&gt; p == null;</span>
-<span class="nc bnc" id="L1167" title="All 2 branches missed.">		Predicate&lt;VersionRange&gt; range = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1101" title="All 2 branches missed.">		Predicate&lt;SearchFilter&gt; filter = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1102" title="All 2 branches missed.">		Predicate&lt;String&gt; match = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">		Predicate&lt;String&gt; matchParameters = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1104" title="All 2 branches missed.">		Predicate&lt;Integer&gt; max = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1105" title="All 2 branches missed.">		Predicate&lt;Integer&gt; min = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1106" title="All 2 branches missed.">		Predicate&lt;String&gt; name = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1107" title="All 2 branches missed.">		Predicate&lt;String&gt; namespace = p -&gt; p == null;</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">		Predicate&lt;VersionRange&gt; range = p -&gt; p == null;</span>
 
 		@Override
 		public boolean test(Required t) {
-<span class="nc bnc" id="L1171" title="All 2 branches missed.">			return filter.test(t.getFilter()) //</span>
-<span class="nc bnc" id="L1172" title="All 2 branches missed.">					&amp;&amp; match.test(t.getMatch()) //</span>
-<span class="nc bnc" id="L1173" title="All 2 branches missed.">					&amp;&amp; matchParameters.test(t.getMatchParameters()) //</span>
-<span class="nc bnc" id="L1174" title="All 4 branches missed.">					&amp;&amp; max.test(t.getMax()) &amp;&amp; min.test(t.getMin()) //</span>
-<span class="nc bnc" id="L1175" title="All 2 branches missed.">					&amp;&amp; name.test(t.getName()) //</span>
-<span class="nc bnc" id="L1176" title="All 2 branches missed.">					&amp;&amp; namespace.test(t.getNamespace()) //</span>
-<span class="nc bnc" id="L1177" title="All 2 branches missed.">					&amp;&amp; range.test(t.getRange());</span>
+<span class="nc bnc" id="L1112" title="All 2 branches missed.">			return filter.test(t.getFilter()) //</span>
+<span class="nc bnc" id="L1113" title="All 2 branches missed.">					&amp;&amp; match.test(t.getMatch()) //</span>
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">					&amp;&amp; matchParameters.test(t.getMatchParameters()) //</span>
+<span class="nc bnc" id="L1115" title="All 4 branches missed.">					&amp;&amp; max.test(t.getMax()) &amp;&amp; min.test(t.getMin()) //</span>
+<span class="nc bnc" id="L1116" title="All 2 branches missed.">					&amp;&amp; name.test(t.getName()) //</span>
+<span class="nc bnc" id="L1117" title="All 2 branches missed.">					&amp;&amp; namespace.test(t.getNamespace()) //</span>
+<span class="nc bnc" id="L1118" title="All 2 branches missed.">					&amp;&amp; range.test(t.getRange());</span>
 		}
 
 		public RequiredMatcher withNamespace(Predicate&lt;String&gt; namespace) {
-<span class="nc" id="L1181">			Preconditions.checkNotNull(namespace);</span>
-<span class="nc" id="L1182">			this.namespace = namespace;</span>
-<span class="nc" id="L1183">			return this;</span>
+<span class="nc" id="L1122">			Preconditions.checkNotNull(namespace);</span>
+<span class="nc" id="L1123">			this.namespace = namespace;</span>
+<span class="nc" id="L1124">			return this;</span>
 		}
 
 		public RequiredMatcher withName(Predicate&lt;String&gt; name) {
-<span class="nc" id="L1187">			Preconditions.checkNotNull(name);</span>
-<span class="nc" id="L1188">			this.name = name;</span>
-<span class="nc" id="L1189">			return this;</span>
+<span class="nc" id="L1128">			Preconditions.checkNotNull(name);</span>
+<span class="nc" id="L1129">			this.name = name;</span>
+<span class="nc" id="L1130">			return this;</span>
 		}
 
 		public RequiredMatcher withRange(Predicate&lt;VersionRange&gt; range) {
-<span class="nc" id="L1193">			Preconditions.checkNotNull(range);</span>
-<span class="nc" id="L1194">			this.range = range;</span>
-<span class="nc" id="L1195">			return this;</span>
+<span class="nc" id="L1134">			Preconditions.checkNotNull(range);</span>
+<span class="nc" id="L1135">			this.range = range;</span>
+<span class="nc" id="L1136">			return this;</span>
 		}
 
 		public RequiredMatcher withFilter(Predicate&lt;SearchFilter&gt; filter) {
-<span class="nc" id="L1199">			Preconditions.checkNotNull(range);</span>
-<span class="nc" id="L1200">			this.filter = filter;</span>
-<span class="nc" id="L1201">			return this;</span>
+<span class="nc" id="L1140">			Preconditions.checkNotNull(range);</span>
+<span class="nc" id="L1141">			this.filter = filter;</span>
+<span class="nc" id="L1142">			return this;</span>
 		}
 
 	}
 
 	static boolean is(Unit u, String id, Version version) {
-<span class="nc bnc" id="L1207" title="All 4 branches missed.">		return u.getId().equals(id) &amp;&amp; u.getVersion().equals(version);</span>
+<span class="nc bnc" id="L1148" title="All 4 branches missed.">		return u.getId().equals(id) &amp;&amp; u.getVersion().equals(version);</span>
 	}
 
 	static boolean is(Artifact u, String id, Version version) {
-<span class="nc bnc" id="L1211" title="All 4 branches missed.">		return u.getId().equals(id) &amp;&amp; u.getVersion().equals(version);</span>
+<span class="nc bnc" id="L1152" title="All 4 branches missed.">		return u.getId().equals(id) &amp;&amp; u.getVersion().equals(version);</span>
 	}
 
 	static boolean isEqual(Provided p, String namespace, String name, Version version) {
-<span class="nc bnc" id="L1215" title="All 6 branches missed.">		return p.getNamespace().equals(namespace) &amp;&amp; p.getName().equals(name) &amp;&amp; p.getVersion().equals(version);</span>
+<span class="nc bnc" id="L1156" title="All 6 branches missed.">		return p.getNamespace().equals(namespace) &amp;&amp; p.getName().equals(name) &amp;&amp; p.getVersion().equals(version);</span>
 	}
 
 	static boolean hasOnlyArtifact(Unit u, String classifier, String id, Version version) {
-<span class="nc bnc" id="L1219" title="All 4 branches missed.">		return u.getArtifacts() != null &amp;&amp; u.getArtifacts().getArtifact().size() == 1</span>
-<span class="nc bnc" id="L1220" title="All 4 branches missed.">				&amp;&amp; u.getArtifacts().getArtifact().stream().allMatch(p -&gt; p.getClassifier().equals(classifier)</span>
-<span class="nc bnc" id="L1221" title="All 4 branches missed.">						&amp;&amp; p.getId().equals(id) &amp;&amp; p.getVersion().equals(version));</span>
+<span class="nc bnc" id="L1160" title="All 4 branches missed.">		return u.getArtifacts() != null &amp;&amp; u.getArtifacts().getArtifact().size() == 1</span>
+<span class="nc bnc" id="L1161" title="All 4 branches missed.">				&amp;&amp; u.getArtifacts().getArtifact().stream().allMatch(p -&gt; p.getClassifier().equals(classifier)</span>
+<span class="nc bnc" id="L1162" title="All 4 branches missed.">						&amp;&amp; p.getId().equals(id) &amp;&amp; p.getVersion().equals(version));</span>
 	}
 
-<span class="nc" id="L1224">	static Version featureVersion = VersionParser.valueOf(&quot;1.0.0&quot;);</span>
+<span class="nc" id="L1165">	static Version featureVersion = VersionParser.valueOf(&quot;1.0.0&quot;);</span>
 
 	static boolean isFeature(Unit u) {
-<span class="nc" id="L1227">		return u.getProvides().getProvided().stream()</span>
-<span class="nc bnc" id="L1228" title="All 2 branches missed.">				.anyMatch(p -&gt; p.getNamespace().equals(&quot;org.eclipse.equinox.p2.eclipse.type&quot;) //</span>
-<span class="nc bnc" id="L1229" title="All 2 branches missed.">						&amp;&amp; p.getName().equals(&quot;feature&quot;) //</span>
-<span class="nc bnc" id="L1230" title="All 2 branches missed.">						&amp;&amp; p.getVersion().equals(featureVersion));</span>
+<span class="nc" id="L1168">		return u.getProvides().getProvided().stream()</span>
+<span class="nc bnc" id="L1169" title="All 2 branches missed.">				.anyMatch(p -&gt; p.getNamespace().equals(&quot;org.eclipse.equinox.p2.eclipse.type&quot;) //</span>
+<span class="nc bnc" id="L1170" title="All 2 branches missed.">						&amp;&amp; p.getName().equals(&quot;feature&quot;) //</span>
+<span class="nc bnc" id="L1171" title="All 2 branches missed.">						&amp;&amp; p.getVersion().equals(featureVersion));</span>
 
 	}
 
@@ -1236,356 +1177,356 @@ import com.google.common.reflect.TypeToken;
 	 * associated artifacts.
 	 * 
 	 */
-<span class="nc" id="L1239">	static abstract class ArtifactVersionChange extends Change {</span>
+<span class="nc" id="L1180">	static abstract class ArtifactVersionChange extends Change {</span>
 
-<span class="nc" id="L1241">		Set&lt;ArtifactKey&gt; removedArtifactsMetadata = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1242">		Set&lt;ArtifactKey&gt; addedArtifactsMetadata = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1243">		Set&lt;ArtifactKey&gt; removedArtifactsArtifacts = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1244">		Set&lt;ArtifactKey&gt; addedArtifactsArtifacts = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1182">		Set&lt;ArtifactId&gt; removedArtifactsMetadata = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1183">		Set&lt;ArtifactId&gt; addedArtifactsMetadata = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1184">		Set&lt;ArtifactId&gt; removedArtifactsArtifacts = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1185">		Set&lt;ArtifactId&gt; addedArtifactsArtifacts = new HashSet&lt;&gt;();</span>
 
 		@Override
 		void check(Consumer&lt;String&gt; incompatibleChanges) {
-<span class="nc bnc" id="L1248" title="All 2 branches missed.">			for (ArtifactKey u : Sets.union(removedArtifactsArtifacts, removedArtifactsMetadata)) {</span>
-<span class="nc" id="L1249">				boolean a = removedArtifactsArtifacts.contains(u);</span>
-<span class="nc" id="L1250">				boolean m = removedArtifactsMetadata.contains(u);</span>
+<span class="nc bnc" id="L1189" title="All 2 branches missed.">			for (ArtifactId u : Sets.union(removedArtifactsArtifacts, removedArtifactsMetadata)) {</span>
+<span class="nc" id="L1190">				boolean a = removedArtifactsArtifacts.contains(u);</span>
+<span class="nc" id="L1191">				boolean m = removedArtifactsMetadata.contains(u);</span>
 
-<span class="nc bnc" id="L1252" title="All 2 branches missed.">				if (!a)</span>
-<span class="nc" id="L1253">					incompatibleChanges.accept(&quot;Only removed in metadata: &quot; + u);</span>
-<span class="nc bnc" id="L1254" title="All 2 branches missed.">				if (!m)</span>
-<span class="nc" id="L1255">					incompatibleChanges.accept(&quot;Only removed in artifacts: &quot; + u);</span>
-<span class="nc" id="L1256">			}</span>
+<span class="nc bnc" id="L1193" title="All 2 branches missed.">				if (!a)</span>
+<span class="nc" id="L1194">					incompatibleChanges.accept(&quot;Only removed in metadata: &quot; + u);</span>
+<span class="nc bnc" id="L1195" title="All 2 branches missed.">				if (!m)</span>
+<span class="nc" id="L1196">					incompatibleChanges.accept(&quot;Only removed in artifacts: &quot; + u);</span>
+<span class="nc" id="L1197">			}</span>
 
-<span class="nc bnc" id="L1258" title="All 2 branches missed.">			for (ArtifactKey u : Sets.union(addedArtifactsArtifacts, addedArtifactsMetadata)) {</span>
-<span class="nc" id="L1259">				boolean a = addedArtifactsArtifacts.contains(u);</span>
-<span class="nc" id="L1260">				boolean m = addedArtifactsMetadata.contains(u);</span>
+<span class="nc bnc" id="L1199" title="All 2 branches missed.">			for (ArtifactId u : Sets.union(addedArtifactsArtifacts, addedArtifactsMetadata)) {</span>
+<span class="nc" id="L1200">				boolean a = addedArtifactsArtifacts.contains(u);</span>
+<span class="nc" id="L1201">				boolean m = addedArtifactsMetadata.contains(u);</span>
 
-<span class="nc bnc" id="L1262" title="All 2 branches missed.">				if (!a)</span>
-<span class="nc" id="L1263">					incompatibleChanges.accept(&quot;Only added in metadata: &quot; + u);</span>
-<span class="nc bnc" id="L1264" title="All 2 branches missed.">				if (!m)</span>
-<span class="nc" id="L1265">					incompatibleChanges.accept(&quot;Only added in artifacts: &quot; + u);</span>
-<span class="nc" id="L1266">			}</span>
-<span class="nc" id="L1267">		}</span>
+<span class="nc bnc" id="L1203" title="All 2 branches missed.">				if (!a)</span>
+<span class="nc" id="L1204">					incompatibleChanges.accept(&quot;Only added in metadata: &quot; + u);</span>
+<span class="nc bnc" id="L1205" title="All 2 branches missed.">				if (!m)</span>
+<span class="nc" id="L1206">					incompatibleChanges.accept(&quot;Only added in artifacts: &quot; + u);</span>
+<span class="nc" id="L1207">			}</span>
+<span class="nc" id="L1208">		}</span>
 	}
 
-<span class="nc" id="L1270">	static class RepositoryTimestampChange extends Change {</span>
+<span class="nc" id="L1211">	static class RepositoryTimestampChange extends Change {</span>
 
 		@Override
 		boolean accept(FileDelta delta) {
-<span class="nc" id="L1274">			return delta instanceof RepositoryTimestampDelta;</span>
+<span class="nc" id="L1215">			return delta instanceof RepositoryTimestampDelta;</span>
 		}
 
 		@Override
 		void check(Consumer&lt;String&gt; change) {
-<span class="nc" id="L1279">		}</span>
+<span class="nc" id="L1220">		}</span>
 
 	}
 
-<span class="nc" id="L1283">	static class BundleVersionChange extends ArtifactVersionChange {</span>
+<span class="nc" id="L1224">	static class BundleVersionChange extends ArtifactVersionChange {</span>
 		private final String bundleId;
 		private final FileId file1;
 		private final FileId file2;
 		private final Version v1;
 		private final Version v2;
 
-<span class="nc" id="L1290">		public BundleVersionChange(String bundleId, FileId file1, Version v1, FileId file2, Version v2) {</span>
-<span class="nc" id="L1291">			Preconditions.checkNotNull(bundleId);</span>
-<span class="nc bnc" id="L1292" title="All 2 branches missed.">			Preconditions.checkArgument(!bundleId.isEmpty());</span>
-<span class="nc" id="L1293">			this.bundleId = bundleId;</span>
-<span class="nc" id="L1294">			Preconditions.checkNotNull(file1);</span>
-<span class="nc" id="L1295">			this.file1 = file1;</span>
-<span class="nc" id="L1296">			Preconditions.checkNotNull(v1);</span>
-<span class="nc" id="L1297">			this.v1 = v1;</span>
-<span class="nc" id="L1298">			Preconditions.checkNotNull(file2);</span>
-<span class="nc" id="L1299">			this.file2 = file2;</span>
-<span class="nc" id="L1300">			Preconditions.checkNotNull(v2);</span>
-<span class="nc" id="L1301">			this.v2 = v2;</span>
-<span class="nc" id="L1302">		}</span>
+<span class="nc" id="L1231">		public BundleVersionChange(String bundleId, FileId file1, Version v1, FileId file2, Version v2) {</span>
+<span class="nc" id="L1232">			Preconditions.checkNotNull(bundleId);</span>
+<span class="nc bnc" id="L1233" title="All 2 branches missed.">			Preconditions.checkArgument(!bundleId.isEmpty());</span>
+<span class="nc" id="L1234">			this.bundleId = bundleId;</span>
+<span class="nc" id="L1235">			Preconditions.checkNotNull(file1);</span>
+<span class="nc" id="L1236">			this.file1 = file1;</span>
+<span class="nc" id="L1237">			Preconditions.checkNotNull(v1);</span>
+<span class="nc" id="L1238">			this.v1 = v1;</span>
+<span class="nc" id="L1239">			Preconditions.checkNotNull(file2);</span>
+<span class="nc" id="L1240">			this.file2 = file2;</span>
+<span class="nc" id="L1241">			Preconditions.checkNotNull(v2);</span>
+<span class="nc" id="L1242">			this.v2 = v2;</span>
+<span class="nc" id="L1243">		}</span>
 
-<span class="nc" id="L1304">		private Set&lt;Unit&gt; addedUnit = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1305">		private Set&lt;Unit&gt; removedUnit = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1245">		private Set&lt;Unit&gt; addedUnit = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1246">		private Set&lt;Unit&gt; removedUnit = new HashSet&lt;&gt;();</span>
 
-<span class="nc" id="L1307">		private Set&lt;String&gt; addedProvidedPackage = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1308">		private Set&lt;String&gt; removedProvidedPackage = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1248">		private Set&lt;String&gt; addedProvidedPackage = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1249">		private Set&lt;String&gt; removedProvidedPackage = new HashSet&lt;&gt;();</span>
 
 		@Override
 		void check(Consumer&lt;String&gt; incompatibleChanges) {
-<span class="nc" id="L1312">			super.check(incompatibleChanges);</span>
+<span class="nc" id="L1253">			super.check(incompatibleChanges);</span>
 
-<span class="nc bnc" id="L1314" title="All 2 branches missed.">			for (Unit u : Sets.union(addedUnit, removedUnit)) {</span>
-<span class="nc" id="L1315">				boolean a = addedUnit.contains(u);</span>
-<span class="nc" id="L1316">				boolean r = removedUnit.contains(u);</span>
+<span class="nc bnc" id="L1255" title="All 2 branches missed.">			for (Unit u : Sets.union(addedUnit, removedUnit)) {</span>
+<span class="nc" id="L1256">				boolean a = addedUnit.contains(u);</span>
+<span class="nc" id="L1257">				boolean r = removedUnit.contains(u);</span>
 
-<span class="nc bnc" id="L1318" title="All 2 branches missed.">				if (!a)</span>
-<span class="nc" id="L1319">					incompatibleChanges.accept(&quot;Only removed: &quot; + u + &quot; &quot; + bundleId);</span>
-<span class="nc bnc" id="L1320" title="All 2 branches missed.">				if (!r)</span>
-<span class="nc" id="L1321">					incompatibleChanges.accept(&quot;Only added: &quot; + u + &quot; &quot; + bundleId);</span>
-<span class="nc" id="L1322">			}</span>
+<span class="nc bnc" id="L1259" title="All 2 branches missed.">				if (!a)</span>
+<span class="nc" id="L1260">					incompatibleChanges.accept(&quot;Only removed: &quot; + u + &quot; &quot; + bundleId);</span>
+<span class="nc bnc" id="L1261" title="All 2 branches missed.">				if (!r)</span>
+<span class="nc" id="L1262">					incompatibleChanges.accept(&quot;Only added: &quot; + u + &quot; &quot; + bundleId);</span>
+<span class="nc" id="L1263">			}</span>
 
-<span class="nc bnc" id="L1324" title="All 2 branches missed.">			for (String u : Sets.union(addedProvidedPackage, removedProvidedPackage)) {</span>
-<span class="nc" id="L1325">				boolean a = addedProvidedPackage.contains(u);</span>
-<span class="nc" id="L1326">				boolean r = removedProvidedPackage.contains(u);</span>
+<span class="nc bnc" id="L1265" title="All 2 branches missed.">			for (String u : Sets.union(addedProvidedPackage, removedProvidedPackage)) {</span>
+<span class="nc" id="L1266">				boolean a = addedProvidedPackage.contains(u);</span>
+<span class="nc" id="L1267">				boolean r = removedProvidedPackage.contains(u);</span>
 
-<span class="nc bnc" id="L1328" title="All 2 branches missed.">				if (!a)</span>
-<span class="nc" id="L1329">					incompatibleChanges.accept(&quot;Only removed package: &quot; + u + &quot; &quot; + bundleId);</span>
-<span class="nc bnc" id="L1330" title="All 2 branches missed.">				if (!r)</span>
-<span class="nc" id="L1331">					incompatibleChanges.accept(&quot;Only added package: &quot; + u + &quot; &quot; + bundleId);</span>
-<span class="nc" id="L1332">			}</span>
+<span class="nc bnc" id="L1269" title="All 2 branches missed.">				if (!a)</span>
+<span class="nc" id="L1270">					incompatibleChanges.accept(&quot;Only removed package: &quot; + u + &quot; &quot; + bundleId);</span>
+<span class="nc bnc" id="L1271" title="All 2 branches missed.">				if (!r)</span>
+<span class="nc" id="L1272">					incompatibleChanges.accept(&quot;Only added package: &quot; + u + &quot; &quot; + bundleId);</span>
+<span class="nc" id="L1273">			}</span>
 
-<span class="nc" id="L1334">			return;</span>
+<span class="nc" id="L1275">			return;</span>
 		}
 
 		@Override
 		boolean accept(FileDelta delta) {
-<span class="nc bnc" id="L1339" title="All 2 branches missed.">			if (delta instanceof ManifestVersionDelta) {</span>
-<span class="nc" id="L1340">				ManifestVersionDelta d = (ManifestVersionDelta) delta;</span>
-<span class="nc bnc" id="L1341" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
-<span class="nc" id="L1342">					return false;</span>
-<span class="nc bnc" id="L1343" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
-<span class="nc" id="L1344">					return false;</span>
-<span class="nc bnc" id="L1345" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
-<span class="nc" id="L1346">					return false;</span>
-<span class="nc bnc" id="L1347" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
-<span class="nc" id="L1348">					return false;</span>
-<span class="nc" id="L1349">				return true;</span>
-<span class="nc bnc" id="L1350" title="All 2 branches missed.">			} else if (delta instanceof ManifestExportPackageVersionDelta) {</span>
-<span class="nc" id="L1351">				ManifestExportPackageVersionDelta d = (ManifestExportPackageVersionDelta) delta;</span>
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">			if (delta instanceof ManifestVersionDelta) {</span>
+<span class="nc" id="L1281">				ManifestVersionDelta d = (ManifestVersionDelta) delta;</span>
+<span class="nc bnc" id="L1282" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
+<span class="nc" id="L1283">					return false;</span>
+<span class="nc bnc" id="L1284" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
+<span class="nc" id="L1285">					return false;</span>
+<span class="nc bnc" id="L1286" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
+<span class="nc" id="L1287">					return false;</span>
+<span class="nc bnc" id="L1288" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
+<span class="nc" id="L1289">					return false;</span>
+<span class="nc" id="L1290">				return true;</span>
+<span class="nc bnc" id="L1291" title="All 2 branches missed.">			} else if (delta instanceof ManifestExportPackageVersionDelta) {</span>
+<span class="nc" id="L1292">				ManifestExportPackageVersionDelta d = (ManifestExportPackageVersionDelta) delta;</span>
 
-<span class="nc bnc" id="L1353" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
-<span class="nc" id="L1354">					return false;</span>
-<span class="nc bnc" id="L1355" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
-<span class="nc" id="L1356">					return false;</span>
-<span class="nc" id="L1357">				return true;</span>
+<span class="nc bnc" id="L1294" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
+<span class="nc" id="L1295">					return false;</span>
+<span class="nc bnc" id="L1296" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
+<span class="nc" id="L1297">					return false;</span>
+<span class="nc" id="L1298">				return true;</span>
 
-<span class="nc bnc" id="L1359" title="All 2 branches missed.">			} else if (delta instanceof ManifestEclipseSourceBundleVersionDelta) {</span>
-<span class="nc" id="L1360">				ManifestEclipseSourceBundleVersionDelta d = (ManifestEclipseSourceBundleVersionDelta) delta;</span>
-<span class="nc bnc" id="L1361" title="All 2 branches missed.">				if (!bundleId.equals(d.getBundleId()))</span>
-<span class="nc" id="L1362">					return false;</span>
-<span class="nc bnc" id="L1363" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
-<span class="nc" id="L1364">					return false;</span>
-<span class="nc bnc" id="L1365" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
-<span class="nc" id="L1366">					return false;</span>
-<span class="nc" id="L1367">				return true;</span>
-<span class="nc bnc" id="L1368" title="All 2 branches missed.">			} else if (delta instanceof ManifestHeaderDelta) {</span>
-<span class="nc" id="L1369">				ManifestHeaderDelta d = (ManifestHeaderDelta) delta;</span>
-<span class="nc bnc" id="L1370" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
-<span class="nc" id="L1371">					return false;</span>
-<span class="nc bnc" id="L1372" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
-<span class="nc" id="L1373">					return false;</span>
+<span class="nc bnc" id="L1300" title="All 2 branches missed.">			} else if (delta instanceof ManifestEclipseSourceBundleVersionDelta) {</span>
+<span class="nc" id="L1301">				ManifestEclipseSourceBundleVersionDelta d = (ManifestEclipseSourceBundleVersionDelta) delta;</span>
+<span class="nc bnc" id="L1302" title="All 2 branches missed.">				if (!bundleId.equals(d.getBundleId()))</span>
+<span class="nc" id="L1303">					return false;</span>
+<span class="nc bnc" id="L1304" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
+<span class="nc" id="L1305">					return false;</span>
+<span class="nc bnc" id="L1306" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
+<span class="nc" id="L1307">					return false;</span>
+<span class="nc" id="L1308">				return true;</span>
+<span class="nc bnc" id="L1309" title="All 2 branches missed.">			} else if (delta instanceof ManifestHeaderDelta) {</span>
+<span class="nc" id="L1310">				ManifestHeaderDelta d = (ManifestHeaderDelta) delta;</span>
+<span class="nc bnc" id="L1311" title="All 2 branches missed.">				if (!d.getBaselineFile().getParent().equals(file1))</span>
+<span class="nc" id="L1312">					return false;</span>
+<span class="nc bnc" id="L1313" title="All 2 branches missed.">				if (!d.getCurrentFile().getParent().equals(file2))</span>
+<span class="nc" id="L1314">					return false;</span>
 
-<span class="nc bnc" id="L1375" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Bnd-LastModified&quot;))</span>
-<span class="nc" id="L1376">					return true;</span>
-<span class="nc bnc" id="L1377" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Created-By&quot;))</span>
-<span class="nc" id="L1378">					return true;</span>
-<span class="nc bnc" id="L1379" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Build-Jdk&quot;))</span>
-<span class="nc" id="L1380">					return true;</span>
-<span class="nc bnc" id="L1381" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Built-By&quot;))</span>
-<span class="nc" id="L1382">					return true;</span>
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Bnd-LastModified&quot;))</span>
+<span class="nc" id="L1317">					return true;</span>
+<span class="nc bnc" id="L1318" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Created-By&quot;))</span>
+<span class="nc" id="L1319">					return true;</span>
+<span class="nc bnc" id="L1320" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Build-Jdk&quot;))</span>
+<span class="nc" id="L1321">					return true;</span>
+<span class="nc bnc" id="L1322" title="All 2 branches missed.">				if (d.getKey().equals(&quot;Built-By&quot;))</span>
+<span class="nc" id="L1323">					return true;</span>
 
-<span class="nc" id="L1384">				return false;</span>
-<span class="nc bnc" id="L1385" title="All 2 branches missed.">			} else if (delta instanceof FeaturePluginVersionDelta) {</span>
-<span class="nc" id="L1386">				FeaturePluginVersionDelta d = (FeaturePluginVersionDelta) delta;</span>
-<span class="nc bnc" id="L1387" title="All 2 branches missed.">				if (!d.getPluginId().equals(bundleId))</span>
-<span class="nc" id="L1388">					return false;</span>
-<span class="nc bnc" id="L1389" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
-<span class="nc" id="L1390">					return false;</span>
-<span class="nc bnc" id="L1391" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
-<span class="nc" id="L1392">					return false;</span>
-<span class="nc" id="L1393">				return true;</span>
-<span class="nc bnc" id="L1394" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
-<span class="nc" id="L1395">				ProvidedAdded d = (ProvidedAdded) delta;</span>
+<span class="nc" id="L1325">				return false;</span>
+<span class="nc bnc" id="L1326" title="All 2 branches missed.">			} else if (delta instanceof FeaturePluginVersionDelta) {</span>
+<span class="nc" id="L1327">				FeaturePluginVersionDelta d = (FeaturePluginVersionDelta) delta;</span>
+<span class="nc bnc" id="L1328" title="All 2 branches missed.">				if (!d.getPluginId().equals(bundleId))</span>
+<span class="nc" id="L1329">					return false;</span>
+<span class="nc bnc" id="L1330" title="All 2 branches missed.">				if (!Objects.equals(v1, d.getBaselineVersion()))</span>
+<span class="nc" id="L1331">					return false;</span>
+<span class="nc bnc" id="L1332" title="All 2 branches missed.">				if (!Objects.equals(v2, d.getCurrentVersion()))</span>
+<span class="nc" id="L1333">					return false;</span>
+<span class="nc" id="L1334">				return true;</span>
+<span class="nc bnc" id="L1335" title="All 2 branches missed.">			} else if (delta instanceof ProvidedAdded) {</span>
+<span class="nc" id="L1336">				ProvidedAdded d = (ProvidedAdded) delta;</span>
 
-<span class="nc bnc" id="L1397" title="All 2 branches missed.">				if (!isBundle(d))</span>
-<span class="nc" id="L1398">					return false;</span>
+<span class="nc bnc" id="L1338" title="All 2 branches missed.">				if (!isBundle(d))</span>
+<span class="nc" id="L1339">					return false;</span>
 
-<span class="nc bnc" id="L1400" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, bundleId, v2))</span>
-<span class="nc" id="L1401">					return true;</span>
+<span class="nc bnc" id="L1341" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, bundleId, v2))</span>
+<span class="nc" id="L1342">					return true;</span>
 
-<span class="nc bnc" id="L1403" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;osgi.bundle&quot;, bundleId, v2))</span>
-<span class="nc" id="L1404">					return true;</span>
+<span class="nc bnc" id="L1344" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;osgi.bundle&quot;, bundleId, v2))</span>
+<span class="nc" id="L1345">					return true;</span>
 
-<span class="nc" id="L1406">				if (new ProvidedMatcher().withNamespace(&quot;java.package&quot;::equals) //</span>
-<span class="nc" id="L1407">						.withName(p -&gt; true) //</span>
-<span class="nc" id="L1408">						.withVersion(v2::equals) //</span>
-<span class="nc bnc" id="L1409" title="All 2 branches missed.">						.test(d.provided)) {</span>
-<span class="nc" id="L1410">					addedProvidedPackage.add(d.provided.getName());</span>
-<span class="nc" id="L1411">					return true;</span>
+<span class="nc" id="L1347">				if (new ProvidedMatcher().withNamespace(&quot;java.package&quot;::equals) //</span>
+<span class="nc" id="L1348">						.withName(p -&gt; true) //</span>
+<span class="nc" id="L1349">						.withVersion(v2::equals) //</span>
+<span class="nc bnc" id="L1350" title="All 2 branches missed.">						.test(d.provided)) {</span>
+<span class="nc" id="L1351">					addedProvidedPackage.add(d.provided.getName());</span>
+<span class="nc" id="L1352">					return true;</span>
 				}
 
-<span class="nc" id="L1414">				return false;</span>
-<span class="nc bnc" id="L1415" title="All 2 branches missed.">			} else if (delta instanceof ProvidedRemoved) {</span>
-<span class="nc" id="L1416">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
+<span class="nc" id="L1355">				return false;</span>
+<span class="nc bnc" id="L1356" title="All 2 branches missed.">			} else if (delta instanceof ProvidedRemoved) {</span>
+<span class="nc" id="L1357">				ProvidedRemoved d = (ProvidedRemoved) delta;</span>
 
-<span class="nc bnc" id="L1418" title="All 2 branches missed.">				if (!isBundle(d))</span>
-<span class="nc" id="L1419">					return false;</span>
+<span class="nc bnc" id="L1359" title="All 2 branches missed.">				if (!isBundle(d))</span>
+<span class="nc" id="L1360">					return false;</span>
 
-<span class="nc bnc" id="L1421" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, bundleId, v1))</span>
-<span class="nc" id="L1422">					return true;</span>
+<span class="nc bnc" id="L1362" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;org.eclipse.equinox.p2.iu&quot;, bundleId, v1))</span>
+<span class="nc" id="L1363">					return true;</span>
 
-<span class="nc bnc" id="L1424" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;osgi.bundle&quot;, bundleId, v1))</span>
-<span class="nc" id="L1425">					return true;</span>
+<span class="nc bnc" id="L1365" title="All 2 branches missed.">				if (isEqual(d.provided, &quot;osgi.bundle&quot;, bundleId, v1))</span>
+<span class="nc" id="L1366">					return true;</span>
 
-<span class="nc" id="L1427">				if (new ProvidedMatcher().withNamespace(&quot;java.package&quot;::equals) //</span>
-<span class="nc" id="L1428">						.withName(p -&gt; true) //</span>
-<span class="nc" id="L1429">						.withVersion(v1::equals) //</span>
-<span class="nc bnc" id="L1430" title="All 2 branches missed.">						.test(d.provided)) {</span>
-<span class="nc" id="L1431">					removedProvidedPackage.add(d.provided.getName());</span>
-<span class="nc" id="L1432">					return true;</span>
+<span class="nc" id="L1368">				if (new ProvidedMatcher().withNamespace(&quot;java.package&quot;::equals) //</span>
+<span class="nc" id="L1369">						.withName(p -&gt; true) //</span>
+<span class="nc" id="L1370">						.withVersion(v1::equals) //</span>
+<span class="nc bnc" id="L1371" title="All 2 branches missed.">						.test(d.provided)) {</span>
+<span class="nc" id="L1372">					removedProvidedPackage.add(d.provided.getName());</span>
+<span class="nc" id="L1373">					return true;</span>
 				}
 
-<span class="nc" id="L1435">				return false;</span>
-<span class="nc bnc" id="L1436" title="All 2 branches missed.">			} else if (delta instanceof RequiredAdded) {</span>
-<span class="nc" id="L1437">				RequiredAdded d = (RequiredAdded) delta;</span>
+<span class="nc" id="L1376">				return false;</span>
+<span class="nc bnc" id="L1377" title="All 2 branches missed.">			} else if (delta instanceof RequiredAdded) {</span>
+<span class="nc" id="L1378">				RequiredAdded d = (RequiredAdded) delta;</span>
 
-<span class="nc" id="L1439">				if (new RequiredMatcher().//</span>
-<span class="nc" id="L1440">						withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L1441">						.withName(bundleId::equals) //</span>
-<span class="nc" id="L1442">						.withRange(</span>
+<span class="nc" id="L1380">				if (new RequiredMatcher().//</span>
+<span class="nc" id="L1381">						withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L1382">						.withName(bundleId::equals) //</span>
+<span class="nc" id="L1383">						.withRange(</span>
 								new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc bnc" id="L1444" title="All 2 branches missed.">						.test(d.required)) {</span>
-<span class="nc" id="L1445">					addedUnit.add(d.right);</span>
-<span class="nc" id="L1446">					return true;</span>
+<span class="nc bnc" id="L1385" title="All 2 branches missed.">						.test(d.required)) {</span>
+<span class="nc" id="L1386">					addedUnit.add(d.right);</span>
+<span class="nc" id="L1387">					return true;</span>
 				}
 
-<span class="nc" id="L1449">				return false;</span>
-<span class="nc bnc" id="L1450" title="All 2 branches missed.">			} else if (delta instanceof RequiredRemoved) {</span>
-<span class="nc" id="L1451">				RequiredRemoved d = (RequiredRemoved) delta;</span>
+<span class="nc" id="L1390">				return false;</span>
+<span class="nc bnc" id="L1391" title="All 2 branches missed.">			} else if (delta instanceof RequiredRemoved) {</span>
+<span class="nc" id="L1392">				RequiredRemoved d = (RequiredRemoved) delta;</span>
 
-<span class="nc" id="L1453">				if (new RequiredMatcher() //</span>
-<span class="nc" id="L1454">						.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
-<span class="nc" id="L1455">						.withName(bundleId::equals) //</span>
-<span class="nc" id="L1456">						.withRange(</span>
+<span class="nc" id="L1394">				if (new RequiredMatcher() //</span>
+<span class="nc" id="L1395">						.withNamespace(&quot;org.eclipse.equinox.p2.iu&quot;::equals) //</span>
+<span class="nc" id="L1396">						.withName(bundleId::equals) //</span>
+<span class="nc" id="L1397">						.withRange(</span>
 								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
-<span class="nc bnc" id="L1458" title="All 2 branches missed.">						.test(d.required)) {</span>
-<span class="nc" id="L1459">					removedUnit.add(d.right);</span>
-<span class="nc" id="L1460">					return true;</span>
+<span class="nc bnc" id="L1399" title="All 2 branches missed.">						.test(d.required)) {</span>
+<span class="nc" id="L1400">					removedUnit.add(d.right);</span>
+<span class="nc" id="L1401">					return true;</span>
 				}
 
-<span class="nc" id="L1463">				return false;</span>
-<span class="nc bnc" id="L1464" title="All 2 branches missed.">			} else if (delta instanceof ArtifactDelta) {</span>
-<span class="nc" id="L1465">				ArtifactDelta d = (ArtifactDelta) delta;</span>
+<span class="nc" id="L1404">				return false;</span>
+<span class="nc bnc" id="L1405" title="All 2 branches missed.">			} else if (delta instanceof ArtifactDelta) {</span>
+<span class="nc" id="L1406">				ArtifactDelta d = (ArtifactDelta) delta;</span>
 
-<span class="nc bnc" id="L1467" title="All 12 branches missed.">				switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L1408" title="All 12 branches missed.">				switch (d.path.getPath()) {</span>
 				case &quot;/properties/property[download.md5]/value&quot;:
 				case &quot;/properties/property[artifact.size]/value&quot;:
 				case &quot;/properties/property[download.size]/value&quot;:
-<span class="nc" id="L1471">					return true;</span>
+<span class="nc" id="L1412">					return true;</span>
 				}
 
-<span class="nc bnc" id="L1474" title="All 2 branches missed.">				if (isBundle(d)) {</span>
-<span class="nc bnc" id="L1475" title="All 6 branches missed.">					switch (d.path.getPath()) {</span>
+<span class="nc bnc" id="L1415" title="All 2 branches missed.">				if (isBundle(d)) {</span>
+<span class="nc bnc" id="L1416" title="All 6 branches missed.">					switch (d.path.getPath()) {</span>
 					case &quot;/version&quot;:
-<span class="nc bnc" id="L1477" title="All 4 branches missed.">						if (d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2)) {</span>
-<span class="nc" id="L1478">							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));</span>
-<span class="nc" id="L1479">							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));</span>
-<span class="nc" id="L1480">							return true;</span>
+<span class="nc bnc" id="L1418" title="All 4 branches missed.">						if (d.path.getLeft().equals(v1) &amp;&amp; d.path.getRight().equals(v2)) {</span>
+<span class="nc" id="L1419">							removedArtifactsArtifacts.add(createId(d.left));</span>
+<span class="nc" id="L1420">							addedArtifactsArtifacts.add(createId(d.right));</span>
+<span class="nc" id="L1421">							return true;</span>
 						}
 					}
 				}
 
-<span class="nc" id="L1485">				return false;</span>
-<span class="nc bnc" id="L1486" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
-<span class="nc" id="L1487">				UnitDelta d = (UnitDelta) delta;</span>
+<span class="nc" id="L1426">				return false;</span>
+<span class="nc bnc" id="L1427" title="All 2 branches missed.">			} else if (delta instanceof UnitDelta) {</span>
+<span class="nc" id="L1428">				UnitDelta d = (UnitDelta) delta;</span>
 
-<span class="nc bnc" id="L1489" title="All 2 branches missed.">				if (!isBundle(d))</span>
-<span class="nc" id="L1490">					return false;</span>
+<span class="nc bnc" id="L1430" title="All 2 branches missed.">				if (!isBundle(d))</span>
+<span class="nc" id="L1431">					return false;</span>
 
-<span class="nc bnc" id="L1492" title="All 2 branches missed.">				if (d.path.getPath().equals(&quot;/version&quot;)) {</span>
-<span class="nc bnc" id="L1493" title="All 2 branches missed.">					if (!d.path.getLeft().equals(v1))</span>
-<span class="nc" id="L1494">						return false;</span>
-<span class="nc bnc" id="L1495" title="All 2 branches missed.">					if (!d.path.getRight().equals(v2))</span>
-<span class="nc" id="L1496">						return false;</span>
-<span class="nc" id="L1497">					return true;</span>
+<span class="nc bnc" id="L1433" title="All 2 branches missed.">				if (d.path.getPath().equals(&quot;/version&quot;)) {</span>
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">					if (!d.path.getLeft().equals(v1))</span>
+<span class="nc" id="L1435">						return false;</span>
+<span class="nc bnc" id="L1436" title="All 2 branches missed.">					if (!d.path.getRight().equals(v2))</span>
+<span class="nc" id="L1437">						return false;</span>
+<span class="nc" id="L1438">					return true;</span>
 				}
 
-<span class="nc bnc" id="L1500" title="All 2 branches missed.">				if (d.path.getPath().equals(&quot;/update/range&quot;)) {</span>
-<span class="nc" id="L1501">					return d.path.getLeft()</span>
-<span class="nc bnc" id="L1502" title="All 2 branches missed.">							.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,</span>
+<span class="nc bnc" id="L1441" title="All 2 branches missed.">				if (d.path.getPath().equals(&quot;/update/range&quot;)) {</span>
+<span class="nc" id="L1442">					return d.path.getLeft()</span>
+<span class="nc bnc" id="L1443" title="All 2 branches missed.">							.equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion, v1,</span>
 									VersionRange.RIGHT_OPEN))
-<span class="nc bnc" id="L1504" title="All 2 branches missed.">							&amp;&amp; d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion,</span>
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">							&amp;&amp; d.path.getRight().equals(new VersionRange(VersionRange.LEFT_CLOSED, Version.emptyVersion,</span>
 									v2, VersionRange.RIGHT_OPEN));
-<span class="nc bnc" id="L1506" title="All 2 branches missed.">				} else if (unitArtifactVersionMatcher.matches(d.path)) {</span>
-<span class="nc" id="L1507">					MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();</span>
-<span class="nc" id="L1508">					MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();</span>
+<span class="nc bnc" id="L1447" title="All 2 branches missed.">				} else if (unitArtifactVersionMatcher.matches(d.path)) {</span>
+<span class="nc" id="L1448">					MetadataArtifact l = (MetadataArtifact) d.path.getParent().getLeft();</span>
+<span class="nc" id="L1449">					MetadataArtifact r = (MetadataArtifact) d.path.getParent().getRight();</span>
 
-<span class="nc bnc" id="L1510" title="All 2 branches missed.">					if (!l.getClassifier().equals(&quot;osgi.bundle&quot;))</span>
-<span class="nc" id="L1511">						return false;</span>
-<span class="nc bnc" id="L1512" title="All 2 branches missed.">					if (!l.getId().equals(bundleId))</span>
-<span class="nc" id="L1513">						return false;</span>
-<span class="nc bnc" id="L1514" title="All 2 branches missed.">					if (!l.getVersion().equals(v1))</span>
-<span class="nc" id="L1515">						return false;</span>
-<span class="nc bnc" id="L1516" title="All 2 branches missed.">					if (!r.getClassifier().equals(&quot;osgi.bundle&quot;))</span>
-<span class="nc" id="L1517">						return false;</span>
-<span class="nc bnc" id="L1518" title="All 2 branches missed.">					if (!r.getId().equals(bundleId))</span>
-<span class="nc" id="L1519">						return false;</span>
-<span class="nc bnc" id="L1520" title="All 2 branches missed.">					if (!r.getVersion().equals(v2))</span>
-<span class="nc" id="L1521">						return false;</span>
+<span class="nc bnc" id="L1451" title="All 2 branches missed.">					if (!l.getClassifier().equals(&quot;osgi.bundle&quot;))</span>
+<span class="nc" id="L1452">						return false;</span>
+<span class="nc bnc" id="L1453" title="All 2 branches missed.">					if (!l.getId().equals(bundleId))</span>
+<span class="nc" id="L1454">						return false;</span>
+<span class="nc bnc" id="L1455" title="All 2 branches missed.">					if (!l.getVersion().equals(v1))</span>
+<span class="nc" id="L1456">						return false;</span>
+<span class="nc bnc" id="L1457" title="All 2 branches missed.">					if (!r.getClassifier().equals(&quot;osgi.bundle&quot;))</span>
+<span class="nc" id="L1458">						return false;</span>
+<span class="nc bnc" id="L1459" title="All 2 branches missed.">					if (!r.getId().equals(bundleId))</span>
+<span class="nc" id="L1460">						return false;</span>
+<span class="nc bnc" id="L1461" title="All 2 branches missed.">					if (!r.getVersion().equals(v2))</span>
+<span class="nc" id="L1462">						return false;</span>
 
-<span class="nc" id="L1523">					removedArtifactsMetadata.add(ArtifactKey.create(l));</span>
-<span class="nc" id="L1524">					addedArtifactsMetadata.add(ArtifactKey.create(r));</span>
+<span class="nc" id="L1464">					removedArtifactsMetadata.add(createId(l));</span>
+<span class="nc" id="L1465">					addedArtifactsMetadata.add(createId(r));</span>
 
-<span class="nc" id="L1526">					return true;</span>
-<span class="nc bnc" id="L1527" title="All 2 branches missed.">				} else if (unitTouchpointInstructionValueMatcher.matches(d.path)) {</span>
+<span class="nc" id="L1467">					return true;</span>
+<span class="nc bnc" id="L1468" title="All 2 branches missed.">				} else if (unitTouchpointInstructionValueMatcher.matches(d.path)) {</span>
 					// Instruction l = (Instruction)
 					// d.path.getParent().getParent().getLeft();
 					// Instruction r = (Instruction)
 					// d.path.getParent().getParent().getRight();
 
-<span class="nc" id="L1533">					Version vl = VersionParser.valueOf((String) d.path.getLeft());</span>
-<span class="nc" id="L1534">					Version vr = VersionParser.valueOf((String) d.path.getRight());</span>
+<span class="nc" id="L1474">					Version vl = VersionParser.valueOf((String) d.path.getLeft());</span>
+<span class="nc" id="L1475">					Version vr = VersionParser.valueOf((String) d.path.getRight());</span>
 
-<span class="nc bnc" id="L1536" title="All 2 branches missed.">					if (!v1.equals(vl))</span>
-<span class="nc" id="L1537">						return false;</span>
-<span class="nc bnc" id="L1538" title="All 2 branches missed.">					if (!v2.equals(vr))</span>
-<span class="nc" id="L1539">						return false;</span>
+<span class="nc bnc" id="L1477" title="All 2 branches missed.">					if (!v1.equals(vl))</span>
+<span class="nc" id="L1478">						return false;</span>
+<span class="nc bnc" id="L1479" title="All 2 branches missed.">					if (!v2.equals(vr))</span>
+<span class="nc" id="L1480">						return false;</span>
 
-<span class="nc" id="L1541">					return true;</span>
+<span class="nc" id="L1482">					return true;</span>
 				}
 			}
-<span class="nc" id="L1544">			return false;</span>
+<span class="nc" id="L1485">			return false;</span>
 		}
 
 		boolean isBundle(AbstractUnitDelta d) {
-<span class="nc bnc" id="L1548" title="All 4 branches missed.">			return is(d.left, bundleId, v1) &amp;&amp; is(d.right, bundleId, v2);</span>
+<span class="nc bnc" id="L1489" title="All 4 branches missed.">			return is(d.left, bundleId, v1) &amp;&amp; is(d.right, bundleId, v2);</span>
 		}
 
 		boolean isBundle(ArtifactDelta d) {
-<span class="nc bnc" id="L1552" title="All 4 branches missed.">			return is(d.left, bundleId, v1) &amp;&amp; is(d.right, bundleId, v2);</span>
+<span class="nc bnc" id="L1493" title="All 4 branches missed.">			return is(d.left, bundleId, v1) &amp;&amp; is(d.right, bundleId, v2);</span>
 		}
 
 	}
 
 	private String render(Object o) {
-<span class="nc bnc" id="L1558" title="All 2 branches missed.">		if (o instanceof List) {</span>
+<span class="nc bnc" id="L1499" title="All 2 branches missed.">		if (o instanceof List) {</span>
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L1560">			List&lt;Object&gt; l = (List&lt;Object&gt;) (List&lt;?&gt;) o;</span>
-<span class="nc" id="L1561">			return &quot;[&quot; + l.stream().map(this::render).collect(Collectors.joining(&quot;, &quot;)) + &quot;]&quot;;</span>
+<span class="nc" id="L1501">			List&lt;Object&gt; l = (List&lt;Object&gt;) (List&lt;?&gt;) o;</span>
+<span class="nc" id="L1502">			return &quot;[&quot; + l.stream().map(this::render).collect(Collectors.joining(&quot;, &quot;)) + &quot;]&quot;;</span>
 		}
 
-<span class="nc bnc" id="L1564" title="All 2 branches missed.">		if (o instanceof Child) {</span>
-<span class="nc" id="L1565">			return new DomRenderer().jaxbRender(CompositeRepositoryFactory.getJaxbContext(), o,</span>
+<span class="nc bnc" id="L1505" title="All 2 branches missed.">		if (o instanceof Child) {</span>
+<span class="nc" id="L1506">			return new DomRenderer().jaxbRender(CompositeRepositoryFactory.getJaxbContext(), o,</span>
 					DomRenderer.Options.TOP_LEVEL);
 		}
 
-<span class="nc bnc" id="L1569" title="All 6 branches missed.">		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {</span>
-<span class="nc" id="L1570">			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,</span>
+<span class="nc bnc" id="L1510" title="All 6 branches missed.">		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {</span>
+<span class="nc" id="L1511">			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,</span>
 					DomRenderer.Options.TOP_LEVEL);
 		}
 
-<span class="nc bnc" id="L1574" title="All 2 branches missed.">		if (o instanceof ArtifactFacade) {</span>
-<span class="nc" id="L1575">			o = ((ArtifactFacade) o).getData();</span>
+<span class="nc bnc" id="L1515" title="All 2 branches missed.">		if (o instanceof ArtifactFacade) {</span>
+<span class="nc" id="L1516">			o = ((ArtifactFacade) o).getData();</span>
 		}
 
-<span class="nc bnc" id="L1578" title="All 2 branches missed.">		if (o instanceof Artifact) {</span>
-<span class="nc" id="L1579">			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(), o,</span>
+<span class="nc bnc" id="L1519" title="All 2 branches missed.">		if (o instanceof Artifact) {</span>
+<span class="nc" id="L1520">			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(), o,</span>
 					DomRenderer.Options.TOP_LEVEL);
 		}
 
-<span class="nc bnc" id="L1583" title="All 2 branches missed.">		if (o instanceof MetadataArtifact) {</span>
-<span class="nc" id="L1584">			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o, &quot;artifact&quot;,</span>
+<span class="nc bnc" id="L1524" title="All 2 branches missed.">		if (o instanceof MetadataArtifact) {</span>
+<span class="nc" id="L1525">			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o, &quot;artifact&quot;,</span>
 					DomRenderer.Options.TOP_LEVEL);
 		}
 
-<span class="nc" id="L1588">		return String.valueOf(o);</span>
+<span class="nc" id="L1529">		return String.valueOf(o);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
