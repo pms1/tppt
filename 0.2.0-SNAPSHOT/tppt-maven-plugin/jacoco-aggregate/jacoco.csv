@@ -93,7 +93,6 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new Fe
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},100,0,2,0,10,0,5,0,4,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,NestedZipFileSystemProvider,120,0,2,0,25,0,21,0,20,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},81,0,0,0,7,0,4,0,4,0
-tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactKey,177,0,30,0,40,0,21,0,6,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.ElementDeltaReporter() {...},51,0,0,0,5,0,3,0,3,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2RepositoryImpl,40,0,0,0,9,0,3,0,3,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.new FeatureXmlComparator.AttributesDeltaReporter() {...},84,0,2,0,9,0,5,0,4,0
@@ -123,7 +122,7 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFacadeImp
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RequiredMatcher,160,0,32,0,28,0,30,0,14,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.PluginChildElementsException,5,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFactory,46,0,6,0,14,0,7,0,4,0
-tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFacadeImpl.ArtifactFacadeImpl,52,0,0,0,11,0,7,0,7,0
+tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactRepositoryFacadeImpl.ArtifactFacadeImpl,54,0,0,0,11,0,7,0,7,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.AbstractRepository,913,0,120,0,105,0,69,0,9,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,AbstractZipComparator.UnparseableZipException,7,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryAdded,12,0,0,0,2,0,1,0,1,0
@@ -134,7 +133,7 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,CompositeRepositoryFactory,
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,BundleEclipseSourceBundleHeaderComparator,153,0,26,0,28,0,15,0,2,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new ObjectComparator.DeltaCreator() {...},127,0,14,0,16,0,9,0,2,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,DataCompressionRaw,37,0,0,0,6,0,6,0,6,0
-tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator,1391,0,134,0,210,0,108,0,39,0
+tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator,1411,0,134,0,212,0,110,0,41,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.new Object() {...},26,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator.UnexpectedTextException,5,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactAddedDelta,15,0,0,0,3,0,1,0,1,0
@@ -165,6 +164,7 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.Reposi
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,DelegatingFileSystem,70,0,0,0,19,0,16,0,16,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,MetadataRepositoryFactory,101,0,12,0,25,0,11,0,5,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureVersionDelta,34,0,0,0,8,0,3,0,3,0
+tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,UnitId,90,0,12,0,19,0,12,0,6,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactDelta,36,0,0,0,4,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.RepositoryRemoved,12,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.AbstractArtifactDelta,19,0,0,0,6,0,1,0,1,0
@@ -174,7 +174,7 @@ tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.Metada
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,DomRenderer.new Object() {...},12,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.CategoryVersionChange,126,0,26,0,27,0,16,0,3,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeatureXmlComparator,1128,0,151,0,181,0,93,0,11,0
-tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactId,90,0,12,0,19,0,12,0,6,0
+tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,ArtifactId,122,0,16,0,24,0,15,0,7,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,FeaturePluginVersionDelta,54,0,2,0,12,0,5,0,4,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,RepositoryComparator.ArtifactsDelta,33,0,0,0,4,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2,P2RepositoryFactory.P2IndexType,137,0,4,0,21,0,10,0,8,0
