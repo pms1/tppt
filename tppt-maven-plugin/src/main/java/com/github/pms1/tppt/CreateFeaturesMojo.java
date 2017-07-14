@@ -223,7 +223,8 @@ public class CreateFeaturesMojo extends AbstractMojo {
 					throw new Error("Unit with multiple artifacts: " + u.getId() + " " + u.getVersion());
 
 				MetadataArtifact a = Iterables.getOnlyElement(u.getArtifacts().getArtifact());
-				Path path = p2.getArtifactRepositoryFacade().getArtifactUri(new ArtifactId(a.getId(), a.getVersion()));
+				Path path = p2.getArtifactRepositoryFacade()
+						.getArtifactUri(new ArtifactId(a.getId(), a.getVersion(), a.getClassifier()));
 
 				Plugin p = new Plugin();
 				p.id = provided.get().getName();

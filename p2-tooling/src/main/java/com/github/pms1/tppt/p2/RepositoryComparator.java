@@ -629,28 +629,27 @@ public class RepositoryComparator {
 		dest.addAll(oc.compare(md1, md2));
 
 		{
-			Map<ArtifactId, Unit> c1 = getCategories(md1);
-			Map<ArtifactId, Unit> c2 = getCategories(md2);
-			Multimap<String, ArtifactId> id1 = HashMultimap.create();
-			Multimap<String, ArtifactId> id2 = HashMultimap.create();
+			Map<UnitId, Unit> c1 = getCategories(md1);
+			Map<UnitId, Unit> c2 = getCategories(md2);
+			Multimap<String, UnitId> id1 = HashMultimap.create();
+			Multimap<String, UnitId> id2 = HashMultimap.create();
 
 			c1.keySet().forEach(a -> id1.put(a.getId(), a));
 			c2.keySet().forEach(a -> id2.put(a.getId(), a));
 
 			for (String a : Sets.union(id1.keySet(), id2.keySet())) {
-				Set<ArtifactId> i1 = new HashSet<>(id1.get(a));
-				Set<ArtifactId> i2 = new HashSet<>(id2.get(a));
+				Set<UnitId> i1 = new HashSet<>(id1.get(a));
+				Set<UnitId> i2 = new HashSet<>(id2.get(a));
 
-				Set<ArtifactId> intersection = new HashSet<>(i1);
+				Set<UnitId> intersection = new HashSet<>(i1);
 				intersection.retainAll(i2);
 
-				for (ArtifactId id : intersection) {
+				for (UnitId id : intersection) {
 					i1.remove(id);
 					i2.remove(id);
 				}
 
 				if (i1.size() == 1 && i2.size() == 1) {
-
 					changes.add(new CategoryVersionChange(c1.get(Iterables.getOnlyElement(i1)),
 							c2.get(Iterables.getOnlyElement(i2))));
 				}
@@ -751,13 +750,13 @@ public class RepositoryComparator {
 			&& p.getProperties().getProperty().stream().anyMatch(
 					p1 -> p1.getName().equals("org.eclipse.equinox.p2.type.category") && p1.getValue().equals("true"));
 
-	private static Map<ArtifactId, Unit> getCategories(MetadataRepository md1) {
+	private static Map<UnitId, Unit> getCategories(MetadataRepository md1) {
 
 		if (md1.getUnits() == null)
 			return Collections.emptyMap();
 
 		return md1.getUnits().getUnit().stream().filter(isCategory)
-				.collect(Collectors.toMap(u -> new ArtifactId(u.getId(), u.getVersion()), Function.identity()));
+				.collect(Collectors.toMap(u -> new UnitId(u.getId(), u.getVersion()), Function.identity()));
 
 	}
 
@@ -980,8 +979,8 @@ public class RepositoryComparator {
 					switch (d.path.getPath()) {
 					case "/version":
 						if (d.path.getLeft().equals(v1) && d.path.getRight().equals(v2)) {
-							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));
-							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));
+							removedArtifactsArtifacts.add(createId(d.left));
+							addedArtifactsArtifacts.add(createId(d.right));
 							return true;
 						}
 					}
@@ -1025,8 +1024,8 @@ public class RepositoryComparator {
 						if (!r.getVersion().equals(v2))
 							return false;
 
-						removedArtifactsMetadata.add(ArtifactKey.create(l));
-						addedArtifactsMetadata.add(ArtifactKey.create(r));
+						removedArtifactsMetadata.add(createId(l));
+						addedArtifactsMetadata.add(createId(r));
 						return true;
 					}
 				}
@@ -1052,70 +1051,12 @@ public class RepositoryComparator {
 		}
 	}
 
-	static class ArtifactKey {
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());
-			result = prime * result + ((id == null) ? 0 : id.hashCode());
-			result = prime * result + ((version == null) ? 0 : version.hashCode());
-			return result;
-		}
+	private static ArtifactId createId(Artifact a) {
+		return new ArtifactId(a.getId(), a.getVersion(), a.getClassifier());
+	}
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			ArtifactKey other = (ArtifactKey) obj;
-			if (classifier == null) {
-				if (other.classifier != null)
-					return false;
-			} else if (!classifier.equals(other.classifier))
-				return false;
-			if (id == null) {
-				if (other.id != null)
-					return false;
-			} else if (!id.equals(other.id))
-				return false;
-			if (version == null) {
-				if (other.version != null)
-					return false;
-			} else if (!version.equals(other.version))
-				return false;
-			return true;
-		}
-
-		private final String id;
-		private final Version version;
-		private final String classifier;
-
-		public ArtifactKey(String id, Version version, String classifier) {
-			Preconditions.checkNotNull(id);
-			Preconditions.checkNotNull(version);
-			Preconditions.checkNotNull(classifier);
-			this.id = id;
-			this.version = version;
-			this.classifier = classifier;
-		}
-
-		public static ArtifactKey create(Artifact a) {
-			return new ArtifactKey(a.getId(), a.getVersion(), a.getClassifier());
-		}
-
-		public static ArtifactKey create(MetadataArtifact r) {
-			return new ArtifactKey(r.getId(), r.getVersion(), r.getClassifier());
-		}
-
-		@Override
-		public String toString() {
-			return "ArtifactKey(" + id + "," + version + "," + classifier + ")";
-		}
-
+	private static ArtifactId createId(MetadataArtifact r) {
+		return new ArtifactId(r.getId(), r.getVersion(), r.getClassifier());
 	}
 
 	final static private OPathMatcher unitArtifactVersionMatcher = OPathMatcher
@@ -1238,14 +1179,14 @@ public class RepositoryComparator {
 	 */
 	static abstract class ArtifactVersionChange extends Change {
 
-		Set<ArtifactKey> removedArtifactsMetadata = new HashSet<>();
-		Set<ArtifactKey> addedArtifactsMetadata = new HashSet<>();
-		Set<ArtifactKey> removedArtifactsArtifacts = new HashSet<>();
-		Set<ArtifactKey> addedArtifactsArtifacts = new HashSet<>();
+		Set<ArtifactId> removedArtifactsMetadata = new HashSet<>();
+		Set<ArtifactId> addedArtifactsMetadata = new HashSet<>();
+		Set<ArtifactId> removedArtifactsArtifacts = new HashSet<>();
+		Set<ArtifactId> addedArtifactsArtifacts = new HashSet<>();
 
 		@Override
 		void check(Consumer<String> incompatibleChanges) {
-			for (ArtifactKey u : Sets.union(removedArtifactsArtifacts, removedArtifactsMetadata)) {
+			for (ArtifactId u : Sets.union(removedArtifactsArtifacts, removedArtifactsMetadata)) {
 				boolean a = removedArtifactsArtifacts.contains(u);
 				boolean m = removedArtifactsMetadata.contains(u);
 
@@ -1255,7 +1196,7 @@ public class RepositoryComparator {
 					incompatibleChanges.accept("Only removed in artifacts: " + u);
 			}
 
-			for (ArtifactKey u : Sets.union(addedArtifactsArtifacts, addedArtifactsMetadata)) {
+			for (ArtifactId u : Sets.union(addedArtifactsArtifacts, addedArtifactsMetadata)) {
 				boolean a = addedArtifactsArtifacts.contains(u);
 				boolean m = addedArtifactsMetadata.contains(u);
 
@@ -1475,8 +1416,8 @@ public class RepositoryComparator {
 					switch (d.path.getPath()) {
 					case "/version":
 						if (d.path.getLeft().equals(v1) && d.path.getRight().equals(v2)) {
-							removedArtifactsArtifacts.add(ArtifactKey.create(d.left));
-							addedArtifactsArtifacts.add(ArtifactKey.create(d.right));
+							removedArtifactsArtifacts.add(createId(d.left));
+							addedArtifactsArtifacts.add(createId(d.right));
 							return true;
 						}
 					}
@@ -1520,8 +1461,8 @@ public class RepositoryComparator {
 					if (!r.getVersion().equals(v2))
 						return false;
 
-					removedArtifactsMetadata.add(ArtifactKey.create(l));
-					addedArtifactsMetadata.add(ArtifactKey.create(r));
+					removedArtifactsMetadata.add(createId(l));
+					addedArtifactsMetadata.add(createId(r));
 
 					return true;
 				} else if (unitTouchpointInstructionValueMatcher.matches(d.path)) {

@@ -12,8 +12,8 @@ import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterEvaluator;
 import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifact;
-import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperty;
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Rule;
 import com.google.common.base.Preconditions;
 
@@ -48,7 +48,7 @@ class ArtifactRepositoryFacadeImpl extends AbstractRepositoryFacade<ArtifactRepo
 			Preconditions.checkNotNull(a);
 
 			this.data = a;
-			this.id = new ArtifactId(a.getId(), a.getVersion());
+			this.id = new ArtifactId(a.getId(), a.getVersion(), a.getClassifier());
 		}
 
 		@Override
