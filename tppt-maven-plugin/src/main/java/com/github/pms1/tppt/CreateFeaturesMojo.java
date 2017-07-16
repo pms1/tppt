@@ -118,23 +118,23 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	private static Plugin scanPlugin(Path path, Plugin plugin)
 			throws IOException, BundleException, MojoExecutionException {
 		Preconditions.checkArgument(Files.isRegularFile(path), "Not a regular file: " + path);
+		Preconditions.checkArgument(Files.isReadable(path), "Not readable: " + path);
 
 		long uncompressedSize = 0;
 
 		// Cannot use ZipInputStream since that leaves getCompressedSize() and
 		// getSize() of ZipEntry unfilled
-		if (!Files.isReadable(path))
-			try (ZipFile zf = new ZipFile(path.toFile())) {
-				for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
-					ZipEntry entry = e.nextElement();
+		try (ZipFile zf = new ZipFile(path.toFile())) {
+			for (Enumeration<? extends ZipEntry> e = zf.entries(); e.hasMoreElements();) {
+				ZipEntry entry = e.nextElement();
 
-					if (entry.getSize() == -1)
-						throw new Error();
-					uncompressedSize += entry.getSize();
-				}
-			} catch (java.util.zip.ZipException e) {
-				throw new RuntimeException("While opening " + path + ": " + e.getMessage());
+				if (entry.getSize() == -1)
+					throw new Error();
+				uncompressedSize += entry.getSize();
 			}
+		} catch (java.util.zip.ZipException e) {
+			throw new RuntimeException("While opening " + path + ": " + e.getMessage());
+		}
 
 		plugin.download_size = Files.size(path) / 1024;
 		plugin.install_size = uncompressedSize / 1024;
