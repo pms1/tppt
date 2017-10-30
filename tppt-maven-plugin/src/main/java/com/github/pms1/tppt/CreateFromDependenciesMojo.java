@@ -387,14 +387,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 							"Unhandled: malformed Eclipse-SourceBundle header: " + sourceBundle);
 				String sbundle = elements[0].getValue();
 				String sversion = elements[0].getAttribute("version");
-				if (!Objects.equals(plugin.id, sbundle))
-					throw new MojoExecutionException(
-							"Unhandled: different bundle in Eclipse-SourceBundle header: " + plugin.id + " " + sbundle);
-				if (!Objects.equals(plugin.version, sversion))
-					throw new MojoExecutionException("Unhandled: different version in Eclipse-SourceBundle header: "
-							+ plugin.version + " " + sversion);
-
-				sourceHasHeaders = true;
+				if (Objects.equals(plugin.id, sbundle) && Objects.equals(plugin.version, sversion))
+					sourceHasHeaders = true;
 			}
 		}
 
