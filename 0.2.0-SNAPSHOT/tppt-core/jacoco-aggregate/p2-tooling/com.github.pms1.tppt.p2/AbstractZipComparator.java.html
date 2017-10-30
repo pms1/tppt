@@ -73,7 +73,7 @@ import com.google.common.collect.Sets;
 
 	abstract protected FileComparator getComparator(String p);
 
-<span class="nc" id="L76">	static class UnparseableZipException extends SemanticException {</span>
+	static class UnparseableZipException extends SemanticException {
 
 		public UnparseableZipException(FileId file, Throwable parent) {
 <span class="nc" id="L79">			super(file, parent.toString(), parent);</span>
