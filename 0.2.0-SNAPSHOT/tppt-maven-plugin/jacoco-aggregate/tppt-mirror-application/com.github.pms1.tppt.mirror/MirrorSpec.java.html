@@ -42,47 +42,50 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 	@XmlElement(name = &quot;iu&quot;)
 	public String[] ius;
 
+	@XmlElement(name = &quot;excludeIu&quot;)
+	public String[] excludeIus;
+
 	@XmlElement
 	public OfflineType offline;
 
-<span class="nc" id="L48">	public static enum OfflineType {</span>
-<span class="nc" id="L49">		offline, online;</span>
+<span class="nc" id="L51">	public static enum OfflineType {</span>
+<span class="nc" id="L52">		offline, online;</span>
 	}
 
 	@XmlElement
 	public StatsType stats;
 
-<span class="nc" id="L55">	public static enum StatsType {</span>
-<span class="nc" id="L56">		collect, suppress;</span>
+<span class="nc" id="L58">	public static enum StatsType {</span>
+<span class="nc" id="L59">		collect, suppress;</span>
 	}
 
-<span class="nc" id="L59">	public static class Filter {</span>
+<span class="nc" id="L62">	public static class Filter {</span>
 		@XmlElement
 		Map&lt;String, String&gt; filter;
 	}
 
-<span class="nc" id="L64">	static class MapAdapter extends XmlAdapter&lt;MapAdapter.Entry[], Map&lt;String, String&gt;&gt; {</span>
+<span class="nc" id="L67">	static class MapAdapter extends XmlAdapter&lt;MapAdapter.Entry[], Map&lt;String, String&gt;&gt; {</span>
 
-<span class="nc" id="L66">		public static class Entry {</span>
+<span class="nc" id="L69">		public static class Entry {</span>
 			public String key;
 			public String value;
 		}
 
 		private Entry from(Map.Entry&lt;String, String&gt; e) {
-<span class="nc" id="L72">			Entry r = new Entry();</span>
-<span class="nc" id="L73">			r.key = e.getKey();</span>
-<span class="nc" id="L74">			r.value = e.getValue();</span>
-<span class="nc" id="L75">			return r;</span>
+<span class="nc" id="L75">			Entry r = new Entry();</span>
+<span class="nc" id="L76">			r.key = e.getKey();</span>
+<span class="nc" id="L77">			r.value = e.getValue();</span>
+<span class="nc" id="L78">			return r;</span>
 		}
 
 		@Override
 		public MapAdapter.Entry[] marshal(Map&lt;String, String&gt; v) throws Exception {
-<span class="nc" id="L80">			return v.entrySet().stream().map(this::from).toArray(s -&gt; new MapAdapter.Entry[s]);</span>
+<span class="nc" id="L83">			return v.entrySet().stream().map(this::from).toArray(s -&gt; new MapAdapter.Entry[s]);</span>
 		}
 
 		@Override
 		public Map&lt;String, String&gt; unmarshal(MapAdapter.Entry[] v) throws Exception {
-<span class="nc" id="L85">			return Arrays.stream(v).collect(Collectors.toMap(e -&gt; e.key, e -&gt; e.value));</span>
+<span class="nc" id="L88">			return Arrays.stream(v).collect(Collectors.toMap(e -&gt; e.key, e -&gt; e.value));</span>
 		}
 
 	}

@@ -19,7 +19,7 @@ tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.Type,70,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.PathAdapter,11,0,0,0,3,0,3,0,3,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,1180,0,129,0,199,0,86,0,18,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,1282,0,145,0,219,0,97,0,21,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirror,14,0,0,0,2,0,2,0,2,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirrors,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Change,17,0,0,0,7,0,5,0,5,0
