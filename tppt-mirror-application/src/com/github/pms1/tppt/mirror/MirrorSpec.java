@@ -42,6 +42,9 @@ public class MirrorSpec {
 	@XmlElement(name = "iu")
 	public String[] ius;
 
+	@XmlElement(name = "excludeIu")
+	public String[] excludeIus;
+
 	@XmlElement
 	public OfflineType offline;
 

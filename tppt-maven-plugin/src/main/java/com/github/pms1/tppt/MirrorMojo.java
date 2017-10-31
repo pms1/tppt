@@ -90,6 +90,9 @@ public class MirrorMojo extends AbstractMojo {
 		public List<String> ius;
 
 		@Parameter
+		public List<String> excludeIus;
+
+		@Parameter
 		public List<URI> sources;
 
 		@SuppressWarnings("unchecked")
@@ -108,6 +111,8 @@ public class MirrorMojo extends AbstractMojo {
 				MirrorSpec ms = new MirrorSpec();
 
 				ms.ius = m.ius.toArray(new String[m.ius.size()]);
+				if (m.excludeIus != null)
+					ms.excludeIus = m.excludeIus.toArray(new String[m.excludeIus.size()]);
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
 				ms.sourceRepositories = m.sources.toArray(new URI[m.sources.size()]);
 				ms.targetRepository = repoOut;

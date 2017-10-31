@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -41,6 +42,7 @@ import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
 import org.eclipse.equinox.p2.query.IQuery;
+import org.eclipse.equinox.p2.query.IQueryResult;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor;
@@ -159,6 +161,10 @@ public class MirrorApplication implements IApplication {
 				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
 				slicingOptions.setFilter(filter);
 				slicingOptions.considerStrictDependencyOnly(false);
+				// true is likely to be always wrong as it removes them without
+				// looking at constraints
+				// e.g. antlr runtime 3.2.0 for xtext if 4.x is present
+				slicingOptions.latestVersionOnly(false);
 
 				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
@@ -173,6 +179,23 @@ public class MirrorApplication implements IApplication {
 					root.addAll(queryResult);
 				}
 
+				List<Predicate<IInstallableUnit>> excludeFilter = new ArrayList<>();
+				if (ms.excludeIus != null)
+					for (String iu : ms.excludeIus) {
+						int idx = iu.indexOf('/');
+						Predicate<IInstallableUnit> p;
+						if (idx == -1) {
+							String unit = iu;
+							p = iiu -> Objects.equals(unit, iiu.getId());
+						} else {
+							String unit = iu.substring(0, idx);
+							String version = iu.substring(idx + 1);
+							p = iiu -> Objects.equals(unit, iiu.getId())
+									&& Objects.equals(version, iiu.getVersion().toString());
+						}
+						excludeFilter.add(p);
+					}
+
 				for (;;) {
 					int oldRootSize = root.size();
 
@@ -184,9 +207,18 @@ public class MirrorApplication implements IApplication {
 					IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new),
 							monitor);
 
+					if (slice != null && slicingOptions.latestVersionOnly()) {
+						IQueryResult<IInstallableUnit> queryResult = slice.query(QueryUtil.createLatestIUQuery(),
+								monitor);
+						slice = queryResult;
+					}
+
 					LinkedList<IInstallableUnit> todo = new LinkedList<>();
-					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))
+					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor)) {
+						if (excludeFilter.stream().anyMatch(p -> p.test(iu)))
+							continue;
 						todo.add(iu);
+					}
 
 					while (!todo.isEmpty()) {
 						IInstallableUnit iu = todo.removeFirst();

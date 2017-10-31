@@ -26,11 +26,14 @@
 					<mirrors>
 						<mirror>
 							<sources>
-								<source>http://download.eclipse.org/releases/neon/201612211000</source>
+								<source>http://download.eclipse.org/releases/oxygen/201710111001/</source>
 							</sources>
 							<ius>
-								<iu>org.eclipse.osgi</iu>
+								<iu>org.eclipse.equinox.core.feature.feature.group</iu>
 							</ius>
+							<excludeIus>
+								<excludeIu>org.eclipse.osgi/3.12.1.v20170821-1548</excludeIu>
+							</excludeIus>
 						</mirror>
 					</mirrors>
 				</configuration>

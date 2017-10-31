@@ -1,11 +1,14 @@
 <mirrorSpecification>
 	<targetRepository>c:/temp/mirror1</targetRepository>
 	<mirrorRepository>C:/Users/Mirko/.m2/repository/.cache/tppt/p2/</mirrorRepository>
-	<sourceRepository>http://download.eclipse.org/releases/neon/201612211000</sourceRepository>
+	<sourceRepository>http://download.eclipse.org/releases/oxygen/201710111001/</sourceRepository>
 
 	<!-- <iu>org.eclipse.core.runtime.feature.feature.group</iu> -->
 
 	<iu>org.eclipse.rcp.feature.group</iu>
+	
+	<excludeIu>org.eclipse.osgi/3.12.1.v20170821-1548</excludeIu>
+	<!-- 
 	<iu>org.eclipse.equinox.executable.feature.group</iu>
 	<iu>org.eclipse.platform.feature.group</iu>
 	<iu>org.eclipse.emf.source.feature.group</iu>
@@ -28,7 +31,8 @@
 	<iu>org.eclipse.emf.edit.feature.group</iu>
 	<iu>org.eclipse.emf.ecore.edit.feature.group</iu>
 	<iu>org.eclipse.emf.common.ui.feature.group</iu>
-
+ -->
+ 
 	<filter>
 		<item>
 			<key>osgi.os</key>
