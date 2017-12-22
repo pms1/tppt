@@ -1,38 +1,14 @@
 <mirrorSpecification>
 	<targetRepository>c:/temp/mirror1</targetRepository>
 	<mirrorRepository>C:/Users/Mirko/.m2/repository/.cache/tppt/p2/</mirrorRepository>
-	<sourceRepository>http://download.eclipse.org/releases/oxygen/201710111001/</sourceRepository>
+	<sourceRepository>http://download.eclipse.org/releases/oxygen/201712201001/</sourceRepository>
+	<sourceRepository>http://download.eclipse.org/technology/epp/packages/oxygen/</sourceRepository>
 
 	<!-- <iu>org.eclipse.core.runtime.feature.feature.group</iu> -->
 
-	<iu>org.eclipse.rcp.feature.group</iu>
+	<iu>epp.package.rcp</iu>
+	<algorithm>permissiveSlicer</algorithm>
 	
-	<excludeIu>org.eclipse.osgi/3.12.1.v20170821-1548</excludeIu>
-	<!-- 
-	<iu>org.eclipse.equinox.executable.feature.group</iu>
-	<iu>org.eclipse.platform.feature.group</iu>
-	<iu>org.eclipse.emf.source.feature.group</iu>
-	<iu>org.eclipse.equinox.p2.core.feature.feature.group</iu>
-	<iu>org.eclipse.equinox.p2.rcp.feature.feature.group</iu>
-	<iu>org.eclipse.equinox.p2.extras.feature.feature.group</iu>
-	<iu>org.eclipse.help.feature.group</iu>
-	<iu>org.eclipse.equinox.core.sdk.feature.group</iu>
-	<iu>org.eclipse.jdt.feature.group</iu>
-	<iu>org.eclipse.emf.mwe.core.feature.feature.group</iu>
-	<iu>org.eclipse.emf.mwe2.language.sdk.feature.group</iu>
-	<iu>org.eclipse.emf.mwe2.runtime.sdk.feature.group</iu>
-	<iu>org.eclipse.emf.ecore.editor.feature.group</iu>
-	<iu>org.eclipse.emf.converter.feature.group</iu>
-	<iu>org.eclipse.emf.codegen.feature.group</iu>
-	<iu>org.eclipse.emf.codegen.ecore.feature.group</iu>
-	<iu>org.eclipse.emf.common.feature.group</iu>
-	<iu>org.eclipse.emf.ecore.feature.group</iu>
-	<iu>org.eclipse.emf.edit.ui.feature.group</iu>
-	<iu>org.eclipse.emf.edit.feature.group</iu>
-	<iu>org.eclipse.emf.ecore.edit.feature.group</iu>
-	<iu>org.eclipse.emf.common.ui.feature.group</iu>
- -->
- 
 	<filter>
 		<item>
 			<key>osgi.os</key>

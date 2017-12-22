@@ -78,6 +78,8 @@ public class MyTransport extends Transport {
 		throw new UnsupportedOperationException();
 	}
 
+	private static Map<Path, Integer> tries = new HashMap<>();
+
 	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
 		try {
 			Files.createDirectories(path.getParent());
@@ -97,9 +99,18 @@ public class MyTransport extends Transport {
 
 					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));
 
-					// #9 should be able to specify somehow if validation is to
-					// be done
-					return Status.OK_STATUS;
+					int tryNr = tries.getOrDefault(path, 0) + 1;
+					tries.put(path, tryNr);
+					if (tryNr < 4) {
+						// #9 should be able to specify somehow if validation is
+						// to be done
+						return Status.OK_STATUS;
+					}
+
+					System.out.println(path
+							+ " is loaded repeatedly from cache. Assuming cached file is corrupted and re-mirroring it.");
+
+					Files.delete(path);
 				} catch (NoSuchFileException e) {
 
 				}
@@ -115,7 +126,7 @@ public class MyTransport extends Transport {
 					switch (response.getStatusLine().getStatusCode()) {
 					case HttpStatus.SC_UNAUTHORIZED:
 						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, "authentication failed " + uri,
+								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, "Authentication failed " + uri,
 								null);
 						break;
 					case HttpStatus.SC_OK:
@@ -169,12 +180,15 @@ public class MyTransport extends Transport {
 						if (date != null)
 							Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));
 
+						System.err.println("R1 " + Files.exists(path));
 						result = Status.OK_STATUS;
 						break;
 					case HttpStatus.SC_NOT_MODIFIED:
+						System.err.println("R2 " + Files.exists(path));
 						result = Status.OK_STATUS;
 						break;
 					case HttpStatus.SC_NOT_FOUND:
+						System.err.println("R3 " + Files.exists(path));
 						EntityUtils.consume(entity);
 						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
 								ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri, null);
@@ -216,6 +230,7 @@ public class MyTransport extends Transport {
 		}
 
 		IStatus result = mirror(toDownload, p, monitor);
+		System.err.println("R4 " + result + " " + p + " " + Files.exists(p));
 
 		if (result.isOK()) {
 			try (InputStream is = Files.newInputStream(p)) {

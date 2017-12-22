@@ -46,6 +46,13 @@ public class MirrorSpec {
 	public String[] excludeIus;
 
 	@XmlElement
+	public AlgorithmType algorithm;
+
+	public static enum AlgorithmType {
+		slicer, permissiveSlicer, planner;
+	}
+
+	@XmlElement
 	public OfflineType offline;
 
 	public static enum OfflineType {

@@ -7,15 +7,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -30,19 +35,30 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository;
 import org.eclipse.equinox.internal.p2.director.PermissiveSlicer;
+import org.eclipse.equinox.internal.p2.director.Slicer;
+import org.eclipse.equinox.internal.p2.metadata.IRequiredCapability;
+import org.eclipse.equinox.internal.p2.metadata.InstallableUnit;
 import org.eclipse.equinox.internal.p2.metadata.repository.CompositeMetadataRepository;
 import org.eclipse.equinox.internal.p2.repository.Transport;
 import org.eclipse.equinox.p2.core.IProvisioningAgent;
 import org.eclipse.equinox.p2.core.IProvisioningAgentProvider;
 import org.eclipse.equinox.p2.core.ProvisionException;
 import org.eclipse.equinox.p2.engine.IProfile;
+import org.eclipse.equinox.p2.engine.IProfileRegistry;
+import org.eclipse.equinox.p2.engine.IProvisioningPlan;
+import org.eclipse.equinox.p2.engine.ProvisioningContext;
 import org.eclipse.equinox.p2.internal.repository.mirroring.Mirroring;
-import org.eclipse.equinox.p2.internal.repository.tools.SlicingOptions;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.IInstallableUnit;
+import org.eclipse.equinox.p2.metadata.IInstallableUnitFragment;
+import org.eclipse.equinox.p2.metadata.IInstallableUnitPatch;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
+import org.eclipse.equinox.p2.metadata.IRequirement;
+import org.eclipse.equinox.p2.metadata.IRequirementChange;
+import org.eclipse.equinox.p2.metadata.expression.IMatchExpression;
+import org.eclipse.equinox.p2.planner.IPlanner;
+import org.eclipse.equinox.p2.planner.IProfileChangeRequest;
 import org.eclipse.equinox.p2.query.IQuery;
-import org.eclipse.equinox.p2.query.IQueryResult;
 import org.eclipse.equinox.p2.query.IQueryable;
 import org.eclipse.equinox.p2.query.QueryUtil;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactDescriptor;
@@ -62,6 +78,27 @@ public class MirrorApplication implements IApplication {
 
 	@SuppressWarnings("unchecked")
 	private static final Map<String, String>[] emptyFilters = new Map[] { Collections.emptyMap() };
+
+	static final List<GlobalOptions> allGo;
+	static final List<SlicerOptions> allSo;
+	static final List<PermissiveSlicerOptions> allPo;
+	static {
+		GlobalOptions go1 = new GlobalOptions();
+		go1.installFeatures = true;
+		GlobalOptions go2 = new GlobalOptions();
+		go2.installFeatures = false;
+		allGo = Arrays.asList(go1, go2);
+
+		SlicerOptions so1 = new SlicerOptions();
+		allSo = Arrays.asList(so1);
+
+		PermissiveSlicerOptions po1 = new PermissiveSlicerOptions();
+		po1.everythingGreedy = false;
+
+		PermissiveSlicerOptions po2 = new PermissiveSlicerOptions();
+		po2.everythingGreedy = true;
+		allPo = Arrays.asList(po1, po2);
+	}
 
 	@Override
 	public Object start(IApplicationContext context) throws Exception {
@@ -153,68 +190,108 @@ public class MirrorApplication implements IApplication {
 			for (URI sr : ms.sourceRepositories)
 				sourceMetadataRepo.addChild(sr);
 
-			Set<IInstallableUnit> finalIus = new HashSet<>();
+			Set<IInstallableUnit> root = new HashSet<>();
+			for (String iu : ms.ius) {
+				// TODO: allow version to be specified...
 
-			for (Map<String, String> basicFilter : ms.filters != null ? ms.filters : emptyFilters) {
-				SlicingOptions slicingOptions = new SlicingOptions();
-				Map<String, String> filter = new HashMap<String, String>(basicFilter);
-				filter.put(IProfile.PROP_INSTALL_FEATURES, "true");
-				slicingOptions.setFilter(filter);
-				slicingOptions.considerStrictDependencyOnly(false);
-				// true is likely to be always wrong as it removes them without
-				// looking at constraints
-				// e.g. antlr runtime 3.2.0 for xtext if 4.x is present
-				slicingOptions.latestVersionOnly(false);
+				IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
 
-				Set<IInstallableUnit> root = new HashSet<>();
-				for (String iu : ms.ius) {
-					// TODO: allow version to be specified...
+				Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
+				if (queryResult.isEmpty())
+					throw new RuntimeException("IU not found: " + iu);
 
-					IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
+				root.addAll(queryResult);
+			}
 
-					Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
-					if (queryResult.isEmpty())
-						throw new RuntimeException("IU not found: " + iu);
+			List<Predicate<IInstallableUnit>> excludeFilter = new ArrayList<>();
+			if (ms.excludeIus != null)
+				for (String iu : ms.excludeIus) {
+					int idx = iu.indexOf('/');
+					Predicate<IInstallableUnit> p;
+					if (idx == -1) {
+						String unit = iu;
+						p = iiu -> Objects.equals(unit, iiu.getId());
+					} else {
+						String unit = iu.substring(0, idx);
+						String version = iu.substring(idx + 1);
+						p = iiu -> Objects.equals(unit, iiu.getId())
+								&& Objects.equals(version, iiu.getVersion().toString());
+					}
+					excludeFilter.add(p);
+				}
+			excludeFilter = Collections.unmodifiableList(excludeFilter);
 
-					root.addAll(queryResult);
+			if (false) {
+
+				for (GlobalOptions go : allGo) {
+					for (SlicerOptions so : allSo) {
+
+						SlicingAlgorithm slicer = createSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
+						SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
+
+						if (diff("MS", my.apply(root, monitor), slicer.apply(root, monitor))) {
+							// throw new Error();
+						}
+					}
 				}
 
-				List<Predicate<IInstallableUnit>> excludeFilter = new ArrayList<>();
-				if (ms.excludeIus != null)
-					for (String iu : ms.excludeIus) {
-						int idx = iu.indexOf('/');
-						Predicate<IInstallableUnit> p;
-						if (idx == -1) {
-							String unit = iu;
-							p = iiu -> Objects.equals(unit, iiu.getId());
-						} else {
-							String unit = iu.substring(0, idx);
-							String version = iu.substring(idx + 1);
-							p = iiu -> Objects.equals(unit, iiu.getId())
-									&& Objects.equals(version, iiu.getVersion().toString());
+				for (GlobalOptions go : allGo) {
+					for (PermissiveSlicerOptions so : allPo) {
+
+						SlicingAlgorithm slicer = createPermissiveSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
+						SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
+
+						if (diff("MP", my.apply(root, monitor), slicer.apply(root, monitor))) {
+							// throw new Error();
 						}
-						excludeFilter.add(p);
 					}
+				}
+				for (GlobalOptions go : allGo) {
+					SlicingAlgorithm planner = createPlanner(sourceMetadataRepo, go, ms.filters[0], ourAgent);
+					MyMirrorOptions mo = new MyMirrorOptions();
+					mo.everythingGreedy = false;
+					SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, mo, ms.filters[0]);
+					diff("ML", my.apply(root, monitor), planner.apply(root, monitor));
+				}
+
+				for (Map.Entry<String, String> e : why.entrySet())
+					System.err.println(e);
+
+				System.exit(1);
+			}
+
+			Set<IInstallableUnit> finalIus = new HashSet<>();
+
+			for (Map<String, String> filter : ms.filters != null ? ms.filters : emptyFilters) {
+
+				GlobalOptions go = new GlobalOptions();
+				go.installFeatures = true;
+
+				SlicingAlgorithm slicer;
+				switch (ms.algorithm) {
+				case slicer:
+					SlicerOptions so = new SlicerOptions();
+					slicer = createSlicer(sourceMetadataRepo, go, so, filter);
+					break;
+				case permissiveSlicer:
+					PermissiveSlicerOptions po = new PermissiveSlicerOptions();
+					po.everythingGreedy = true;
+					slicer = createPermissiveSlicer(sourceMetadataRepo, go, po, filter);
+					break;
+				case planner:
+					slicer = createPlanner(sourceMetadataRepo, go, filter, ourAgent);
+					break;
+				default:
+					throw new Error();
+				}
+
+				Set<IInstallableUnit> root1 = new HashSet<>(root);
 
 				for (;;) {
-					int oldRootSize = root.size();
-
-					PermissiveSlicer slicer = new PermissiveSlicer(sourceMetadataRepo, slicingOptions.getFilter(),
-							slicingOptions.includeOptionalDependencies(), slicingOptions.isEverythingGreedy(),
-							slicingOptions.forceFilterTo(), slicingOptions.considerStrictDependencyOnly(),
-							slicingOptions.followOnlyFilteredRequirements());
-
-					IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new),
-							monitor);
-
-					if (slice != null && slicingOptions.latestVersionOnly()) {
-						IQueryResult<IInstallableUnit> queryResult = slice.query(QueryUtil.createLatestIUQuery(),
-								monitor);
-						slice = queryResult;
-					}
+					int oldRootSize = root1.size();
 
 					LinkedList<IInstallableUnit> todo = new LinkedList<>();
-					for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor)) {
+					for (IInstallableUnit iu : slicer.apply(root1, monitor)) {
 						if (excludeFilter.stream().anyMatch(p -> p.test(iu)))
 							continue;
 						todo.add(iu);
@@ -248,7 +325,7 @@ public class MirrorApplication implements IApplication {
 							for (String c : cand)
 								for (IInstallableUnit iu1 : sourceMetadataRepo
 										.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))
-									if (root.add(iu1))
+									if (root1.add(iu1))
 										System.out.println("Adding " + iu1 + " as source of " + iu);
 							break;
 						default:
@@ -256,7 +333,7 @@ public class MirrorApplication implements IApplication {
 						}
 					}
 
-					if (oldRootSize == root.size())
+					if (oldRootSize == root1.size())
 						break;
 				}
 			}
@@ -341,6 +418,401 @@ public class MirrorApplication implements IApplication {
 
 		return null;
 
+	}
+
+	private SlicingAlgorithm createPlanner(CompositeMetadataRepository sourceMetadataRepo, GlobalOptions go,
+			Map<String, String> basicFilter, IProvisioningAgent agent) {
+
+		IProfileRegistry registry = (IProfileRegistry) agent.getService(IProfileRegistry.SERVICE_NAME);
+
+		return (root, monitor) -> {
+			try {
+				Set<IInstallableUnit> fromSlice = new HashSet<>();
+
+				Map<String, String> filter = new HashMap<String, String>(basicFilter);
+				addGlobalOptions(filter, go);
+
+				String profileId = "MirrorApplication-" + System.currentTimeMillis();
+				IProfile profile = registry.addProfile(profileId, filter);
+				try {
+					IPlanner planner = (IPlanner) agent.getService(IPlanner.SERVICE_NAME);
+					if (planner == null)
+						throw new IllegalStateException();
+					IProfileChangeRequest pcr = planner.createChangeRequest(profile);
+					pcr.addAll(root);
+
+					ProvisioningContext context2 = new ProvisioningContext(agent);
+					context2.setMetadataRepositories(sourceMetadataRepo.getChildren().toArray(new URI[0]));
+
+					IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
+
+					System.err.println("REQUEST " + pcr);
+					System.err.println("PLAN " + plan);
+
+					for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
+						fromSlice.add(iu);
+					if (plan.getInstallerPlan() != null)
+						for (IInstallableUnit iu : plan.getInstallerPlan().getAdditions().query(QueryUtil.ALL_UNITS,
+								monitor))
+							fromSlice.add(iu);
+
+				} finally {
+					registry.removeProfile(profileId);
+				}
+
+				return fromSlice;
+			} catch (ProvisionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			throw new Error();
+
+			// IProfileRegistry registry = Activator.getProfileRegistry();
+			// String profileId = "MirrorApplication-" + System.currentTimeMillis();
+			// //$NON-NLS-1$
+			// IProfile profile = registry.addProfile(profileId,
+			// slicingOptions.getFilter());
+			// IPlanner planner = (IPlanner)
+			// Activator.getAgent().getService(IPlanner.SERVICE_NAME);
+			// if (planner == null)
+			// throw new IllegalStateException();
+			// IProfileChangeRequest pcr = planner.createChangeRequest(profile);
+			// pcr.addAll(sourceIUs);
+			// IProvisioningPlan plan = planner.getProvisioningPlan(pcr, null, monitor);
+			// registry.removeProfile(profileId);
+			// @SuppressWarnings("unchecked")
+			// IQueryable<IInstallableUnit>[] arr = new IQueryable[plan.getInstallerPlan()
+			// == null ? 1 : 2];
+			// arr[0] = plan.getAdditions();
+			// if (plan.getInstallerPlan() != null)
+			// arr[1] = plan.getInstallerPlan().getAdditions();
+			// return null;
+		};
+	}
+
+	private MyMirrorOptions myOptions(PermissiveSlicerOptions so) {
+		if (so.considerOnlyStrictDependency)
+			throw new Error();
+
+		if (!so.evalFilterTo)
+			throw new Error();
+
+		if (!so.includeOptionalDependencies)
+			throw new Error();
+
+		if (so.onlyFilteredRequirements)
+			throw new Error();
+
+		MyMirrorOptions result = new MyMirrorOptions();
+		result.everythingGreedy = so.everythingGreedy;
+		return result;
+	}
+
+	private MyMirrorOptions myOptions(SlicerOptions so) {
+		if (so.considerMetaRequirements)
+			throw new Error();
+
+		MyMirrorOptions result = new MyMirrorOptions();
+		result.everythingGreedy = false;
+		return result;
+	}
+
+	static class GlobalOptions {
+		Boolean installFeatures;
+	}
+
+	static class SlicerOptions {
+		final boolean considerMetaRequirements = false;
+	}
+
+	static class PermissiveSlicerOptions {
+		final boolean includeOptionalDependencies = true;
+		Boolean everythingGreedy;
+		final boolean evalFilterTo = true;
+		final boolean considerOnlyStrictDependency = false;
+		final boolean onlyFilteredRequirements = false;
+	}
+
+	private SlicingAlgorithm createSlicer(CompositeMetadataRepository repo, GlobalOptions go, SlicerOptions so,
+			Map<String, String> basicFilter) {
+		return (root, monitor) -> {
+			Set<IInstallableUnit> fromSlice = new HashSet<>();
+
+			Map<String, String> filter = new HashMap<String, String>(basicFilter);
+			addGlobalOptions(filter, go);
+
+			Slicer slicer = new Slicer(repo, filter, so.considerMetaRequirements);
+			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
+
+			// if (slice != null && slicingOptions.latestVersionOnly()) {
+			// IQueryResult<IInstallableUnit> queryResult =
+			// slice.query(QueryUtil.createLatestIUQuery(), monitor);
+			// slice = queryResult;
+			// }
+
+			for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))
+				fromSlice.add(iu);
+
+			return fromSlice;
+		};
+	}
+
+	private void setOption(Map<String, String> filter, String option, String value) {
+		if (value == null) {
+			if (filter.containsKey(option))
+				throw new Error();
+		} else {
+			String old = filter.putIfAbsent(option, value);
+			if (old != null)
+				throw new Error();
+		}
+	}
+
+	private void addGlobalOptions(Map<String, String> filter, GlobalOptions go) {
+		if (go.installFeatures)
+			setOption(filter, IProfile.PROP_INSTALL_FEATURES, "true");
+		else
+			setOption(filter, IProfile.PROP_INSTALL_FEATURES, null);
+	}
+
+	private SlicingAlgorithm createPermissiveSlicer(CompositeMetadataRepository repo, GlobalOptions go,
+			PermissiveSlicerOptions po, Map<String, String> basicFilter) {
+
+		return (root, monitor) ->
+
+		{
+			Set<IInstallableUnit> fromSlice = new HashSet<>();
+
+			Map<String, String> filter = new HashMap<String, String>(basicFilter);
+			addGlobalOptions(filter, go);
+
+			System.err.println("OPTS " + filter);
+			PermissiveSlicer slicer = new PermissiveSlicer(repo, filter, po.includeOptionalDependencies,
+					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
+
+			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
+
+			if (slice == null) {
+				print(slicer.getStatus(), "");
+				throw new Error("slicing failed for " + root);
+			}
+
+			// if (slice != null && slicingOptions.latestVersionOnly()) {
+			// IQueryResult<IInstallableUnit> queryResult =
+			// slice.query(QueryUtil.createLatestIUQuery(), monitor);
+			// slice = queryResult;
+			// }
+
+			for (IInstallableUnit iu : slice.query(QueryUtil.ALL_UNITS, monitor))
+				fromSlice.add(iu);
+
+			return fromSlice;
+		};
+	}
+
+	@SafeVarargs
+	private final boolean diff(String ids, Set<IInstallableUnit>... data) {
+		if (ids.length() != data.length)
+			throw new IllegalArgumentException();
+
+		Set<IInstallableUnit> all = new TreeSet<>((a, b) -> {
+			int diff = a.getId().compareTo(b.getId());
+			if (diff != 0)
+				return diff;
+			return a.getVersion().compareTo(b.getVersion());
+		});
+
+		for (Set<IInstallableUnit> d : data)
+			all.addAll(d);
+
+		Map<String, Integer> count = new TreeMap<>();
+		for (IInstallableUnit iu : all) {
+			String out = "";
+
+			for (int i = 0; i != data.length; ++i)
+				out += data[i].contains(iu) ? ids.charAt(i) : " ";
+
+			if (out.contains(" "))
+				System.out.println(out + " " + iu.getId() + " " + iu.getVersion());
+
+			count.put(out, count.getOrDefault(out, 0) + 1);
+		}
+
+		for (Entry<String, Integer> e : count.entrySet())
+			System.out.println(e.getKey() + " = " + e.getValue());
+
+		return count.size() != 1;
+	}
+
+	MyMirrorOptions optionsSlicer(boolean considerMetaRequirements) {
+		return new MyMirrorOptions();
+	}
+
+	static class MyMirrorOptions {
+
+		public Boolean everythingGreedy;
+
+	}
+
+	Map<String, String> why;
+
+	private SlicingAlgorithm myMirror(CompositeMetadataRepository sourceMetadataRepo, GlobalOptions go,
+			MyMirrorOptions mo, Map<String, String> filter) {
+
+		// filter.put("org.eclipse.epp.install.roots", "true");
+
+		Predicate<IMatchExpression<IInstallableUnit>> filter1;
+
+		if (filter == null) {
+			filter1 = (x) -> true;
+		} else {
+			List<IInstallableUnit> filterUnits = new ArrayList<>();
+
+			HashMap filter2 = new HashMap<>(filter);
+			addGlobalOptions(filter2, go);
+
+			IInstallableUnit unit = InstallableUnit.contextIU(filter2);
+
+			filterUnits.add(unit);
+
+			filter1 = (x) -> {
+				if (x == null)
+					return true;
+
+				for (IInstallableUnit f : filterUnits)
+					if (x.isMatch(f))
+						return true;
+
+				return false;
+			};
+		}
+
+		return (root, monitor) -> {
+			why = new TreeMap<>();
+
+			Set<IInstallableUnit> all = new HashSet<>();
+			Map<String, Collection<IInstallableUnit>> cache = new HashMap<>();
+			for (IInstallableUnit a : sourceMetadataRepo.query(QueryUtil.ALL_UNITS, monitor)) {
+				all.add(a);
+
+				for (IProvidedCapability c : a.getProvidedCapabilities()) {
+					String id = c.getNamespace() + "\t" + c.getName();
+					cache.computeIfAbsent(id, (x) -> new HashSet<>()).add(a);
+				}
+			}
+
+			Set<IInstallableUnit> in = new HashSet<>();
+			Set<IInstallableUnit> done = new HashSet<>();
+			Set<IInstallableUnit> todo = new HashSet<>();
+
+			todo.addAll(root);
+
+			while (!todo.isEmpty()) {
+				Set<IInstallableUnit> oldTodo = todo;
+				todo = new HashSet<>();
+				Set<IInstallableUnit> oldIn = new HashSet<>(in);
+
+				for (IInstallableUnit iu : oldTodo) {
+					if (!done.add(iu))
+						continue;
+
+					if (!filter1.test(iu.getFilter()))
+						continue;
+
+					in.add(iu);
+
+					if (!iu.getMetaRequirements().isEmpty())
+						throw new Error();
+
+					Collection<IRequirement> allRequirements = allRequirements(iu);
+
+					if (false)
+						System.err.println("IU " + iu);
+					for (IRequirement req : allRequirements) {
+						IRequiredCapability req2 = (IRequiredCapability) req;
+
+						if (!mo.everythingGreedy)
+							if (!req2.isGreedy())
+								continue;
+
+						if (false)
+							System.err.println(
+									" R " + req2 + " " + req2.getMax() + " " + req2.getMin() + " " + req2.isGreedy());
+
+						if (!filter1.test(req2.getFilter()))
+							continue;
+
+						String id = req2.getNamespace() + "\t" + req2.getName();
+
+						Collection<IInstallableUnit> collection = cache.getOrDefault(id, Collections.emptySet());
+
+						collection = collection.stream().filter(
+
+								iu2 -> req2.isMatch(iu2)
+
+						).collect(Collectors.toSet());
+
+						if (collection.isEmpty()) {
+							if (req2.getMin() == 0)
+								continue;
+						}
+
+						if (req.getMax() == 0)
+							continue;
+
+						if (false)
+							if (collection.size() > 1) {
+								Map<String, TreeSet<IInstallableUnit>> byIu = new HashMap<>();
+
+								for (IInstallableUnit iu1 : collection) {
+									byIu.computeIfAbsent(iu1.getId(),
+											(x) -> new TreeSet<>(Comparator.comparing(IInstallableUnit::getVersion)))
+											.add(iu1);
+								}
+
+								collection = byIu.values().stream().map(TreeSet::last).collect(Collectors.toSet());
+							}
+						if (collection.isEmpty())
+							throw new Error();
+
+						if (false) {
+							if (collection.size() > 1) {
+								System.err.println("  MULTI INCLUDE");
+							}
+							for (IInstallableUnit c : collection) {
+								System.err.println("  ADD " + c);
+							}
+						}
+
+						todo.addAll(collection);
+
+						for (IInstallableUnit iu1 : collection) {
+							why.putIfAbsent(iu1.getId() + " " + iu1.getVersion(), req + " of " + iu);
+						}
+					}
+				}
+			}
+
+			return in;
+		};
+
+	}
+
+	private Collection<IRequirement> allRequirements(IInstallableUnit iu) {
+		if (!(iu instanceof IInstallableUnitPatch) && !(iu instanceof IInstallableUnitFragment))
+			return iu.getRequirements();
+
+		Set<IRequirement> allRequirements = new HashSet<>(iu.getRequirements());
+
+		if (iu instanceof IInstallableUnitPatch)
+			((IInstallableUnitPatch) iu).getRequirementsChange().stream() //
+					.map(IRequirementChange::newValue) //
+					.forEach(allRequirements::add);
+
+		if (iu instanceof IInstallableUnitFragment)
+			allRequirements.addAll(((IInstallableUnitFragment) iu).getHost());
+
+		return allRequirements;
 	}
 
 	static void print(IStatus s, String indent) {

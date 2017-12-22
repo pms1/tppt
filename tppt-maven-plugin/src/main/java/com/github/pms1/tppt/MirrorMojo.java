@@ -34,6 +34,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 
 import com.github.pms1.tppt.mirror.MirrorSpec;
+import com.github.pms1.tppt.mirror.MirrorSpec.AlgorithmType;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
@@ -98,6 +99,9 @@ public class MirrorMojo extends AbstractMojo {
 		@SuppressWarnings("unchecked")
 		@Parameter
 		public Map<String, String>[] filters = new Map[0];
+
+		@Parameter
+		public AlgorithmType algorithm = AlgorithmType.permissiveSlicer;
 	}
 
 	private static final String cacheRelPath = ".cache/tppt/p2";
@@ -119,6 +123,7 @@ public class MirrorMojo extends AbstractMojo {
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
 				ms.filters = m.filters;
+				ms.algorithm = m.algorithm;
 
 				byte[] bytes;
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
