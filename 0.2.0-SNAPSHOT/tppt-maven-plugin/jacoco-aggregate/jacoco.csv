@@ -9,17 +9,22 @@ tppt-maven-plugin/maven-equinox-runner,com.github.pms1.tppt,TychoUnpackLocker,97
 tppt-maven-plugin/maven-equinox-runner,com.github.pms1.tppt,EquinoxRunner.Plugin,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport.RepoMirror,37,0,0,0,7,0,2,0,2,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.Filter,3,0,0,0,1,0,1,0,1,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.GlobalOptions,3,0,0,0,1,0,1,0,1,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.AlgorithmType,60,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,Activator,11,0,0,0,6,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.OfflineType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter.Entry,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.new IProgressMonitor() {...},15,0,0,0,10,0,9,0,9,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1062,0,135,0,185,0,86,0,15,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1154,0,137,0,196,0,87,0,15,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.PermissiveSlicerOptions,15,0,0,0,5,0,1,0,1,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.SlicerOptions,6,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter,46,0,0,0,7,0,7,0,7,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.StatsType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.Type,70,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.PathAdapter,11,0,0,0,3,0,3,0,3,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,1282,0,145,0,219,0,97,0,21,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,2265,0,233,0,400,0,162,0,41,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.MyMirrorOptions,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirror,14,0,0,0,2,0,2,0,2,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirrors,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/p2-tooling,com.github.pms1.tppt.p2.jaxb.metadata,Change,17,0,0,0,7,0,5,0,5,0
