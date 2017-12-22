@@ -117,6 +117,8 @@ public class DeployMojo extends AbstractMojo {
 						"Deployment of '" + p.getArtifact().getFile().toPath() + "' to '" + targetPath + "' failed.",
 						e);
 			}
+
+			p.getProperties().setProperty("tppt.deployment.path", targetRoot.toString());
 		}
 
 		if (true)
