@@ -13,14 +13,19 @@ import org.codehaus.plexus.component.annotations.Requirement;
 	@Requirement(hint = PropertiesComparator.HINT)
 	FileComparator propertiesComparator;
 
+	@Requirement(hint = ClassComparator.HINT)
+	FileComparator classComparator;
+
 	@Override
 	protected FileComparator getComparator(String p) {
-<span class="nc bnc" id="L18" title="All 2 branches missed.">		if (p.equals(&quot;/META-INF/MANIFEST.MF&quot;)) {</span>
-<span class="nc" id="L19">			return bundleManifestComparator;</span>
-<span class="nc bnc" id="L20" title="All 2 branches missed.">		} else if (p.endsWith(&quot;.properties&quot;)) {</span>
-<span class="nc" id="L21">			return propertiesComparator;</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">		if (p.equals(&quot;/META-INF/MANIFEST.MF&quot;)) {</span>
+<span class="nc" id="L22">			return bundleManifestComparator;</span>
+<span class="nc bnc" id="L23" title="All 2 branches missed.">		} else if (p.endsWith(&quot;.properties&quot;)) {</span>
+<span class="nc" id="L24">			return propertiesComparator;</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">		} else if (p.endsWith(&quot;.class&quot;)) {</span>
+<span class="nc" id="L26">			return classComparator;</span>
 		} else {
-<span class="nc" id="L23">			return null;</span>
+<span class="nc" id="L28">			return null;</span>
 		}
 	}
 
