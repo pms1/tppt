@@ -13,12 +13,17 @@ public class BundleComparator extends AbstractZipComparator {
 	@Requirement(hint = PropertiesComparator.HINT)
 	FileComparator propertiesComparator;
 
+	@Requirement(hint = ClassComparator.HINT)
+	FileComparator classComparator;
+
 	@Override
 	protected FileComparator getComparator(String p) {
 		if (p.equals("/META-INF/MANIFEST.MF")) {
 			return bundleManifestComparator;
 		} else if (p.endsWith(".properties")) {
 			return propertiesComparator;
+		} else if (p.endsWith(".class")) {
+			return classComparator;
 		} else {
 			return null;
 		}
