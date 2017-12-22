@@ -80,7 +80,11 @@ public class MyTransport extends Transport {
 
 	private static Map<Path, Integer> tries = new HashMap<>();
 
+	Path last;
+
 	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
+		last = null;
+
 		try {
 			Files.createDirectories(path.getParent());
 		} catch (IOException e) {
@@ -104,6 +108,7 @@ public class MyTransport extends Transport {
 					if (tryNr < 4) {
 						// #9 should be able to specify somehow if validation is
 						// to be done
+						last = path;
 						return Status.OK_STATUS;
 					}
 

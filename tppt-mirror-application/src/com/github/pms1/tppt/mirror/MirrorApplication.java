@@ -1,10 +1,12 @@
 package com.github.pms1.tppt.mirror;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +24,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -33,6 +37,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.equinox.internal.p2.artifact.processors.md5.Messages;
 import org.eclipse.equinox.internal.p2.artifact.repository.CompositeArtifactRepository;
 import org.eclipse.equinox.internal.p2.director.PermissiveSlicer;
 import org.eclipse.equinox.internal.p2.director.Slicer;
@@ -357,10 +362,18 @@ public class MirrorApplication implements IApplication {
 			mirroring.setArtifactKeys(
 					finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
 
-			MultiStatus multiStatus = mirroring.run(true, false);
-			if (!multiStatus.isOK()) {
-				print(multiStatus, "");
-				return 1;
+			for (;;) {
+				MultiStatus multiStatus = mirroring.run(true, false);
+				if (!multiStatus.isOK()) {
+					print(multiStatus, "");
+
+					if (handleChecksumFailure(multiStatus, transport))
+						continue;
+
+					return 1;
+				} else {
+					break;
+				}
 			}
 
 			// additionally mirror packed-only artifacts, unpacking them in the
@@ -420,6 +433,54 @@ public class MirrorApplication implements IApplication {
 
 	}
 
+	private boolean handleChecksumFailure(MultiStatus multiStatus, MyTransport transport) throws Exception {
+		if (transport.last == null)
+			return false;
+
+		if (multiStatus.getChildren().length != 1)
+			return false;
+		IStatus c1 = multiStatus.getChildren()[0];
+		if (c1.getChildren().length != 1)
+			return false;
+		IStatus c2 = c1.getChildren()[0];
+		if (c2.getChildren().length != 0)
+			return false;
+		if (c2.getCode() != ProvisionException.ARTIFACT_MD5_NOT_MATCH)
+			return false;
+		Pattern p = Pattern.compile(Messages.Error_unexpected_hash.replaceAll("[{][01][}]", "(.*)"));
+		Matcher m = p.matcher(c2.getMessage());
+		if (!m.matches())
+			return false;
+
+		String expected = m.group(2);
+
+		String is = MD5(transport.last);
+
+		if (!expected.equalsIgnoreCase(is))
+			return false;
+
+		System.err.println("Checksum of '" + transport.last
+				+ "' is unexpected. Assuming file is corrupted. Deleting it and trying again.");
+		Files.delete(transport.last);
+		return true;
+	}
+
+	public String MD5(Path p) throws IOException, NoSuchAlgorithmException {
+		java.security.MessageDigest md5 = java.security.MessageDigest.getInstance("MD5");
+		try (InputStream is = Files.newInputStream(p)) {
+			byte[] buf = new byte[8192];
+			int read;
+			while ((read = is.read(buf)) != -1)
+				md5.update(buf, 0, read);
+		}
+		byte[] array = md5.digest();
+		StringBuffer sb = new StringBuffer();
+		for (int i = 0; i < array.length; ++i) {
+			sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
+		}
+		return sb.toString();
+	}
+
 	private SlicingAlgorithm createPlanner(CompositeMetadataRepository sourceMetadataRepo, GlobalOptions go,
 			Map<String, String> basicFilter, IProvisioningAgent agent) {
 
@@ -445,9 +506,6 @@ public class MirrorApplication implements IApplication {
 					context2.setMetadataRepositories(sourceMetadataRepo.getChildren().toArray(new URI[0]));
 
 					IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
-
-					System.err.println("REQUEST " + pcr);
-					System.err.println("PLAN " + plan);
 
 					for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
 						fromSlice.add(iu);
@@ -586,7 +644,6 @@ public class MirrorApplication implements IApplication {
 			Map<String, String> filter = new HashMap<String, String>(basicFilter);
 			addGlobalOptions(filter, go);
 
-			System.err.println("OPTS " + filter);
 			PermissiveSlicer slicer = new PermissiveSlicer(repo, filter, po.includeOptionalDependencies,
 					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
 
