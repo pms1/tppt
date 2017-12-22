@@ -365,10 +365,10 @@ public class MirrorApplication implements IApplication {
 			for (;;) {
 				MultiStatus multiStatus = mirroring.run(true, false);
 				if (!multiStatus.isOK()) {
-					print(multiStatus, "");
-
 					if (handleChecksumFailure(multiStatus, transport))
 						continue;
+
+					print(multiStatus, "");
 
 					return 1;
 				} else {
@@ -430,38 +430,48 @@ public class MirrorApplication implements IApplication {
 		}
 
 		return null;
-
 	}
 
-	private boolean handleChecksumFailure(MultiStatus multiStatus, MyTransport transport) throws Exception {
-		if (transport.last == null)
+	private void extractExpectedMD5(IStatus status, Set<String> expected) {
+		if (status.getCode() == ProvisionException.ARTIFACT_MD5_NOT_MATCH) {
+			Pattern p = Pattern.compile(Messages.Error_unexpected_hash.replaceAll("[{][01][}]", "(.*)"));
+			Matcher m = p.matcher(status.getMessage());
+			if (!m.matches())
+				throw new Error("Failed to parse message about unexpected hash.");
+			expected.add(m.group(2));
+		}
+
+		for (IStatus c : status.getChildren()) {
+			extractExpectedMD5(c, expected);
+		}
+	}
+
+	private boolean handleChecksumFailure(IStatus status, MyTransport transport) throws Exception {
+		if (transport.getLast() == null)
 			return false;
 
-		if (multiStatus.getChildren().length != 1)
+		Set<String> allExpected = new HashSet<>();
+		extractExpectedMD5(status, allExpected);
+		String expected;
+		switch (allExpected.size()) {
+		case 0:
 			return false;
-		IStatus c1 = multiStatus.getChildren()[0];
-		if (c1.getChildren().length != 1)
-			return false;
-		IStatus c2 = c1.getChildren()[0];
-		if (c2.getChildren().length != 0)
-			return false;
-		if (c2.getCode() != ProvisionException.ARTIFACT_MD5_NOT_MATCH)
-			return false;
-		Pattern p = Pattern.compile(Messages.Error_unexpected_hash.replaceAll("[{][01][}]", "(.*)"));
-		Matcher m = p.matcher(c2.getMessage());
-		if (!m.matches())
-			return false;
+		case 1:
+			expected = allExpected.iterator().next();
+			break;
+		default:
+			throw new Error("Multiple different checksum failures");
+		}
 
-		String expected = m.group(2);
-
-		String is = MD5(transport.last);
+		String is = MD5(transport.getLast());
 
 		if (!expected.equalsIgnoreCase(is))
 			return false;
 
-		System.err.println("Checksum of '" + transport.last
+		System.err.println("Checksum of '" + transport.getLast()
 				+ "' is unexpected. Assuming file is corrupted. Deleting it and trying again.");
-		Files.delete(transport.last);
+		Files.delete(transport.getLast());
+
 		return true;
 	}
 
