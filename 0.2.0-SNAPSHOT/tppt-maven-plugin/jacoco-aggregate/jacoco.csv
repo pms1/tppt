@@ -15,7 +15,7 @@ tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,Activator,
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.OfflineType,50,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter.Entry,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.new IProgressMonitor() {...},15,0,0,0,10,0,9,0,9,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1160,0,137,0,198,0,87,0,15,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MyTransport,1077,0,135,0,190,0,87,0,16,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.PermissiveSlicerOptions,15,0,0,0,5,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.SlicerOptions,6,0,0,0,2,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.MapAdapter,46,0,0,0,7,0,7,0,7,0
@@ -23,7 +23,7 @@ tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.Type,70,0,0,0,3,0,4,0,4,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorSpec.PathAdapter,11,0,0,0,3,0,3,0,3,0
-tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,2419,0,261,0,434,0,178,0,43,0
+tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication,2438,0,260,0,435,0,179,0,44,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror,MirrorApplication.MyMirrorOptions,3,0,0,0,1,0,1,0,1,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirror,14,0,0,0,2,0,2,0,2,0
 tppt-maven-plugin/tppt-mirror-application,com.github.pms1.tppt.mirror.jaxb,Mirrors,3,0,0,0,1,0,1,0,1,0

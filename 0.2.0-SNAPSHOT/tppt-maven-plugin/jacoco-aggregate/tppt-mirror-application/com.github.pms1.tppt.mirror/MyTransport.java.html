@@ -78,228 +78,216 @@ public class MyTransport extends Transport {
 <span class="nc" id="L78">		throw new UnsupportedOperationException();</span>
 	}
 
-<span class="nc" id="L81">	private static Map&lt;Path, Integer&gt; tries = new HashMap&lt;&gt;();</span>
-
-	Path last;
+	private Path last;
 
 	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
-<span class="nc" id="L86">		last = null;</span>
+<span class="nc" id="L84">		last = null;</span>
 
 		try {
-<span class="nc" id="L89">			Files.createDirectories(path.getParent());</span>
-<span class="nc" id="L90">		} catch (IOException e) {</span>
-<span class="nc" id="L91">			throw new Error(&quot;Could not create directories: &quot; + path.getParent() + &quot;: &quot; + e, e);</span>
+<span class="nc" id="L87">			Files.createDirectories(path.getParent());</span>
+<span class="nc" id="L88">		} catch (IOException e) {</span>
+<span class="nc" id="L89">			throw new Error(&quot;Could not create directories: &quot; + path.getParent() + &quot;: &quot; + e, e);</span>
 		}
 
 		IStatus result;
 
 		try {
-<span class="nc" id="L97">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
+<span class="nc" id="L95">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
 
-<span class="nc" id="L99">				HttpGet get = new HttpGet(uri);</span>
+<span class="nc" id="L97">				HttpGet get = new HttpGet(uri);</span>
 
 				try {
-<span class="nc" id="L102">					FileTime ft = Files.getLastModifiedTime(path);</span>
+<span class="nc" id="L100">					FileTime ft = Files.getLastModifiedTime(path);</span>
 
-<span class="nc" id="L104">					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));</span>
+<span class="nc" id="L102">					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));</span>
 
-<span class="nc" id="L106">					int tryNr = tries.getOrDefault(path, 0) + 1;</span>
-<span class="nc" id="L107">					tries.put(path, tryNr);</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">					if (tryNr &lt; 4) {</span>
-						// #9 should be able to specify somehow if validation is
-						// to be done
-<span class="nc" id="L111">						last = path;</span>
-<span class="nc" id="L112">						return Status.OK_STATUS;</span>
-					}
+					// #9 should be able to specify somehow if validation is
+					// to be done
 
-<span class="nc" id="L115">					System.out.println(path</span>
-<span class="nc" id="L116">							+ &quot; is loaded repeatedly from cache. Assuming cached file is corrupted and re-mirroring it.&quot;);</span>
-
-<span class="nc" id="L118">					Files.delete(path);</span>
-<span class="nc" id="L119">				} catch (NoSuchFileException e) {</span>
+<span class="nc" id="L107">					last = path;</span>
+<span class="nc" id="L108">					return Status.OK_STATUS;</span>
+<span class="nc" id="L109">				} catch (NoSuchFileException e) {</span>
 
 				}
 
-<span class="nc bnc" id="L123" title="All 2 branches missed.">				if (offline == OfflineType.offline)</span>
-<span class="nc" id="L124">					return OFFLINE_STATUS;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">				if (offline == OfflineType.offline)</span>
+<span class="nc" id="L114">					return OFFLINE_STATUS;</span>
 
-<span class="nc" id="L126">				System.out.println(&quot;Mirroring: &quot; + uri + &quot; -&gt; &quot; + path);</span>
+<span class="nc" id="L116">				System.out.println(&quot;Mirroring: &quot; + uri + &quot; -&gt; &quot; + path);</span>
 
-<span class="nc" id="L128">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
+<span class="nc" id="L118">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
 
-<span class="nc" id="L130">					HttpEntity entity = response.getEntity();</span>
-<span class="nc bnc" id="L131" title="All 5 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
+<span class="nc" id="L120">					HttpEntity entity = response.getEntity();</span>
+<span class="nc bnc" id="L121" title="All 5 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
 					case HttpStatus.SC_UNAUTHORIZED:
-<span class="nc" id="L133">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
-<span class="nc" id="L134">								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, &quot;Authentication failed &quot; + uri,</span>
-<span class="nc" id="L135">								null);</span>
-<span class="nc" id="L136">						break;</span>
+<span class="nc" id="L123">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
+<span class="nc" id="L124">								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, &quot;Authentication failed &quot; + uri,</span>
+<span class="nc" id="L125">								null);</span>
+<span class="nc" id="L126">						break;</span>
 					case HttpStatus.SC_OK:
-<span class="nc" id="L138">						try (OutputStream out = Files.newOutputStream(path)) {</span>
+<span class="nc" id="L128">						try (OutputStream out = Files.newOutputStream(path)) {</span>
 
-<span class="nc" id="L140">							InputStream is = entity.getContent();</span>
+<span class="nc" id="L130">							InputStream is = entity.getContent();</span>
 
-<span class="nc" id="L142">							long total = entity.getContentLength();</span>
-<span class="nc" id="L143">							String totalc = convert(total);</span>
-<span class="nc" id="L144">							monitor.beginTask(null,</span>
-<span class="nc bnc" id="L145" title="All 4 branches missed.">									(total &lt; 0 || total &gt; Integer.MAX_VALUE) ? IProgressMonitor.UNKNOWN : (int) total);</span>
+<span class="nc" id="L132">							long total = entity.getContentLength();</span>
+<span class="nc" id="L133">							String totalc = convert(total);</span>
+<span class="nc" id="L134">							monitor.beginTask(null,</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">									(total &lt; 0 || total &gt; Integer.MAX_VALUE) ? IProgressMonitor.UNKNOWN : (int) total);</span>
 
-<span class="nc" id="L147">							byte[] buf = new byte[BUFFER_SIZE];</span>
-<span class="nc" id="L148">							long done = 0;</span>
-<span class="nc" id="L149">							long start = System.currentTimeMillis();</span>
+<span class="nc" id="L137">							byte[] buf = new byte[BUFFER_SIZE];</span>
+<span class="nc" id="L138">							long done = 0;</span>
+<span class="nc" id="L139">							long start = System.currentTimeMillis();</span>
 							for (;;) {
-<span class="nc" id="L151">								int r = is.read(buf);</span>
-<span class="nc bnc" id="L152" title="All 2 branches missed.">								if (r == -1)</span>
-<span class="nc" id="L153">									break;</span>
-<span class="nc" id="L154">								out.write(buf, 0, r);</span>
-<span class="nc" id="L155">								done += r;</span>
+<span class="nc" id="L141">								int r = is.read(buf);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">								if (r == -1)</span>
+<span class="nc" id="L143">									break;</span>
+<span class="nc" id="L144">								out.write(buf, 0, r);</span>
+<span class="nc" id="L145">								done += r;</span>
 
 								// monitor handling as seen in
 								// org.eclipse.equinox.internal.p2.transport.ecf.FileReader
-<span class="nc" id="L159">								monitor.worked(r);</span>
+<span class="nc" id="L149">								monitor.worked(r);</span>
 
-<span class="nc" id="L161">								long now = System.currentTimeMillis();</span>
+<span class="nc" id="L151">								long now = System.currentTimeMillis();</span>
 
-<span class="nc" id="L163">								int ms = (int) (now - start);</span>
+<span class="nc" id="L153">								int ms = (int) (now - start);</span>
 
 								int rate;
 
-<span class="nc bnc" id="L167" title="All 2 branches missed.">								if (ms == 0)</span>
-<span class="nc" id="L168">									rate = 0;</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">								if (ms == 0)</span>
+<span class="nc" id="L158">									rate = 0;</span>
 								else
-<span class="nc" id="L170">									rate = (int) (1000L * total / ms);</span>
+<span class="nc" id="L160">									rate = (int) (1000L * total / ms);</span>
 
-<span class="nc" id="L172">								monitor.subTask(&quot;loading &quot; + uri + &quot; (&quot; + convert(done) + &quot;/&quot; + totalc + &quot; &quot;</span>
-<span class="nc" id="L173">										+ convert(rate) + &quot;/s)&quot;);</span>
+<span class="nc" id="L162">								monitor.subTask(&quot;loading &quot; + uri + &quot; (&quot; + convert(done) + &quot;/&quot; + totalc + &quot; &quot;</span>
+<span class="nc" id="L163">										+ convert(rate) + &quot;/s)&quot;);</span>
 
-<span class="nc bnc" id="L175" title="All 2 branches missed.">								if (monitor.isCanceled()) {</span>
-<span class="nc" id="L176">									get.abort();</span>
-<span class="nc" id="L177">									throw new OperationCanceledException();</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">								if (monitor.isCanceled()) {</span>
+<span class="nc" id="L166">									get.abort();</span>
+<span class="nc" id="L167">									throw new OperationCanceledException();</span>
 								}
 							}
 
-<span class="nc" id="L181">							monitor.done();</span>
-<span class="nc bnc" id="L182" title="All 8 branches missed.">						}</span>
+<span class="nc" id="L171">							monitor.done();</span>
+<span class="nc bnc" id="L172" title="All 8 branches missed.">						}</span>
 
-<span class="nc" id="L184">						Date date = parseLastModified(response);</span>
-<span class="nc bnc" id="L185" title="All 2 branches missed.">						if (date != null)</span>
-<span class="nc" id="L186">							Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));</span>
+<span class="nc" id="L174">						Date date = parseLastModified(response);</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">						if (date != null)</span>
+<span class="nc" id="L176">							Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));</span>
 
-<span class="nc" id="L188">						System.err.println(&quot;R1 &quot; + Files.exists(path));</span>
-<span class="nc" id="L189">						result = Status.OK_STATUS;</span>
-<span class="nc" id="L190">						break;</span>
+<span class="nc" id="L178">						last = path;</span>
+<span class="nc" id="L179">						result = Status.OK_STATUS;</span>
+<span class="nc" id="L180">						break;</span>
 					case HttpStatus.SC_NOT_MODIFIED:
-<span class="nc" id="L192">						System.err.println(&quot;R2 &quot; + Files.exists(path));</span>
-<span class="nc" id="L193">						result = Status.OK_STATUS;</span>
-<span class="nc" id="L194">						break;</span>
+<span class="nc" id="L182">						last = path;</span>
+<span class="nc" id="L183">						result = Status.OK_STATUS;</span>
+<span class="nc" id="L184">						break;</span>
 					case HttpStatus.SC_NOT_FOUND:
-<span class="nc" id="L196">						System.err.println(&quot;R3 &quot; + Files.exists(path));</span>
-<span class="nc" id="L197">						EntityUtils.consume(entity);</span>
-<span class="nc" id="L198">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
-<span class="nc" id="L199">								ProvisionException.ARTIFACT_NOT_FOUND, &quot;not found: &quot; + uri, null);</span>
-<span class="nc" id="L200">						break;</span>
+<span class="nc" id="L186">						EntityUtils.consume(entity);</span>
+<span class="nc" id="L187">						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,</span>
+<span class="nc" id="L188">								ProvisionException.ARTIFACT_NOT_FOUND, &quot;not found: &quot; + uri, null);</span>
+<span class="nc" id="L189">						break;</span>
 					default:
-<span class="nc" id="L202">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
+<span class="nc" id="L191">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
 					}
-<span class="nc bnc" id="L204" title="All 8 branches missed.">				}</span>
-<span class="nc bnc" id="L205" title="All 12 branches missed.">			}</span>
-<span class="nc" id="L206">		} catch (ConnectException e) {</span>
-<span class="nc" id="L207">			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,</span>
-<span class="nc" id="L208">					&quot;foo&quot;, e);</span>
-<span class="nc" id="L209">		} catch (IOException e) {</span>
-<span class="nc" id="L210">			throw new RuntimeException(e);</span>
+<span class="nc bnc" id="L193" title="All 8 branches missed.">				}</span>
+<span class="nc bnc" id="L194" title="All 12 branches missed.">			}</span>
+<span class="nc" id="L195">		} catch (ConnectException e) {</span>
+<span class="nc" id="L196">			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,</span>
+<span class="nc" id="L197">					&quot;foo&quot;, e);</span>
+<span class="nc" id="L198">		} catch (IOException e) {</span>
+<span class="nc" id="L199">			throw new RuntimeException(e);</span>
 		}
 
-<span class="nc" id="L213">		return result;</span>
+<span class="nc" id="L202">		return result;</span>
 	}
 
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
-<span class="nc" id="L218">		Set&lt;String&gt; collect = mirrorFiles.values().stream().flatMap(p -&gt; Arrays.stream(p.mirrors).map(p1 -&gt; {</span>
-<span class="nc bnc" id="L219" title="All 2 branches missed.">			if (toDownload.toString().startsWith(p1.url.toString()))</span>
-<span class="nc" id="L220">				return p.base + toDownload.toString().substring(p1.url.toString().length());</span>
+<span class="nc" id="L207">		Set&lt;String&gt; collect = mirrorFiles.values().stream().flatMap(p -&gt; Arrays.stream(p.mirrors).map(p1 -&gt; {</span>
+<span class="nc bnc" id="L208" title="All 2 branches missed.">			if (toDownload.toString().startsWith(p1.url.toString()))</span>
+<span class="nc" id="L209">				return p.base + toDownload.toString().substring(p1.url.toString().length());</span>
 			else
-<span class="nc" id="L222">				return null;</span>
-<span class="nc bnc" id="L223" title="All 2 branches missed.">		}).filter(p1 -&gt; p1 != null)).collect(Collectors.toSet());</span>
+<span class="nc" id="L211">				return null;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">		}).filter(p1 -&gt; p1 != null)).collect(Collectors.toSet());</span>
 
 		Path p;
-<span class="nc bnc" id="L226" title="All 3 branches missed.">		switch (collect.size()) {</span>
+<span class="nc bnc" id="L215" title="All 3 branches missed.">		switch (collect.size()) {</span>
 		case 0:
-<span class="nc" id="L228">			p = toPath(toDownload);</span>
-<span class="nc" id="L229">			break;</span>
+<span class="nc" id="L217">			p = toPath(toDownload);</span>
+<span class="nc" id="L218">			break;</span>
 		case 1:
-<span class="nc" id="L231">			p = toPath(URI.create(collect.iterator().next()));</span>
-<span class="nc" id="L232">			break;</span>
+<span class="nc" id="L220">			p = toPath(URI.create(collect.iterator().next()));</span>
+<span class="nc" id="L221">			break;</span>
 		default:
-<span class="nc" id="L234">			throw new Error(&quot;URI '&quot; + toDownload + &quot;' was de-mirrored to different URIs: &quot; + collect);</span>
+<span class="nc" id="L223">			throw new Error(&quot;URI '&quot; + toDownload + &quot;' was de-mirrored to different URIs: &quot; + collect);</span>
 		}
 
-<span class="nc" id="L237">		IStatus result = mirror(toDownload, p, monitor);</span>
-<span class="nc" id="L238">		System.err.println(&quot;R4 &quot; + result + &quot; &quot; + p + &quot; &quot; + Files.exists(p));</span>
+<span class="nc" id="L226">		IStatus result = mirror(toDownload, p, monitor);</span>
 
-<span class="nc bnc" id="L240" title="All 2 branches missed.">		if (result.isOK()) {</span>
-<span class="nc" id="L241">			try (InputStream is = Files.newInputStream(p)) {</span>
-<span class="nc" id="L242">				byte[] buf = new byte[BUFFER_SIZE];</span>
-<span class="nc" id="L243">				for (;;) {</span>
-<span class="nc" id="L244">					int r = is.read(buf);</span>
-<span class="nc bnc" id="L245" title="All 2 branches missed.">					if (r == -1)</span>
-<span class="nc" id="L246">						break;</span>
-<span class="nc" id="L247">					target.write(buf, 0, r);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">		if (result.isOK()) {</span>
+<span class="nc" id="L229">			try (InputStream is = Files.newInputStream(p)) {</span>
+<span class="nc" id="L230">				byte[] buf = new byte[BUFFER_SIZE];</span>
+<span class="nc" id="L231">				for (;;) {</span>
+<span class="nc" id="L232">					int r = is.read(buf);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">					if (r == -1)</span>
+<span class="nc" id="L234">						break;</span>
+<span class="nc" id="L235">					target.write(buf, 0, r);</span>
 				}
-<span class="nc bnc" id="L249" title="All 8 branches missed.">			} catch (IOException e) {</span>
-<span class="nc" id="L250">				throw new RuntimeException(e);</span>
+<span class="nc bnc" id="L237" title="All 8 branches missed.">			} catch (IOException e) {</span>
+<span class="nc" id="L238">				throw new RuntimeException(e);</span>
 			}
 		}
 
-<span class="nc" id="L254">		return result;</span>
+<span class="nc" id="L242">		return result;</span>
 	}
 
 	private Path toPath(URI toDownload) {
-<span class="nc" id="L258">		Path path = root;</span>
+<span class="nc" id="L246">		Path path = root;</span>
 
-<span class="nc" id="L260">		path = path.resolve(toDownload.getScheme());</span>
-<span class="nc" id="L261">		path = path.resolve(toDownload.getHost());</span>
+<span class="nc" id="L248">		path = path.resolve(toDownload.getScheme());</span>
+<span class="nc" id="L249">		path = path.resolve(toDownload.getHost());</span>
 
-<span class="nc" id="L263">		String p = toDownload.getPath();</span>
-<span class="nc bnc" id="L264" title="All 2 branches missed.">		if (!p.startsWith(&quot;/&quot;))</span>
-<span class="nc" id="L265">			throw new Error();</span>
-<span class="nc" id="L266">		p = p.substring(1);</span>
+<span class="nc" id="L251">		String p = toDownload.getPath();</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">		if (!p.startsWith(&quot;/&quot;))</span>
+<span class="nc" id="L253">			throw new Error();</span>
+<span class="nc" id="L254">		p = p.substring(1);</span>
 
-<span class="nc" id="L268">		String q = toDownload.getQuery();</span>
-<span class="nc bnc" id="L269" title="All 2 branches missed.">		if (q != null)</span>
-<span class="nc" id="L270">			p += &quot;_&quot; + q;</span>
+<span class="nc" id="L256">		String q = toDownload.getQuery();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if (q != null)</span>
+<span class="nc" id="L258">			p += &quot;_&quot; + q;</span>
 
-<span class="nc" id="L272">		path = path.resolve(p);</span>
+<span class="nc" id="L260">		path = path.resolve(p);</span>
 
-<span class="nc" id="L274">		return path;</span>
+<span class="nc" id="L262">		return path;</span>
 	}
 
 	@Override
 	public InputStream stream(URI toDownload, IProgressMonitor monitor)
 			throws FileNotFoundException, CoreException, AuthenticationFailedException {
 
-<span class="nc" id="L281">		Path p = toPath(toDownload);</span>
+<span class="nc" id="L269">		Path p = toPath(toDownload);</span>
 
-<span class="nc" id="L283">		mirror(toDownload, p, monitor);</span>
+<span class="nc" id="L271">		mirror(toDownload, p, monitor);</span>
 
-<span class="nc" id="L285">		boolean found = false;</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">		for (RepoMirror r : mirrorFiles.values()) {</span>
+<span class="nc" id="L273">		boolean found = false;</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">		for (RepoMirror r : mirrorFiles.values()) {</span>
 			// p2 creates this by string concatenation so we don't to test for a
 			// real prefix
-<span class="nc bnc" id="L289" title="All 2 branches missed.">			if (toDownload.toString().startsWith(r.mirrorFile)) {</span>
-<span class="nc" id="L290">				found = true;</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">			if (toDownload.toString().startsWith(r.mirrorFile)) {</span>
+<span class="nc" id="L278">				found = true;</span>
 
-<span class="nc" id="L292">				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;</span>
+<span class="nc" id="L280">				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;</span>
 			}
 		}
 
-<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (!found)</span>
-<span class="nc" id="L297">			throw new Error(&quot;Not a recogized mirror: &quot; + toDownload + &quot; [mirrorFiles=&quot; + mirrorFiles.values() + &quot;]&quot;);</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		if (!found)</span>
+<span class="nc" id="L285">			throw new Error(&quot;Not a recogized mirror: &quot; + toDownload + &quot; [mirrorFiles=&quot; + mirrorFiles.values() + &quot;]&quot;);</span>
 
 		try {
-<span class="nc" id="L300">			return Files.newInputStream(p);</span>
-<span class="nc" id="L301">		} catch (IOException e) {</span>
-<span class="nc" id="L302">			throw new Error(&quot;Could not open &quot; + p + &quot;: &quot; + e, e);</span>
+<span class="nc" id="L288">			return Files.newInputStream(p);</span>
+<span class="nc" id="L289">		} catch (IOException e) {</span>
+<span class="nc" id="L290">			throw new Error(&quot;Could not open &quot; + p + &quot;: &quot; + e, e);</span>
 		}
 	}
 
@@ -307,60 +295,60 @@ public class MyTransport extends Transport {
 	public long getLastModified(URI toDownload, IProgressMonitor monitor)
 			throws CoreException, FileNotFoundException, AuthenticationFailedException {
 
-<span class="nc" id="L310">		boolean isStats = mirrorFiles.values().stream()</span>
-<span class="nc bnc" id="L311" title="All 4 branches missed.">				.anyMatch(p -&gt; p.stats != null &amp;&amp; toDownload.toString().startsWith(p.stats));</span>
+<span class="nc" id="L298">		boolean isStats = mirrorFiles.values().stream()</span>
+<span class="nc bnc" id="L299" title="All 4 branches missed.">				.anyMatch(p -&gt; p.stats != null &amp;&amp; toDownload.toString().startsWith(p.stats));</span>
 
-<span class="nc bnc" id="L313" title="All 2 branches missed.">		if (isStats) {</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (isStats) {</span>
 			// FileNotFound is the expected result for statistics anyway, so we
 			// can use it safely if we don't access them at all.
 
-<span class="nc bnc" id="L317" title="All 2 branches missed.">			if (offline == OfflineType.offline)</span>
-<span class="nc" id="L318">				throw new FileNotFoundException(&quot;Offline: &quot; + toDownload);</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">			if (offline == OfflineType.offline)</span>
+<span class="nc" id="L306">				throw new FileNotFoundException(&quot;Offline: &quot; + toDownload);</span>
 
-<span class="nc bnc" id="L320" title="All 2 branches missed.">			if (stats == StatsType.suppress)</span>
-<span class="nc" id="L321">				throw new FileNotFoundException(&quot;Accessing statistics was suppressed: &quot; + toDownload);</span>
+<span class="nc bnc" id="L308" title="All 2 branches missed.">			if (stats == StatsType.suppress)</span>
+<span class="nc" id="L309">				throw new FileNotFoundException(&quot;Accessing statistics was suppressed: &quot; + toDownload);</span>
 
-<span class="nc" id="L323">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
+<span class="nc" id="L311">			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {</span>
 
-<span class="nc" id="L325">				HttpHead get = new HttpHead(toDownload);</span>
+<span class="nc" id="L313">				HttpHead get = new HttpHead(toDownload);</span>
 
-<span class="nc" id="L327">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
-<span class="nc bnc" id="L328" title="All 4 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
+<span class="nc" id="L315">				try (CloseableHttpResponse response = httpClient.execute(get)) {</span>
+<span class="nc bnc" id="L316" title="All 4 branches missed.">					switch (response.getStatusLine().getStatusCode()) {</span>
 					case HttpStatus.SC_UNAUTHORIZED:
-<span class="nc" id="L330">						throw new AuthenticationFailedException();</span>
+<span class="nc" id="L318">						throw new AuthenticationFailedException();</span>
 					case HttpStatus.SC_OK:
-<span class="nc" id="L332">						return parseLastModified(response).getTime();</span>
+<span class="nc" id="L320">						return parseLastModified(response).getTime();</span>
 					case HttpStatus.SC_NOT_FOUND:
-<span class="nc" id="L334">						throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
+<span class="nc" id="L322">						throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
 					default:
-<span class="nc" id="L336">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
+<span class="nc" id="L324">						throw new Error(get + &quot; -&gt; &quot; + response);</span>
 					}
 
-<span class="nc bnc" id="L339" title="All 8 branches missed.">				}</span>
-<span class="nc bnc" id="L340" title="All 8 branches missed.">			} catch (FileNotFoundException | AuthenticationFailedException e) {</span>
-<span class="nc" id="L341">				throw e;</span>
-<span class="nc" id="L342">			} catch (IOException e) {</span>
-<span class="nc" id="L343">				throw new Error(e);</span>
+<span class="nc bnc" id="L327" title="All 8 branches missed.">				}</span>
+<span class="nc bnc" id="L328" title="All 8 branches missed.">			} catch (FileNotFoundException | AuthenticationFailedException e) {</span>
+<span class="nc" id="L329">				throw e;</span>
+<span class="nc" id="L330">			} catch (IOException e) {</span>
+<span class="nc" id="L331">				throw new Error(e);</span>
 			}
 		}
 
-<span class="nc" id="L347">		Path p = toPath(toDownload);</span>
-<span class="nc" id="L348">		IStatus status = mirror(toDownload, p, monitor);</span>
+<span class="nc" id="L335">		Path p = toPath(toDownload);</span>
+<span class="nc" id="L336">		IStatus status = mirror(toDownload, p, monitor);</span>
 
-<span class="nc bnc" id="L350" title="All 2 branches missed.">		if (status.isOK()) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">		if (status.isOK()) {</span>
 			try {
-<span class="nc" id="L352">				return Files.getLastModifiedTime(p).toMillis();</span>
-<span class="nc" id="L353">			} catch (IOException e) {</span>
-<span class="nc" id="L354">				throw new Error(e);</span>
+<span class="nc" id="L340">				return Files.getLastModifiedTime(p).toMillis();</span>
+<span class="nc" id="L341">			} catch (IOException e) {</span>
+<span class="nc" id="L342">				throw new Error(e);</span>
 			}
 		} else {
-<span class="nc bnc" id="L357" title="All 3 branches missed.">			switch (status.getCode()) {</span>
+<span class="nc bnc" id="L345" title="All 3 branches missed.">			switch (status.getCode()) {</span>
 			case ProvisionException.REPOSITORY_FAILED_AUTHENTICATION:
-<span class="nc" id="L359">				throw new AuthenticationFailedException();</span>
+<span class="nc" id="L347">				throw new AuthenticationFailedException();</span>
 			case ProvisionException.ARTIFACT_NOT_FOUND:
-<span class="nc" id="L361">				throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
+<span class="nc" id="L349">				throw new FileNotFoundException(&quot;not found: &quot; + toDownload);</span>
 			default:
-<span class="nc" id="L363">				throw new Error(&quot;Unhandled status &quot; + status);</span>
+<span class="nc" id="L351">				throw new Error(&quot;Unhandled status &quot; + status);</span>
 			}
 
 			// AuthenticationFailedException
@@ -373,80 +361,83 @@ public class MyTransport extends Transport {
 	}
 
 	private String convert(long amount) {
-<span class="nc bnc" id="L376" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
-<span class="nc" id="L377">			return amount + &quot;B&quot;;</span>
+<span class="nc bnc" id="L364" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
+<span class="nc" id="L365">			return amount + &quot;B&quot;;</span>
 		}
-<span class="nc" id="L379">		amount /= 1024;</span>
-<span class="nc bnc" id="L380" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
-<span class="nc" id="L381">			return amount + &quot;KB&quot;;</span>
+<span class="nc" id="L367">		amount /= 1024;</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">		if (amount &lt; 1024) {</span>
+<span class="nc" id="L369">			return amount + &quot;KB&quot;;</span>
 		}
-<span class="nc" id="L383">		amount /= 1024;</span>
-<span class="nc" id="L384">		return amount + &quot;MB&quot;;</span>
+<span class="nc" id="L371">		amount /= 1024;</span>
+<span class="nc" id="L372">		return amount + &quot;MB&quot;;</span>
 	}
 
 	private Date parseLastModified(HttpResponse response) {
-<span class="nc" id="L388">		Header header = response.getFirstHeader(HttpHeaders.LAST_MODIFIED);</span>
-<span class="nc bnc" id="L389" title="All 2 branches missed.">		if (header == null) {</span>
-<span class="nc" id="L390">			return null;</span>
+<span class="nc" id="L376">		Header header = response.getFirstHeader(HttpHeaders.LAST_MODIFIED);</span>
+<span class="nc bnc" id="L377" title="All 2 branches missed.">		if (header == null) {</span>
+<span class="nc" id="L378">			return null;</span>
 		}
-<span class="nc" id="L392">		String lm = header.getValue();</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">		if (lm == null) {</span>
-<span class="nc" id="L394">			return null;</span>
+<span class="nc" id="L380">		String lm = header.getValue();</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">		if (lm == null) {</span>
+<span class="nc" id="L382">			return null;</span>
 		}
 
-<span class="nc" id="L397">		return DateUtils.parseDate(lm);</span>
+<span class="nc" id="L385">		return DateUtils.parseDate(lm);</span>
 	}
 
 	static class RepoMirror {
-<span class="nc" id="L401">		public RepoMirror(String base, String mirrorFile, String stats) {</span>
-<span class="nc" id="L402">			this.base = base;</span>
-<span class="nc" id="L403">			this.mirrorFile = mirrorFile;</span>
-<span class="nc" id="L404">			this.stats = stats;</span>
-<span class="nc" id="L405">		}</span>
+<span class="nc" id="L389">		public RepoMirror(String base, String mirrorFile, String stats) {</span>
+<span class="nc" id="L390">			this.base = base;</span>
+<span class="nc" id="L391">			this.mirrorFile = mirrorFile;</span>
+<span class="nc" id="L392">			this.stats = stats;</span>
+<span class="nc" id="L393">		}</span>
 
 		final String mirrorFile;
 		final String base;
 		final String stats;
 
-<span class="nc" id="L411">		Mirror[] mirrors = new Mirror[0];</span>
+<span class="nc" id="L399">		Mirror[] mirrors = new Mirror[0];</span>
 
 		@Override
 		public String toString() {
-<span class="nc" id="L415">			return &quot;RepoMirror(mirrorFile=&quot; + mirrorFile + &quot;,base=&quot; + base + &quot;,stats=&quot; + stats + &quot;)&quot;;</span>
+<span class="nc" id="L403">			return &quot;RepoMirror(mirrorFile=&quot; + mirrorFile + &quot;,base=&quot; + base + &quot;,stats=&quot; + stats + &quot;)&quot;;</span>
 		}
 	}
 
-<span class="nc" id="L419">	private Map&lt;URI, RepoMirror&gt; mirrorFiles = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L407">	private Map&lt;URI, RepoMirror&gt; mirrorFiles = new HashMap&lt;&gt;();</span>
 
 	public void addRepositories(Collection&lt;IArtifactRepository&gt; repositories) {
-<span class="nc" id="L422">		LinkedList&lt;IArtifactRepository&gt; todo = new LinkedList&lt;&gt;(repositories);</span>
-<span class="nc bnc" id="L423" title="All 2 branches missed.">		while (!todo.isEmpty()) {</span>
-<span class="nc" id="L424">			IArtifactRepository repo = todo.removeFirst();</span>
-<span class="nc" id="L425">			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);</span>
-<span class="nc" id="L426">			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);</span>
-<span class="nc" id="L427">			String stats = repo.getProperties().get(&quot;p2.statsURI&quot;); // no public</span>
+<span class="nc" id="L410">		LinkedList&lt;IArtifactRepository&gt; todo = new LinkedList&lt;&gt;(repositories);</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">		while (!todo.isEmpty()) {</span>
+<span class="nc" id="L412">			IArtifactRepository repo = todo.removeFirst();</span>
+<span class="nc" id="L413">			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);</span>
+<span class="nc" id="L414">			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);</span>
+<span class="nc" id="L415">			String stats = repo.getProperties().get(&quot;p2.statsURI&quot;); // no public</span>
 																	// constant
 
-<span class="nc" id="L430">			CompositeArtifactRepository composite = repo.getAdapter(CompositeArtifactRepository.class);</span>
-<span class="nc bnc" id="L431" title="All 2 branches missed.">			if (composite != null)</span>
-<span class="nc" id="L432">				todo.addAll(composite.getLoadedChildren());</span>
+<span class="nc" id="L418">			CompositeArtifactRepository composite = repo.getAdapter(CompositeArtifactRepository.class);</span>
+<span class="nc bnc" id="L419" title="All 2 branches missed.">			if (composite != null)</span>
+<span class="nc" id="L420">				todo.addAll(composite.getLoadedChildren());</span>
 
 			// constant
-<span class="nc bnc" id="L435" title="All 2 branches missed.">			if (mirror == null)</span>
-<span class="nc" id="L436">				continue;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">			if (mirror == null)</span>
+<span class="nc" id="L424">				continue;</span>
 
 			// be a bit paranoid and sanitize these values
-<span class="nc bnc" id="L439" title="All 4 branches missed.">			if (base != null &amp;&amp; base.isEmpty())</span>
-<span class="nc" id="L440">				base = null;</span>
-<span class="nc bnc" id="L441" title="All 4 branches missed.">			if (stats != null &amp;&amp; stats.isEmpty())</span>
-<span class="nc" id="L442">				stats = null;</span>
+<span class="nc bnc" id="L427" title="All 4 branches missed.">			if (base != null &amp;&amp; base.isEmpty())</span>
+<span class="nc" id="L428">				base = null;</span>
+<span class="nc bnc" id="L429" title="All 4 branches missed.">			if (stats != null &amp;&amp; stats.isEmpty())</span>
+<span class="nc" id="L430">				stats = null;</span>
 
-<span class="nc bnc" id="L444" title="All 2 branches missed.">			if (base == null)</span>
-<span class="nc" id="L445">				base = repo.getLocation().toString();</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">			if (base == null)</span>
+<span class="nc" id="L433">				base = repo.getLocation().toString();</span>
 
-<span class="nc" id="L447">			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));</span>
+<span class="nc" id="L435">			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));</span>
 		}
-<span class="nc" id="L449">	}</span>
+<span class="nc" id="L437">	}</span>
 
+	Path getLast() {
+<span class="nc" id="L440">		return last;</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
