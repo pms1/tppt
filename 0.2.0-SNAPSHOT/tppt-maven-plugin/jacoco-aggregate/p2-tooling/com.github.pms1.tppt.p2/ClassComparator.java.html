@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClassComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">tppt-maven-plugin</a> &gt; <a href="../index.html" class="el_bundle">p2-tooling</a> &gt; <a href="index.source.html" class="el_package">com.github.pms1.tppt.p2</a> &gt; <span class="el_source">ClassComparator.java</span></div><h1>ClassComparator.java</h1><pre class="source lang-java linenums">package com.github.pms1.tppt.p2;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.function.Consumer;
+
+import org.codehaus.plexus.component.annotations.Component;
+import org.codehaus.plexus.component.annotations.Requirement;
+import org.eclipse.tycho.artifactcomparator.ArtifactDelta;
+import org.eclipse.tycho.zipcomparator.internal.ClassfileComparator;
+import org.eclipse.tycho.zipcomparator.internal.ContentsComparator;
+import org.eclipse.tycho.zipcomparator.internal.SimpleArtifactDelta;
+
+@Component(role = FileComparator.class, hint = ClassComparator.HINT)
+<span class="nc" id="L17">public class ClassComparator implements FileComparator {</span>
+	public final static String HINT = &quot;class&quot;;
+
+	@Requirement(role = ContentsComparator.class, hint = ClassfileComparator.TYPE)
+	ContentsComparator cc;
+
+	@Override
+	public void compare(FileId file1, Path p1, FileId file2, Path p2, Consumer&lt;FileDelta&gt; dest) throws IOException {
+
+<span class="nc" id="L26">		try (InputStream is1 = Files.newInputStream(p1)) {</span>
+<span class="nc" id="L27">			try (InputStream is2 = Files.newInputStream(p2)) {</span>
+<span class="nc" id="L28">				ArtifactDelta delta = cc.getDelta(is1, is2);</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">				if (delta != null)</span>
+<span class="nc" id="L30">					dest.accept(new FileDelta(file1, file2, &quot;Code changed&quot;));</span>
+
+				if (false)
+					if (delta instanceof SimpleArtifactDelta) {
+						SimpleArtifactDelta sad = (SimpleArtifactDelta) delta;
+						System.err.println(&quot;--baseline--\n&quot; + sad.getBaseline() + &quot;\n&quot;);
+						System.err.println(&quot;--reactor--\n&quot; + sad.getReactor() + &quot;\n&quot;);
+					}
+<span class="nc bnc" id="L38" title="All 8 branches missed.">			}</span>
+<span class="nc bnc" id="L39" title="All 8 branches missed.">		}</span>
+<span class="nc" id="L40">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.7.8.201612092310</span></div></body></html>
