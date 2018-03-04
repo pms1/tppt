@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.internal.p2.artifact.processors.md5.Messages;
@@ -106,330 +105,348 @@ public class MirrorApplication implements IApplication {
 	}
 
 	@Override
-	public Object start(IApplicationContext context) throws Exception {
+	public Object start(IApplicationContext context) throws IOException, NoSuchAlgorithmException {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 
 		if (debug)
 			System.out.println("MirrorApplication.commandLine        = " + Arrays.asList((String[]) args));
 
-		for (String s : Arrays.asList((String[]) args)) {
-			MirrorSpec ms;
-			if (s.equals("-")) {
-				ms = JAXB.unmarshal(System.in, MirrorSpec.class);
-			} else {
-				try (InputStream is = Files.newInputStream(Paths.get(s))) {
-					ms = JAXB.unmarshal(is, MirrorSpec.class);
-				}
-			}
-
-			if (debug) {
-				System.out.println("MirrorApplication.mirrorRepository   = " + ms.mirrorRepository);
-				System.out.println("MirrorApplication.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
-				System.out.println("MirrorApplication.targetRepository   = " + ms.targetRepository);
-				System.out.println("MirrorApplication.installableUnit    = " + Arrays.toString(ms.ius));
-				System.out.println("MirrorApplication.offline            = " + ms.offline);
-				System.out.println("MirrorApplication.stats              = " + ms.stats);
-				System.out.println("MirrorApplication.filter             = " + Arrays.toString(ms.filters));
-			}
-
-			IProgressMonitor monitor = new IProgressMonitor() {
-
-				@Override
-				public void worked(int work) {
-					// TODO Auto-generated method stub
-
-				}
-
-				@Override
-				public void subTask(String name) {
-					// System.err.println("ST " + name);
-				}
-
-				@Override
-				public void setTaskName(String name) {
-					// System.err.println("STN " + name);
-				}
-
-				@Override
-				public void setCanceled(boolean value) {
-					// TODO Auto-generated method stub
-
-				}
-
-				@Override
-				public boolean isCanceled() {
-					// TODO Auto-generated method stub
-					return false;
-				}
-
-				@Override
-				public void internalWorked(double work) {
-					// TODO Auto-generated method stub
-
-				}
-
-				@Override
-				public void done() {
-					// System.err.println("DONE");
-				}
-
-				@Override
-				public void beginTask(String name, int totalWork) {
-					// System.err.println("BT " + name);
-				}
-			};
-
-			IProvisioningAgent ourAgent = getAgent();
-
-			MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
-			ourAgent.registerService(Transport.SERVICE_NAME, transport);
-
-			CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository
-					.createMemoryComposite(ourAgent);
-			for (URI sr : ms.sourceRepositories)
-				sourceArtifactRepo.addChild(sr);
-			transport.addRepositories(sourceArtifactRepo.getLoadedChildren());
-
-			CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository
-					.createMemoryComposite(ourAgent);
-			for (URI sr : ms.sourceRepositories)
-				sourceMetadataRepo.addChild(sr);
-
-			Set<IInstallableUnit> root = new HashSet<>();
-			for (String iu : ms.ius) {
-				// TODO: allow version to be specified...
-
-				IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
-
-				Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
-				if (queryResult.isEmpty())
-					throw new RuntimeException("IU not found: " + iu);
-
-				root.addAll(queryResult);
-			}
-
-			List<Predicate<IInstallableUnit>> excludeFilter = new ArrayList<>();
-			if (ms.excludeIus != null)
-				for (String iu : ms.excludeIus) {
-					int idx = iu.indexOf('/');
-					Predicate<IInstallableUnit> p;
-					if (idx == -1) {
-						String unit = iu;
-						p = iiu -> Objects.equals(unit, iiu.getId());
-					} else {
-						String unit = iu.substring(0, idx);
-						String version = iu.substring(idx + 1);
-						p = iiu -> Objects.equals(unit, iiu.getId())
-								&& Objects.equals(version, iiu.getVersion().toString());
-					}
-					excludeFilter.add(p);
-				}
-			excludeFilter = Collections.unmodifiableList(excludeFilter);
-
-			if (false) {
-
-				for (GlobalOptions go : allGo) {
-					for (SlicerOptions so : allSo) {
-
-						SlicingAlgorithm slicer = createSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
-						SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
-
-						if (diff("MS", my.apply(root, monitor), slicer.apply(root, monitor))) {
-							// throw new Error();
-						}
-					}
-				}
-
-				for (GlobalOptions go : allGo) {
-					for (PermissiveSlicerOptions so : allPo) {
-
-						SlicingAlgorithm slicer = createPermissiveSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
-						SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
-
-						if (diff("MP", my.apply(root, monitor), slicer.apply(root, monitor))) {
-							// throw new Error();
-						}
-					}
-				}
-				for (GlobalOptions go : allGo) {
-					SlicingAlgorithm planner = createPlanner(sourceMetadataRepo, go, ms.filters[0], ourAgent);
-					MyMirrorOptions mo = new MyMirrorOptions();
-					mo.everythingGreedy = false;
-					SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, mo, ms.filters[0]);
-					diff("ML", my.apply(root, monitor), planner.apply(root, monitor));
-				}
-
-				for (Map.Entry<String, String> e : why.entrySet())
-					System.err.println(e);
-
-				System.exit(1);
-			}
-
-			Set<IInstallableUnit> finalIus = new HashSet<>();
-
-			for (Map<String, String> filter : ms.filters != null ? ms.filters : emptyFilters) {
-
-				GlobalOptions go = new GlobalOptions();
-				go.installFeatures = true;
-
-				SlicingAlgorithm slicer;
-				switch (ms.algorithm) {
-				case slicer:
-					SlicerOptions so = new SlicerOptions();
-					slicer = createSlicer(sourceMetadataRepo, go, so, filter);
-					break;
-				case permissiveSlicer:
-					PermissiveSlicerOptions po = new PermissiveSlicerOptions();
-					po.everythingGreedy = true;
-					slicer = createPermissiveSlicer(sourceMetadataRepo, go, po, filter);
-					break;
-				case planner:
-					slicer = createPlanner(sourceMetadataRepo, go, filter, ourAgent);
-					break;
-				default:
-					throw new Error();
-				}
-
-				Set<IInstallableUnit> root1 = new HashSet<>(root);
-
-				for (;;) {
-					int oldRootSize = root1.size();
-
-					LinkedList<IInstallableUnit> todo = new LinkedList<>();
-					for (IInstallableUnit iu : slicer.apply(root1, monitor)) {
-						if (excludeFilter.stream().anyMatch(p -> p.test(iu)))
-							continue;
-						todo.add(iu);
-					}
-
-					while (!todo.isEmpty()) {
-						IInstallableUnit iu = todo.removeFirst();
-						if (!finalIus.add(iu))
-							continue;
-
-						switch (getType(iu)) {
-						case bundle:
-							for (IInstallableUnit iu1 : sourceMetadataRepo
-									.query(QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), monitor))
-								if (getType(iu1) == Type.source_bundle) {
-									if (!finalIus.contains(iu1) && todo.add(iu1))
-										System.out.println("Adding " + iu1 + " as source of " + iu);
-								}
-							break;
-						case feature:
-							if (!iu.getId().endsWith(".feature.jar"))
-								throw new Error("");
-							String shortId = removeSuffix(iu.getId(), ".feature.jar");
-							List<String> cand = new ArrayList<>();
-							cand.add(shortId + ".source" + featureSuffix);
-							if (shortId.endsWith(".feature")) {
-								String s2 = removeSuffix(shortId, ".feature");
-								cand.add(s2 + ".source" + featureSuffix);
-								cand.add(s2 + ".source.feature" + featureSuffix);
-							}
-							for (String c : cand)
-								for (IInstallableUnit iu1 : sourceMetadataRepo
-										.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))
-									if (root1.add(iu1))
-										System.out.println("Adding " + iu1 + " as source of " + iu);
-							break;
-						default:
-							break;
-						}
-					}
-
-					if (oldRootSize == root1.size())
-						break;
-				}
-			}
-
-			// mirror metadata
-			IMetadataRepository destinationMetadataRepo = createDestinationMetadataRepository(
-					(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
-					ms.targetRepository, "");
-
-			destinationMetadataRepo.addInstallableUnits(finalIus);
-
-			// mirror artifacts
-			IArtifactRepository destinationArtifactRepo = createDestinationArtifactRepository(
-					(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
-					ms.targetRepository, "");
-
-			// mirror all artifacts that have a non-packed descriptor
-			Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);
-			mirroring.setTransport(transport);
-			mirroring.setIncludePacked(false);
-			mirroring.setArtifactKeys(
-					finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
-
-			for (;;) {
-				MultiStatus multiStatus = mirroring.run(true, false);
-				if (!multiStatus.isOK()) {
-					if (handleChecksumFailure(multiStatus, transport))
-						continue;
-
-					print(multiStatus, "");
-
-					return 1;
+		try {
+			for (String s : Arrays.asList((String[]) args)) {
+				MirrorSpec ms;
+				if (s.equals("-")) {
+					ms = JAXB.unmarshal(System.in, MirrorSpec.class);
 				} else {
-					break;
+					try (InputStream is = Files.newInputStream(Paths.get(s))) {
+						ms = JAXB.unmarshal(is, MirrorSpec.class);
+					}
 				}
-			}
 
-			// additionally mirror packed-only artifacts, unpacking them in the
-			// process
-			for (IArtifactKey a : finalIus.stream().flatMap(p -> p.getArtifacts().stream())
-					.toArray(IArtifactKey[]::new)) {
+				if (debug) {
+					System.out.println("MirrorApplication.mirrorRepository   = " + ms.mirrorRepository);
+					System.out.println(
+							"MirrorApplication.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
+					System.out.println("MirrorApplication.targetRepository   = " + ms.targetRepository);
+					System.out.println("MirrorApplication.installableUnit    = " + Arrays.toString(ms.ius));
+					System.out.println("MirrorApplication.offline            = " + ms.offline);
+					System.out.println("MirrorApplication.stats              = " + ms.stats);
+					System.out.println("MirrorApplication.filter             = " + Arrays.toString(ms.filters));
+				}
 
-				IArtifactDescriptor[] ad = sourceArtifactRepo.getArtifactDescriptors(a);
-				if (Arrays.stream(ad).anyMatch(
-						d -> !IArtifactDescriptor.FORMAT_PACKED.equals(d.getProperty(IArtifactDescriptor.FORMAT))))
-					continue;
+				IProgressMonitor monitor = new IProgressMonitor() {
 
-				if (ad.length != 1)
-					throw new Error();
+					@Override
+					public void worked(int work) {
+						// TODO Auto-generated method stub
 
-				ArtifactDescriptor d = new ArtifactDescriptor(a);
+					}
 
-				for (Map.Entry<String, String> e : ad[0].getProperties().entrySet()) {
-					switch (e.getKey()) {
-					case IArtifactDescriptor.FORMAT:
-					case IArtifactDescriptor.DOWNLOAD_MD5:
-					case IArtifactDescriptor.DOWNLOAD_SIZE:
+					@Override
+					public void subTask(String name) {
+						// System.err.println("ST " + name);
+					}
+
+					@Override
+					public void setTaskName(String name) {
+						// System.err.println("STN " + name);
+					}
+
+					@Override
+					public void setCanceled(boolean value) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public boolean isCanceled() {
+						// TODO Auto-generated method stub
+						return false;
+					}
+
+					@Override
+					public void internalWorked(double work) {
+						// TODO Auto-generated method stub
+
+					}
+
+					@Override
+					public void done() {
+						// System.err.println("DONE");
+					}
+
+					@Override
+					public void beginTask(String name, int totalWork) {
+						// System.err.println("BT " + name);
+					}
+				};
+
+				IProvisioningAgent ourAgent;
+				ourAgent = getAgent();
+
+				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
+				ourAgent.registerService(Transport.SERVICE_NAME, transport);
+
+				CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository
+						.createMemoryComposite(ourAgent);
+				if (ms.sourceRepositories == null)
+					throw new IllegalArgumentException("No <sourceRepository> defined");
+
+				for (URI sr : ms.sourceRepositories)
+					sourceArtifactRepo.addChild(sr);
+				transport.addRepositories(sourceArtifactRepo.getLoadedChildren());
+
+				CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository
+						.createMemoryComposite(ourAgent);
+				for (URI sr : ms.sourceRepositories)
+					sourceMetadataRepo.addChild(sr);
+
+				Set<IInstallableUnit> root = new HashSet<>();
+				for (String iu : ms.ius) {
+					// TODO: allow version to be specified...
+
+					IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
+
+					Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
+					if (queryResult.isEmpty())
+						throw new RuntimeException("IU not found: " + iu);
+
+					root.addAll(queryResult);
+				}
+
+				List<Predicate<IInstallableUnit>> excludeFilter = new ArrayList<>();
+				if (ms.excludeIus != null)
+					for (String iu : ms.excludeIus) {
+						int idx = iu.indexOf('/');
+						Predicate<IInstallableUnit> p;
+						if (idx == -1) {
+							String unit = iu;
+							p = iiu -> Objects.equals(unit, iiu.getId());
+						} else {
+							String unit = iu.substring(0, idx);
+							String version = iu.substring(idx + 1);
+							p = iiu -> Objects.equals(unit, iiu.getId())
+									&& Objects.equals(version, iiu.getVersion().toString());
+						}
+						excludeFilter.add(p);
+					}
+				excludeFilter = Collections.unmodifiableList(excludeFilter);
+
+				if (false) {
+
+					for (GlobalOptions go : allGo) {
+						for (SlicerOptions so : allSo) {
+
+							SlicingAlgorithm slicer = createSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
+							SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
+
+							if (diff("MS", my.apply(root, monitor), slicer.apply(root, monitor))) {
+								// throw new Error();
+							}
+						}
+					}
+
+					for (GlobalOptions go : allGo) {
+						for (PermissiveSlicerOptions so : allPo) {
+
+							SlicingAlgorithm slicer = createPermissiveSlicer(sourceMetadataRepo, go, so, ms.filters[0]);
+							SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, myOptions(so), ms.filters[0]);
+
+							if (diff("MP", my.apply(root, monitor), slicer.apply(root, monitor))) {
+								// throw new Error();
+							}
+						}
+					}
+					for (GlobalOptions go : allGo) {
+						SlicingAlgorithm planner = createPlanner(sourceMetadataRepo, go, ms.filters[0], ourAgent);
+						MyMirrorOptions mo = new MyMirrorOptions();
+						mo.everythingGreedy = false;
+						SlicingAlgorithm my = myMirror(sourceMetadataRepo, go, mo, ms.filters[0]);
+						diff("ML", my.apply(root, monitor), planner.apply(root, monitor));
+					}
+
+					for (Map.Entry<String, String> e : why.entrySet())
+						System.err.println(e);
+
+					System.exit(1);
+				}
+
+				Set<IInstallableUnit> finalIus = new HashSet<>();
+
+				for (Map<String, String> filter : ms.filters != null ? ms.filters : emptyFilters) {
+
+					GlobalOptions go = new GlobalOptions();
+					go.installFeatures = true;
+
+					SlicingAlgorithm slicer;
+					switch (ms.algorithm) {
+					case slicer:
+						SlicerOptions so = new SlicerOptions();
+						slicer = createSlicer(sourceMetadataRepo, go, so, filter);
 						break;
-					case IArtifactDescriptor.ARTIFACT_MD5:
-					case IArtifactDescriptor.ARTIFACT_SIZE:
-						// the unpacked jar does not necessarily match those,
-						// so we remove them
+					case permissiveSlicer:
+						PermissiveSlicerOptions po = new PermissiveSlicerOptions();
+						po.everythingGreedy = true;
+						slicer = createPermissiveSlicer(sourceMetadataRepo, go, po, filter);
+						break;
+					case planner:
+						slicer = createPlanner(sourceMetadataRepo, go, filter, ourAgent);
 						break;
 					default:
-						// this could be other checksums that potentially are
-						// wrong after unpacking. But it could also
-						// be use full metadata like maven coordinates. For the
-						// moment, we keep those properties
-						// to avoid loosing useful data
-						d.setProperty(e.getKey(), e.getValue());
+						throw new Error();
+					}
+
+					Set<IInstallableUnit> root1 = new HashSet<>(root);
+
+					for (;;) {
+						int oldRootSize = root1.size();
+
+						LinkedList<IInstallableUnit> todo = new LinkedList<>();
+						for (IInstallableUnit iu : slicer.apply(root1, monitor)) {
+							if (excludeFilter.stream().anyMatch(p -> p.test(iu)))
+								continue;
+							todo.add(iu);
+						}
+
+						while (!todo.isEmpty()) {
+							IInstallableUnit iu = todo.removeFirst();
+							if (!finalIus.add(iu))
+								continue;
+
+							switch (getType(iu)) {
+							case bundle:
+								for (IInstallableUnit iu1 : sourceMetadataRepo.query(
+										QueryUtil.createIUQuery(iu.getId() + ".source", iu.getVersion()), monitor))
+									if (getType(iu1) == Type.source_bundle) {
+										if (!finalIus.contains(iu1) && todo.add(iu1))
+											System.out.println("Adding " + iu1 + " as source of " + iu);
+									}
+								break;
+							case feature:
+								if (!iu.getId().endsWith(".feature.jar"))
+									throw new Error("");
+								String shortId = removeSuffix(iu.getId(), ".feature.jar");
+								List<String> cand = new ArrayList<>();
+								cand.add(shortId + ".source" + featureSuffix);
+								if (shortId.endsWith(".feature")) {
+									String s2 = removeSuffix(shortId, ".feature");
+									cand.add(s2 + ".source" + featureSuffix);
+									cand.add(s2 + ".source.feature" + featureSuffix);
+								}
+								for (String c : cand)
+									for (IInstallableUnit iu1 : sourceMetadataRepo
+											.query(QueryUtil.createIUQuery(c, iu.getVersion()), monitor))
+										if (root1.add(iu1))
+											System.out.println("Adding " + iu1 + " as source of " + iu);
+								break;
+							default:
+								break;
+							}
+						}
+
+						if (oldRootSize == root1.size())
+							break;
+					}
+				}
+
+				// mirror metadata
+				IMetadataRepository destinationMetadataRepo = createDestinationMetadataRepository(
+						(IMetadataRepositoryManager) ourAgent.getService(IMetadataRepositoryManager.SERVICE_NAME),
+						ms.targetRepository, "");
+
+				destinationMetadataRepo.addInstallableUnits(finalIus);
+
+				// mirror artifacts
+				IArtifactRepository destinationArtifactRepo = createDestinationArtifactRepository(
+						(IArtifactRepositoryManager) ourAgent.getService(IArtifactRepositoryManager.SERVICE_NAME),
+						ms.targetRepository, "");
+
+				// mirror all artifacts that have a non-packed descriptor
+				Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);
+				mirroring.setTransport(transport);
+				mirroring.setIncludePacked(false);
+				mirroring.setArtifactKeys(
+						finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
+
+				for (;;) {
+					MultiStatus multiStatus = mirroring.run(true, false);
+					if (!multiStatus.isOK()) {
+						if (handleChecksumFailure(multiStatus, transport))
+							continue;
+
+						throw new StatusException("Mirroring failed", multiStatus);
+					} else {
 						break;
 					}
 				}
 
-				// copy all processing steps but the unpacking
-				d.setProcessingSteps(Arrays.stream(ad[0].getProcessingSteps())
-						.filter(e -> !e.getProcessorId().equals("org.eclipse.equinox.p2.processing.Pack200Unpacker"))
-						.toArray(IProcessingStepDescriptor[]::new));
+				// additionally mirror packed-only artifacts, unpacking them in the
+				// process
+				for (IArtifactKey a : finalIus.stream().flatMap(p -> p.getArtifacts().stream())
+						.toArray(IArtifactKey[]::new)) {
 
-				try (java.io.OutputStream os = destinationArtifactRepo.getOutputStream(d)) {
-					IStatus status = sourceArtifactRepo.getArtifact(ad[0], os, new NullProgressMonitor());
-					if (!status.isOK()) {
-						print(status, "");
-						return 1;
+					IArtifactDescriptor[] ad = sourceArtifactRepo.getArtifactDescriptors(a);
+					if (Arrays.stream(ad).anyMatch(
+							d -> !IArtifactDescriptor.FORMAT_PACKED.equals(d.getProperty(IArtifactDescriptor.FORMAT))))
+						continue;
+
+					if (ad.length != 1)
+						throw new Error();
+
+					ArtifactDescriptor d = new ArtifactDescriptor(a);
+
+					for (Map.Entry<String, String> e : ad[0].getProperties().entrySet()) {
+						switch (e.getKey()) {
+						case IArtifactDescriptor.FORMAT:
+						case IArtifactDescriptor.DOWNLOAD_MD5:
+						case IArtifactDescriptor.DOWNLOAD_SIZE:
+							break;
+						case IArtifactDescriptor.ARTIFACT_MD5:
+						case IArtifactDescriptor.ARTIFACT_SIZE:
+							// the unpacked jar does not necessarily match those,
+							// so we remove them
+							break;
+						default:
+							// this could be other checksums that potentially are
+							// wrong after unpacking. But it could also
+							// be use full metadata like maven coordinates. For the
+							// moment, we keep those properties
+							// to avoid loosing useful data
+							d.setProperty(e.getKey(), e.getValue());
+							break;
+						}
 					}
-				}
 
+					// copy all processing steps but the unpacking
+					d.setProcessingSteps(Arrays.stream(ad[0].getProcessingSteps()).filter(
+							e -> !e.getProcessorId().equals("org.eclipse.equinox.p2.processing.Pack200Unpacker"))
+							.toArray(IProcessingStepDescriptor[]::new));
+
+					try (java.io.OutputStream os = destinationArtifactRepo.getOutputStream(d)) {
+						IStatus status = sourceArtifactRepo.getArtifact(ad[0], os, new NullProgressMonitor());
+						if (!status.isOK())
+							throw new StatusException("Retrieving artifact failed (" + ad[0] + ")", status);
+					} catch (ProvisionException e) {
+						throw new StatusException("Writing artifact descriptor failed", e.getStatus());
+					}
+
+				}
 			}
+		} catch (StatusException e) {
+			System.err.println("[FATAL] " + e.getMessage());
+			print(e.status, " ");
+			return 1;
+		}
+		return null;
+	}
+
+	private static class StatusException extends RuntimeException {
+		private final IStatus status;
+
+		StatusException(String message, IStatus status) {
+			super(message);
+			this.status = status;
 		}
 
-		return null;
 	}
 
 	private void extractExpectedMD5(IStatus status, Set<String> expected) {
@@ -446,7 +463,8 @@ public class MirrorApplication implements IApplication {
 		}
 	}
 
-	private boolean handleChecksumFailure(IStatus status, MyTransport transport) throws Exception {
+	private boolean handleChecksumFailure(IStatus status, MyTransport transport)
+			throws IOException, NoSuchAlgorithmException {
 		if (transport.getLast() == null)
 			return false;
 
@@ -497,64 +515,46 @@ public class MirrorApplication implements IApplication {
 		IProfileRegistry registry = (IProfileRegistry) agent.getService(IProfileRegistry.SERVICE_NAME);
 
 		return (root, monitor) -> {
+
+			Set<IInstallableUnit> fromSlice = new HashSet<>();
+
+			Map<String, String> filter = new HashMap<String, String>(basicFilter);
+			addGlobalOptions(filter, go);
+
+			String profileId = "MirrorApplication-" + System.currentTimeMillis();
+			IProfile profile;
 			try {
-				Set<IInstallableUnit> fromSlice = new HashSet<>();
-
-				Map<String, String> filter = new HashMap<String, String>(basicFilter);
-				addGlobalOptions(filter, go);
-
-				String profileId = "MirrorApplication-" + System.currentTimeMillis();
-				IProfile profile = registry.addProfile(profileId, filter);
-				try {
-					IPlanner planner = (IPlanner) agent.getService(IPlanner.SERVICE_NAME);
-					if (planner == null)
-						throw new IllegalStateException();
-					IProfileChangeRequest pcr = planner.createChangeRequest(profile);
-					pcr.addAll(root);
-
-					ProvisioningContext context2 = new ProvisioningContext(agent);
-					context2.setMetadataRepositories(sourceMetadataRepo.getChildren().toArray(new URI[0]));
-
-					IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
-
-					for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
-						fromSlice.add(iu);
-					if (plan.getInstallerPlan() != null)
-						for (IInstallableUnit iu : plan.getInstallerPlan().getAdditions().query(QueryUtil.ALL_UNITS,
-								monitor))
-							fromSlice.add(iu);
-
-				} finally {
-					registry.removeProfile(profileId);
-				}
-
-				return fromSlice;
+				profile = registry.addProfile(profileId, filter);
 			} catch (ProvisionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				throw new StatusException("Adding a profile failed (" + profileId + " " + filter + ")", e.getStatus());
 			}
-			throw new Error();
 
-			// IProfileRegistry registry = Activator.getProfileRegistry();
-			// String profileId = "MirrorApplication-" + System.currentTimeMillis();
-			// //$NON-NLS-1$
-			// IProfile profile = registry.addProfile(profileId,
-			// slicingOptions.getFilter());
-			// IPlanner planner = (IPlanner)
-			// Activator.getAgent().getService(IPlanner.SERVICE_NAME);
-			// if (planner == null)
-			// throw new IllegalStateException();
-			// IProfileChangeRequest pcr = planner.createChangeRequest(profile);
-			// pcr.addAll(sourceIUs);
-			// IProvisioningPlan plan = planner.getProvisioningPlan(pcr, null, monitor);
-			// registry.removeProfile(profileId);
-			// @SuppressWarnings("unchecked")
-			// IQueryable<IInstallableUnit>[] arr = new IQueryable[plan.getInstallerPlan()
-			// == null ? 1 : 2];
-			// arr[0] = plan.getAdditions();
-			// if (plan.getInstallerPlan() != null)
-			// arr[1] = plan.getInstallerPlan().getAdditions();
-			// return null;
+			try {
+				IPlanner planner = (IPlanner) agent.getService(IPlanner.SERVICE_NAME);
+				if (planner == null)
+					throw new IllegalStateException();
+				IProfileChangeRequest pcr = planner.createChangeRequest(profile);
+				pcr.addAll(root);
+
+				ProvisioningContext context2 = new ProvisioningContext(agent);
+				context2.setMetadataRepositories(sourceMetadataRepo.getChildren().toArray(new URI[0]));
+
+				IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
+				if (!plan.getStatus().isOK())
+					throw new StatusException("Planer failed (" + root + ")", plan.getStatus());
+
+				for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
+					fromSlice.add(iu);
+				if (plan.getInstallerPlan() != null)
+					for (IInstallableUnit iu : plan.getInstallerPlan().getAdditions().query(QueryUtil.ALL_UNITS,
+							monitor))
+						fromSlice.add(iu);
+
+			} finally {
+				registry.removeProfile(profileId);
+			}
+
+			return fromSlice;
 		};
 	}
 
@@ -611,6 +611,8 @@ public class MirrorApplication implements IApplication {
 
 			Slicer slicer = new Slicer(repo, filter, so.considerMetaRequirements);
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
+			if (!slicer.getStatus().isOK() || slice == null)
+				throw new StatusException("Slicer failed (" + root + ")", slicer.getStatus());
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
 			// IQueryResult<IInstallableUnit> queryResult =
@@ -658,10 +660,8 @@ public class MirrorApplication implements IApplication {
 					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
 
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
-
-			if (slice == null) {
-				print(slicer.getStatus(), "");
-				throw new Error("slicing failed for " + root);
+			if (!slicer.getStatus().isOK() || slice == null) {
+				throw new StatusException("PermissiveSlicer failed (" + root + ")", slicer.getStatus());
 			}
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
@@ -917,7 +917,7 @@ public class MirrorApplication implements IApplication {
 			print(c, indent + "  ");
 	}
 
-	static IProvisioningAgent getAgent() throws ProvisionException {
+	static IProvisioningAgent getAgent() {
 		ServiceReference<?> serviceReference = Activator.getContext()
 				.getServiceReference(IProvisioningAgentProvider.SERVICE_NAME);
 		IProvisioningAgentProvider agentFactory = (IProvisioningAgentProvider) Activator.getContext()
@@ -926,7 +926,7 @@ public class MirrorApplication implements IApplication {
 		try {
 			ourAgent = agentFactory.createAgent(null); // targetDirectory.getChild("p2agent").toURI());
 		} catch (ProvisionException e) {
-			throw e;
+			throw new StatusException("Creating an agent failed", e.getStatus());
 		} finally {
 			Activator.getContext().ungetService(serviceReference);
 		}
@@ -971,46 +971,39 @@ public class MirrorApplication implements IApplication {
 	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, Path path,
 			String name) {
 		try {
-			try {
-				return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
-						new NullProgressMonitor());
-			} catch (ProvisionException e) {
-				// assume that repository does not exist
-			}
+			return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
+					new NullProgressMonitor());
+		} catch (ProvisionException e) {
+			if (e.getStatus().getCode() != ProvisionException.REPOSITORY_NOT_FOUND)
+				throw new StatusException("Loading repository failed (" + path + ")", e.getStatus());
+		}
 
-			IArtifactRepository dest;
-			try {
-				dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY,
-						null);
-				return dest;
-			} catch (ProvisionException e) {
-				throw new RuntimeException(e);
-			}
-		} catch (OperationCanceledException e) {
-			throw new RuntimeException(e);
+		IArtifactRepository dest;
+		try {
+			dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
+			return dest;
+		} catch (ProvisionException e) {
+			throw new StatusException("Creating artifact repository failed (" + path + " " + name + ")", e.getStatus());
 		}
 	}
 
 	private IMetadataRepository createDestinationMetadataRepository(IMetadataRepositoryManager mgr, Path path,
-			String string) {
-		try {
-			try {
-				return mgr.loadRepository(path.toUri(), IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
-						new NullProgressMonitor());
-			} catch (ProvisionException e) {
-				// assume that repository does not exist
-			}
+			String name) {
 
-			IMetadataRepository dest;
-			try {
-				dest = mgr.createRepository(path.toUri(), string, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY,
-						null);
-				return dest;
-			} catch (ProvisionException e) {
-				throw new RuntimeException(e);
-			}
-		} catch (OperationCanceledException e) {
-			throw new RuntimeException(e);
+		try {
+			return mgr.loadRepository(path.toUri(), IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
+					new NullProgressMonitor());
+		} catch (ProvisionException e) {
+			if (e.getStatus().getCode() != ProvisionException.REPOSITORY_NOT_FOUND)
+				throw new StatusException("Loading repository failed (" + path + ")", e.getStatus());
+		}
+
+		IMetadataRepository dest;
+		try {
+			dest = mgr.createRepository(path.toUri(), name, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
+			return dest;
+		} catch (ProvisionException e) {
+			throw new StatusException("Creating metadata repository failed (" + path + " " + name + ")", e.getStatus());
 		}
 	}
 
