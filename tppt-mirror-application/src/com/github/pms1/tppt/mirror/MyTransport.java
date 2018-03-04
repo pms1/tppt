@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -192,9 +193,12 @@ public class MyTransport extends Transport {
 					}
 				}
 			}
+		} catch (UnknownHostException e) {
+			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+					ProvisionException.REPOSITORY_INVALID_LOCATION, "Unknown host: " + uri + " " + e, e);
 		} catch (ConnectException e) {
 			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,
-					"foo", e);
+					"Connect failed: " + uri + " " + e, e);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
