@@ -486,7 +486,7 @@ public class MirrorApplication implements IApplication {
 		if (!expected.equalsIgnoreCase(is))
 			return false;
 
-		System.err.println("Checksum of '" + transport.getLast()
+		System.err.println("[INFO] Checksum of '" + transport.getLast()
 				+ "' is unexpected. Assuming file is corrupted. Deleting it and trying again.");
 		Files.delete(transport.getLast());
 
@@ -540,8 +540,9 @@ public class MirrorApplication implements IApplication {
 				context2.setMetadataRepositories(sourceMetadataRepo.getChildren().toArray(new URI[0]));
 
 				IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
-				if (!plan.getStatus().isOK())
-					throw new StatusException("Planer failed (" + root + ")", plan.getStatus());
+				if (plan == null)
+					throw new RuntimeException("Planner (" + root + ") returned null");
+				handleStatus("Planner (" + root + ")", plan.getStatus());
 
 				for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
 					fromSlice.add(iu);
@@ -611,8 +612,9 @@ public class MirrorApplication implements IApplication {
 
 			Slicer slicer = new Slicer(repo, filter, so.considerMetaRequirements);
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
-			if (!slicer.getStatus().isOK() || slice == null)
-				throw new StatusException("Slicer failed (" + root + ")", slicer.getStatus());
+			handleStatus("Slicer (" + root + ")", slicer.getStatus());
+			if (slice == null)
+				throw new StatusException("Slicer (" + root + ") returned null", slicer.getStatus());
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
 			// IQueryResult<IInstallableUnit> queryResult =
@@ -660,9 +662,9 @@ public class MirrorApplication implements IApplication {
 					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
 
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
-			if (!slicer.getStatus().isOK() || slice == null) {
-				throw new StatusException("PermissiveSlicer failed (" + root + ")", slicer.getStatus());
-			}
+			handleStatus("PermissiveSlicer (" + root + ")", slicer.getStatus());
+			if (slice == null)
+				throw new StatusException("PermissiveSlicer (" + root + ") returned null", slicer.getStatus());
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
 			// IQueryResult<IInstallableUnit> queryResult =
@@ -675,6 +677,13 @@ public class MirrorApplication implements IApplication {
 
 			return fromSlice;
 		};
+	}
+
+	static void handleStatus(String prefix, IStatus status) {
+		if (status.matches(IStatus.ERROR | IStatus.CANCEL))
+			throw new StatusException(prefix + " failed", status);
+		System.err.println("[INFO] " + prefix + " returned status is not OK");
+		print(status, " ");
 	}
 
 	@SafeVarargs
@@ -960,7 +969,7 @@ public class MirrorApplication implements IApplication {
 		case "feature":
 			return Type.feature;
 		default:
-			System.err.println("UNHANDLED " + cap.get());
+			System.err.println("[WARNING] UNHANDLED " + cap.get());
 			return Type.other;
 		}
 
