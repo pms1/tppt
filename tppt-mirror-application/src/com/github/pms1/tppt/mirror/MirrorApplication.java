@@ -541,8 +541,8 @@ public class MirrorApplication implements IApplication {
 
 				IProvisioningPlan plan = planner.getProvisioningPlan(pcr, context2, monitor);
 				if (plan == null)
-					throw new RuntimeException("Planner (" + root + ") returned null");
-				handleStatus("Planner (" + root + ")", plan.getStatus());
+					throw new RuntimeException("Planner returned null");
+				handleStatus("Planner", plan.getStatus());
 
 				for (IInstallableUnit iu : plan.getAdditions().query(QueryUtil.ALL_UNITS, monitor))
 					fromSlice.add(iu);
@@ -612,9 +612,9 @@ public class MirrorApplication implements IApplication {
 
 			Slicer slicer = new Slicer(repo, filter, so.considerMetaRequirements);
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
-			handleStatus("Slicer (" + root + ")", slicer.getStatus());
+			handleStatus("Slicer", slicer.getStatus());
 			if (slice == null)
-				throw new StatusException("Slicer (" + root + ") returned null", slicer.getStatus());
+				throw new StatusException("Slicer returned null", slicer.getStatus());
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
 			// IQueryResult<IInstallableUnit> queryResult =
@@ -662,9 +662,9 @@ public class MirrorApplication implements IApplication {
 					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
 
 			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
-			handleStatus("PermissiveSlicer (" + root + ")", slicer.getStatus());
+			handleStatus("PermissiveSlicer", slicer.getStatus());
 			if (slice == null)
-				throw new StatusException("PermissiveSlicer (" + root + ") returned null", slicer.getStatus());
+				throw new StatusException("PermissiveSlicer returned null", slicer.getStatus());
 
 			// if (slice != null && slicingOptions.latestVersionOnly()) {
 			// IQueryResult<IInstallableUnit> queryResult =
@@ -680,8 +680,12 @@ public class MirrorApplication implements IApplication {
 	}
 
 	static void handleStatus(String prefix, IStatus status) {
+		if (status.isOK())
+			return;
+
 		if (status.matches(IStatus.ERROR | IStatus.CANCEL))
 			throw new StatusException(prefix + " failed", status);
+
 		System.err.println("[INFO] " + prefix + " returned status is not OK");
 		print(status, " ");
 	}
