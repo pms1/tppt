@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.2.0-SNAPSHOT</version>
+		<version>0.3.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>p2-tooling</artifactId>
 
@@ -38,13 +38,13 @@
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>minimal-ldap-parser</artifactId>
-			<version>0.2.0-SNAPSHOT</version>
+			<version>0.3.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>object-comparator</artifactId>
-			<version>0.2.0-SNAPSHOT</version>
+			<version>0.3.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
