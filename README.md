@@ -7,7 +7,7 @@
 An Apache Maven plugin for creating p2 repositories along with features directly from Maven artifacts. This
 provides easy use of those artifacts during development of Eclipse RCP applications within the Eclipse IDE.
 
-This project was created when I wanted to use [Jersey](https://jersey.java.net/) inside an Eclipse RCP application and found it incredibly inconvenient to transform it's Maven artifacts into a p2 repository directly usable from Eclipse with the various existing tools.
+This project was created when I wanted to use [Jersey](https://jersey.github.io/) inside an Eclipse RCP application and found it incredibly inconvenient to transform it's Maven artifacts into a p2 repository directly usable from Eclipse with the various existing tools.
 
 ## Features 
 
