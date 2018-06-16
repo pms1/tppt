@@ -22,10 +22,11 @@ public class ClassComparator implements FileComparator {
 
 	@Override
 	public void compare(FileId file1, Path p1, FileId file2, Path p2, Consumer<FileDelta> dest) throws IOException {
+		org.apache.maven.plugin.MojoExecution execution = null;
 
 		try (InputStream is1 = Files.newInputStream(p1)) {
 			try (InputStream is2 = Files.newInputStream(p2)) {
-				ArtifactDelta delta = cc.getDelta(is1, is2);
+				ArtifactDelta delta = cc.getDelta(is1, is2, null);
 				if (delta != null)
 					dest.accept(new FileDelta(file1, file2, "Code changed"));
 

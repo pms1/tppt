@@ -45,8 +45,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<tycho.version>1.0.0</tycho.version>
-		<tycho.osgi.version>3.11.2.v20161107-1947</tycho.osgi.version>
+		<tycho.version>1.2.0</tycho.version>
+		<tycho.osgi.version>3.13.0.v20180226-1711</tycho.osgi.version>
 		<antlr4.version>4.6</antlr4.version>
 		<maven.version>3.3.9</maven.version>
 		<maven.guava.version>18.0</maven.guava.version>
