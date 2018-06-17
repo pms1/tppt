@@ -52,6 +52,7 @@ import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperty;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
@@ -801,13 +802,19 @@ public class RepositoryComparator {
 			if (delta instanceof ProvidedRemoved) {
 				ProvidedRemoved d = (ProvidedRemoved) delta;
 
-				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.left.getId(), d.left.getVersion()))
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.left.getId(), d.left.getVersion(),
+						emptyProperties))
 					return true;
 			} else if (delta instanceof ProvidedAdded) {
 				ProvidedAdded d = (ProvidedAdded) delta;
 
-				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.right.getId(), d.right.getVersion()))
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.right.getId(), d.right.getVersion(),
+						emptyProperties))
 					return true;
+
+				System.err.println("FAIL2 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
+						+ d.provided.getVersion());
+
 			} else if (delta instanceof UnitDelta) {
 				UnitDelta d = (UnitDelta) delta;
 
@@ -887,16 +894,20 @@ public class RepositoryComparator {
 
 				// check unit is our right feature
 				if (hasOnlyArtifact(d.right, "org.eclipse.update.feature", featureId, v2)) {
-					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.jar", v2))
+					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.jar", v2,
+							emptyProperties))
 						return true;
-					if (isEqual(d.provided, "org.eclipse.update.feature", featureId, v2))
+					if (isEqual(d.provided, "org.eclipse.update.feature", featureId, v2, emptyProperties))
 						return true;
 				}
 
 				if (is(d.right, featureId + ".feature.group", v2)) {
-					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.group", v2))
+					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.group", v2,
+							emptyProperties))
 						return true;
 				}
+				System.err.println("FAIL3 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
+						+ d.provided.getVersion());
 
 				return false;
 			} else if (delta instanceof ProvidedRemoved) {
@@ -904,14 +915,16 @@ public class RepositoryComparator {
 
 				// check unit is our left feature
 				if (hasOnlyArtifact(d.left, "org.eclipse.update.feature", featureId, v1)) {
-					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.jar", v1))
+					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.jar", v1,
+							emptyProperties))
 						return true;
-					if (isEqual(d.provided, "org.eclipse.update.feature", featureId, v1))
+					if (isEqual(d.provided, "org.eclipse.update.feature", featureId, v1, emptyProperties))
 						return true;
 				}
 
 				if (is(d.left, featureId + ".feature.group", v1)) {
-					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.group", v1))
+					if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", featureId + ".feature.group", v1,
+							emptyProperties))
 						return true;
 				}
 
@@ -969,9 +982,11 @@ public class RepositoryComparator {
 				ArtifactDelta d = (ArtifactDelta) delta;
 
 				switch (d.path.getPath()) {
-				case "/properties/property[download.md5]/value":
 				case "/properties/property[artifact.size]/value":
 				case "/properties/property[download.size]/value":
+				case "/properties/property[download.md5]/value":
+				case "/properties/property[download.checksum.md5]/value":
+				case "/properties/property[download.checksum.sha-256]/value":
 					return true;
 				}
 
@@ -1152,9 +1167,20 @@ public class RepositoryComparator {
 		return u.getId().equals(id) && u.getVersion().equals(version);
 	}
 
-	static boolean isEqual(Provided p, String namespace, String name, Version version) {
-		return p.getNamespace().equals(namespace) && p.getName().equals(name) && p.getVersion().equals(version);
+	static boolean isEqual(Provided p, String namespace, String name, Version version,
+			Predicate<MetadataProperties> propertiesPredicate) {
+		return p.getNamespace().equals(namespace) && p.getName().equals(name) && p.getVersion().equals(version)
+				&& propertiesPredicate.test(p.getProperties());
 	}
+
+	static Predicate<MetadataProperties> emptyProperties = p -> p == null || p.getProperty().isEmpty();
+
+	static Predicate<MetadataProperties> anyProperties = p -> {
+		for (MetadataProperty mp : p.getProperty()) {
+			System.err.println("-- FIXME " + mp + " " + render(mp));
+		}
+		return true;
+	};
 
 	static boolean hasOnlyArtifact(Unit u, String classifier, String id, Version version) {
 		return u.getArtifacts() != null && u.getArtifacts().getArtifact().size() == 1
@@ -1338,10 +1364,14 @@ public class RepositoryComparator {
 				if (!isBundle(d))
 					return false;
 
-				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v2))
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v2, emptyProperties))
 					return true;
 
-				if (isEqual(d.provided, "osgi.bundle", bundleId, v2))
+				if (isEqual(d.provided, "osgi.bundle", bundleId, v2, emptyProperties))
+					return true;
+
+				// FIXME: should check child nodes
+				if (isEqual(d.provided, "osgi.identity", bundleId, v2, anyProperties))
 					return true;
 
 				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
@@ -1352,6 +1382,9 @@ public class RepositoryComparator {
 					return true;
 				}
 
+				System.err.println("FAIL1 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
+						+ d.provided.getVersion());
+
 				return false;
 			} else if (delta instanceof ProvidedRemoved) {
 				ProvidedRemoved d = (ProvidedRemoved) delta;
@@ -1359,10 +1392,14 @@ public class RepositoryComparator {
 				if (!isBundle(d))
 					return false;
 
-				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v1))
+				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", bundleId, v1, emptyProperties))
 					return true;
 
-				if (isEqual(d.provided, "osgi.bundle", bundleId, v1))
+				if (isEqual(d.provided, "osgi.bundle", bundleId, v1, emptyProperties))
+					return true;
+
+				// FIXME: should check child nodes
+				if (isEqual(d.provided, "osgi.identity", bundleId, v1, anyProperties))
 					return true;
 
 				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
@@ -1495,11 +1532,11 @@ public class RepositoryComparator {
 
 	}
 
-	private String render(Object o) {
+	private static String render(Object o) {
 		if (o instanceof List) {
 			@SuppressWarnings("unchecked")
 			List<Object> l = (List<Object>) (List<?>) o;
-			return "[" + l.stream().map(this::render).collect(Collectors.joining(", ")) + "]";
+			return "[" + l.stream().map(RepositoryComparator::render).collect(Collectors.joining(", ")) + "]";
 		}
 
 		if (o instanceof Child) {
@@ -1510,6 +1547,10 @@ public class RepositoryComparator {
 		if (o instanceof Required || o instanceof Provided || o instanceof Unit) {
 			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o,
 					DomRenderer.Options.TOP_LEVEL);
+		}
+
+		if (o instanceof MetadataProperty) {
+			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o);
 		}
 
 		if (o instanceof ArtifactFacade) {

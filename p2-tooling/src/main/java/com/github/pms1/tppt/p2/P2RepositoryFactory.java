@@ -306,6 +306,8 @@ public class P2RepositoryFactory {
 				try (InputStream is = dc.openInputStream(root, artifact.getFilePrefix())) {
 					a = artifactCreator.apply(root.resolve(artifact.getFilePrefix() + "." + dc.getFileSuffix()),
 							artifactFactory.read(is));
+				} catch (RuntimeException e) {
+					throw new RuntimeException("While loading artifact data from '" + root + "' using " + dc, e);
 				}
 			}
 			return a;
@@ -318,6 +320,8 @@ public class P2RepositoryFactory {
 				try (InputStream is = dc.openInputStream(root, metadata.getFilePrefix())) {
 					m = metadataCreator.apply(root.resolve(metadata.getFilePrefix() + "." + dc.getFileSuffix()),
 							metadataFactory.read(is));
+				} catch (RuntimeException e) {
+					throw new RuntimeException("While loading metadata from '" + root + "' using " + dc, e);
 				}
 			}
 			return m;
@@ -487,9 +491,11 @@ public class P2RepositoryFactory {
 
 		return new P2RepositoryImpl(path, p2index, availableCompressions,
 				kinds.contains(P2Kind.artifact)
-						? new ArtifactRepositoryFacadeImpl(path, artifactRepositoryFactory.createEmpty()) : null,
+						? new ArtifactRepositoryFacadeImpl(path, artifactRepositoryFactory.createEmpty())
+						: null,
 				kinds.contains(P2Kind.metadata)
-						? new MetadataRepositoryFacadeImpl(path, metadataRepositoryFactory.createEmpty()) : null);
+						? new MetadataRepositoryFacadeImpl(path, metadataRepositoryFactory.createEmpty())
+						: null);
 	}
 
 	public P2CompositeRepository loadComposite(Path path, P2Kind... kinds) throws IOException {

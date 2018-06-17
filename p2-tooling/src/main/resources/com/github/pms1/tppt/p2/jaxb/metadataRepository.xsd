@@ -109,6 +109,7 @@
 	<xsd:complexType name="requires">
 		<xsd:sequence>
 			<xsd:element name="required" type="required" maxOccurs="unbounded" minOccurs="0"></xsd:element>
+			<xsd:element name="requiredProperties" type="requiredProperties" maxOccurs="unbounded" minOccurs="0"></xsd:element>
 		</xsd:sequence>
 		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
 	</xsd:complexType>
@@ -126,6 +127,9 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="provided">
+		<xsd:sequence>
+			<xsd:element name="properties" type="properties" maxOccurs="1" minOccurs="0"></xsd:element>
+		</xsd:sequence>
 		<xsd:attribute name="namespace" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
@@ -151,6 +155,11 @@
 		<xsd:attribute name="min" type="xsd:int"></xsd:attribute>
 		<xsd:attribute name="max" type="xsd:int"></xsd:attribute>
 		<xsd:attribute name="multiple" type="xsd:boolean"></xsd:attribute>
+	</xsd:complexType>
+
+	<xsd:complexType name="requiredProperties">
+		<xsd:attribute name="namespace" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="match" type="xsd:string"></xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="touchpointData">
