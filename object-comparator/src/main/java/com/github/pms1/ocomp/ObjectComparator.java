@@ -170,11 +170,17 @@ public class ObjectComparator<T> {
 			return new OPath("[" + condition + "]");
 		}
 
+		public static OPath any() {
+			return any;
+		}
+
 		public OPath append(OPath key) {
 			return new OPath(path + key.path);
 		}
 
 	}
+
+	private static final OPath any = new OPath("[*]");
 
 	public interface DecomposerFactory {
 		<T> Decomposer<T> generate(Type t);
@@ -571,7 +577,7 @@ public class ObjectComparator<T> {
 						List<T> temp = new ArrayList<>();
 
 						TypedObject v2 = i2.next();
-						compare(OPath2.root(v1, v2.getValue()), v1, v2, temp::add);
+						compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
 
 						if (temp.isEmpty()) {
 							i2.remove();
@@ -581,13 +587,13 @@ public class ObjectComparator<T> {
 					}
 
 					if (!found) {
-						add(sink, deltaCreator.missing(key != null ? p.child(key.path, v1.getValue(), null) : p,
+						add(sink, deltaCreator.missing(p.child(key != null ? key.path : any.path, v1.getValue(), null),
 								v1.getValue()));
 					}
 				}
 
 				for (TypedObject v2 : c2) {
-					add(sink, deltaCreator.additional(key != null ? p.child(key.path, null, v2.getValue()) : p,
+					add(sink, deltaCreator.additional(p.child(key != null ? key.path : any.path, null, v2.getValue()),
 							v2.getValue()));
 				}
 			}

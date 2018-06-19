@@ -126,9 +126,22 @@
 		<xsd:attribute name="version" type="versionType" use="required"></xsd:attribute>
 	</xsd:complexType>
 
+	<xsd:complexType name="providedProperty">
+		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="value" type="xsd:string" use="required"></xsd:attribute>
+		<xsd:attribute name="type" type="xsd:string"></xsd:attribute>
+	</xsd:complexType>
+	
+	<xsd:complexType name="providedProperties">
+		<xsd:sequence>
+			<xsd:element name="property" type="providedProperty" minOccurs="0" maxOccurs="unbounded"></xsd:element>
+		</xsd:sequence>
+		<xsd:attribute name="size" type="xsd:int" ></xsd:attribute> <!-- strict: required -->
+	</xsd:complexType>
+
 	<xsd:complexType name="provided">
 		<xsd:sequence>
-			<xsd:element name="properties" type="properties" maxOccurs="1" minOccurs="0"></xsd:element>
+			<xsd:element name="properties" type="providedProperties" maxOccurs="1" minOccurs="0"></xsd:element>
 		</xsd:sequence>
 		<xsd:attribute name="namespace" type="xsd:string" use="required"></xsd:attribute>
 		<xsd:attribute name="name" type="xsd:string" use="required"></xsd:attribute>
@@ -159,7 +172,9 @@
 
 	<xsd:complexType name="requiredProperties">
 		<xsd:attribute name="namespace" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="greedy" type="xsd:boolean"></xsd:attribute>
 		<xsd:attribute name="match" type="xsd:string"></xsd:attribute>
+		<xsd:attribute name="min" type="xsd:int"></xsd:attribute>
 	</xsd:complexType>
 
 	<xsd:complexType name="touchpointData">

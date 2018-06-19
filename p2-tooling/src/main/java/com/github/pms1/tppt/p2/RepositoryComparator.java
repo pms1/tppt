@@ -52,10 +52,11 @@ import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperty;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Instruction;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataArtifact;
-import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
+import com.github.pms1.tppt.p2.jaxb.metadata.ProvidedProperties;
+import com.github.pms1.tppt.p2.jaxb.metadata.ProvidedProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Preconditions;
@@ -331,6 +332,8 @@ public class RepositoryComparator {
 				.addDecomposer("//units/unit[*]/artifacts/artifact",
 						ObjectComparator
 								.<MetadataArtifact>listToMapDecomposer(p -> p.getId() + "/" + p.getClassifier()))
+				.addDecomposer("//units/unit[*]/provides/provided/properties/property",
+						ObjectComparator.<ProvidedProperty>listToMapDecomposer(p -> p.getName()))
 				.addDecomposer("//properties/property",
 						ObjectComparator.<MetadataProperty>listToMapDecomposer(p -> p.getName()));
 	}
@@ -576,6 +579,7 @@ public class RepositoryComparator {
 					if (unitPath.getPath().equals("//units/unit")) {
 
 						OPath2 rel = p.subPath(4);
+
 						if (rel == null) {
 							return new MetadataDelta(mdf1id, mdf2id, p, change);
 						} else {
@@ -583,7 +587,7 @@ public class RepositoryComparator {
 							Unit uright = (Unit) p.subPath(3, 4).getRight();
 
 							switch (rel.getPath()) {
-							case "/provides/provided":
+							case "/provides/provided[*]":
 								switch (change) {
 								case ADDED:
 									return new ProvidedAdded(mdf1id, uleft, mdf2id, uright, (Provided) m2);
@@ -592,7 +596,7 @@ public class RepositoryComparator {
 								default:
 									throw new Error(change + " " + rel.getPath());
 								}
-							case "/requires/required":
+							case "/requires/required[*]":
 								switch (change) {
 								case ADDED:
 									return new RequiredAdded(mdf1id, uleft, mdf2id, uright, (Required) m2);
@@ -651,7 +655,7 @@ public class RepositoryComparator {
 				}
 
 				if (i1.size() == 1 && i2.size() == 1) {
-					changes.add(new CategoryVersionChange(c1.get(Iterables.getOnlyElement(i1)),
+					changes.add(new CategoryVersionChange(a, c1.get(Iterables.getOnlyElement(i1)),
 							c2.get(Iterables.getOnlyElement(i2))));
 				}
 			}
@@ -780,14 +784,17 @@ public class RepositoryComparator {
 			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
 
 	class CategoryVersionChange extends Change {
-		final Unit left;
-		final Unit right;
+		private final String id;
+		private final Unit left;
+		private final Unit right;
 
-		public CategoryVersionChange(Unit left, Unit right) {
+		public CategoryVersionChange(String id, Unit left, Unit right) {
+			Preconditions.checkNotNull(id);
 			Preconditions.checkNotNull(left);
 			Preconditions.checkNotNull(right);
 			this.left = left;
 			this.right = right;
+			this.id = id;
 		}
 
 		@Override
@@ -811,9 +818,6 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "org.eclipse.equinox.p2.iu", d.right.getId(), d.right.getVersion(),
 						emptyProperties))
 					return true;
-
-				System.err.println("FAIL2 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
-						+ d.provided.getVersion());
 
 			} else if (delta instanceof UnitDelta) {
 				UnitDelta d = (UnitDelta) delta;
@@ -906,8 +910,6 @@ public class RepositoryComparator {
 							emptyProperties))
 						return true;
 				}
-				System.err.println("FAIL3 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
-						+ d.provided.getVersion());
 
 				return false;
 			} else if (delta instanceof ProvidedRemoved) {
@@ -1168,15 +1170,15 @@ public class RepositoryComparator {
 	}
 
 	static boolean isEqual(Provided p, String namespace, String name, Version version,
-			Predicate<MetadataProperties> propertiesPredicate) {
+			Predicate<ProvidedProperties> propertiesPredicate) {
 		return p.getNamespace().equals(namespace) && p.getName().equals(name) && p.getVersion().equals(version)
 				&& propertiesPredicate.test(p.getProperties());
 	}
 
-	static Predicate<MetadataProperties> emptyProperties = p -> p == null || p.getProperty().isEmpty();
+	static Predicate<ProvidedProperties> emptyProperties = p -> p == null || p.getProperty().isEmpty();
 
-	static Predicate<MetadataProperties> anyProperties = p -> {
-		for (MetadataProperty mp : p.getProperty()) {
+	static Predicate<ProvidedProperties> anyProperties = p -> {
+		for (ProvidedProperty mp : p.getProperty()) {
 			System.err.println("-- FIXME " + mp + " " + render(mp));
 		}
 		return true;
@@ -1382,9 +1384,6 @@ public class RepositoryComparator {
 					return true;
 				}
 
-				System.err.println("FAIL1 " + d.provided.getNamespace() + " " + d.provided.getName() + " "
-						+ d.provided.getVersion());
-
 				return false;
 			} else if (delta instanceof ProvidedRemoved) {
 				ProvidedRemoved d = (ProvidedRemoved) delta;
@@ -1549,8 +1548,12 @@ public class RepositoryComparator {
 					DomRenderer.Options.TOP_LEVEL);
 		}
 
-		if (o instanceof MetadataProperty) {
+		if (o instanceof MetadataProperty || o instanceof ProvidedProperty) {
 			return new DomRenderer().jaxbRender(MetadataRepositoryFactory.getJaxbContext(), o);
+		}
+
+		if (o instanceof ArtifactProperty) {
+			return new DomRenderer().jaxbRender(ArtifactRepositoryFactory.getJaxbContext(), o);
 		}
 
 		if (o instanceof ArtifactFacade) {
