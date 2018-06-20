@@ -93,6 +93,9 @@ public class MirrorMojo extends AbstractMojo {
 		@Parameter
 		public List<String> excludeIus;
 
+		/**
+		 * @deprecated
+		 */
 		@Parameter
 		public List<URI> sources;
 
@@ -102,6 +105,22 @@ public class MirrorMojo extends AbstractMojo {
 
 		@Parameter
 		public AlgorithmType algorithm = AlgorithmType.permissiveSlicer;
+
+		@Parameter
+		public Source source;
+	}
+
+	public static class Source {
+		@Parameter
+		public List<Repository> repository = Collections.emptyList();
+	}
+
+	public static class Repository {
+		@Parameter
+		public String id;
+
+		@Parameter
+		public URI url;
 	}
 
 	private static final String cacheRelPath = ".cache/tppt/p2";
@@ -118,7 +137,16 @@ public class MirrorMojo extends AbstractMojo {
 				if (m.excludeIus != null)
 					ms.excludeIus = m.excludeIus.toArray(new String[m.excludeIus.size()]);
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
-				ms.sourceRepositories = m.sources.toArray(new URI[m.sources.size()]);
+
+				List<URI> repos = new ArrayList<>();
+				repos.addAll(m.sources);
+				if (m.source != null)
+					m.source.repository.forEach(r -> {
+						if (r.url != null)
+							repos.add(r.url);
+					});
+
+				ms.sourceRepositories = repos.toArray(new URI[repos.size()]);
 				ms.targetRepository = repoOut;
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
