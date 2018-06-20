@@ -97,7 +97,7 @@ public class MirrorMojo extends AbstractMojo {
 		 * @deprecated
 		 */
 		@Parameter
-		public List<URI> sources;
+		public List<URI> sources = Collections.emptyList();
 
 		@SuppressWarnings("unchecked")
 		@Parameter
@@ -106,20 +106,15 @@ public class MirrorMojo extends AbstractMojo {
 		@Parameter
 		public AlgorithmType algorithm = AlgorithmType.permissiveSlicer;
 
-		@Parameter
-		public Source source;
-	}
-
-	public static class Source {
-		@Parameter
-		public List<Repository> repository = Collections.emptyList();
+		@Parameter(required = true)
+		public List<Repository> source = Collections.emptyList();
 	}
 
 	public static class Repository {
 		@Parameter
 		public String id;
 
-		@Parameter
+		@Parameter(required = true)
 		public URI url;
 	}
 
@@ -140,11 +135,14 @@ public class MirrorMojo extends AbstractMojo {
 
 				List<URI> repos = new ArrayList<>();
 				repos.addAll(m.sources);
-				if (m.source != null)
-					m.source.repository.forEach(r -> {
-						if (r.url != null)
-							repos.add(r.url);
-					});
+				if (!m.sources.isEmpty())
+					getLog().warn(
+							"Obsolete parameter 'sources' used. Use 'source' instead. 'sources' will be removed in the future.");
+
+				m.source.forEach(r -> {
+					if (r.url != null)
+						repos.add(r.url);
+				});
 
 				ms.sourceRepositories = repos.toArray(new URI[repos.size()]);
 				ms.targetRepository = repoOut;
