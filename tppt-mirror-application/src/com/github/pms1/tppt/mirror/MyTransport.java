@@ -17,8 +17,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -63,14 +65,18 @@ public class MyTransport extends Transport {
 
 	private final StatsType stats;
 
+	private final TreeMap<String, String> mirrors = new TreeMap<>();
+
 	// see p2's OfflineTransport
 	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
 
-	public MyTransport(Path root, OfflineType offline, StatsType stats) {
+	public MyTransport(Path root, OfflineType offline, StatsType stats, Map<URI, URI> mirrors) {
 		Objects.requireNonNull(root);
 		this.root = root;
 		this.offline = offline;
 		this.stats = stats;
+		if (mirrors != null)
+			mirrors.forEach((k, v) -> this.mirrors.put(k.toString(), v.toString()));
 	}
 
 	@Override
@@ -206,6 +212,21 @@ public class MyTransport extends Transport {
 		return result;
 	}
 
+	static Entry<String, String> find(TreeMap<String, String> data, String prefix) {
+
+		Entry<String, String> solution = null;
+
+		for (Entry<String, String> e : data.entrySet()) {
+			if (e.getKey().compareTo(prefix) > 0)
+				break;
+
+			if (prefix.startsWith(e.getKey()))
+				solution = e;
+		}
+
+		return solution;
+	}
+
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
 		Set<String> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
@@ -215,19 +236,27 @@ public class MyTransport extends Transport {
 				return null;
 		}).filter(p1 -> p1 != null)).collect(Collectors.toSet());
 
-		Path p;
+		URI norm;
 		switch (collect.size()) {
 		case 0:
-			p = toPath(toDownload);
+			norm = toDownload;
 			break;
 		case 1:
-			p = toPath(URI.create(collect.iterator().next()));
+			norm = URI.create(collect.iterator().next());
 			break;
 		default:
 			throw new Error("URI '" + toDownload + "' was de-mirrored to different URIs: " + collect);
 		}
 
-		IStatus result = mirror(toDownload, p, monitor);
+		Entry<String, String> replace = find(mirrors, norm.toString());
+		URI toDownload2;
+		if (replace != null)
+			toDownload2 = URI.create(replacePrefix(norm.toString(), replace.getKey(), replace.getValue()));
+		else
+			toDownload2 = toDownload;
+
+		Path p = toPath(norm);
+		IStatus result = mirror(toDownload2, p, monitor);
 
 		if (result.isOK()) {
 			try (InputStream is = Files.newInputStream(p)) {
@@ -244,6 +273,12 @@ public class MyTransport extends Transport {
 		}
 
 		return result;
+	}
+
+	private String replacePrefix(String base, String from, String to) {
+
+		return to + base.substring(from.length());
+
 	}
 
 	private Path toPath(URI toDownload) {

@@ -39,6 +39,9 @@ public class MirrorSpec {
 	@XmlElement(name = "sourceRepository")
 	public URI[] sourceRepositories;
 
+	@XmlElement
+	public Map<URI, URI> mirrors;
+
 	@XmlElement(name = "iu")
 	public String[] ius;
 

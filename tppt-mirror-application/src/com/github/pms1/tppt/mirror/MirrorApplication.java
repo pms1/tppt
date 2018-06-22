@@ -131,6 +131,9 @@ public class MirrorApplication implements IApplication {
 					System.out.println("MirrorApplication.offline            = " + ms.offline);
 					System.out.println("MirrorApplication.stats              = " + ms.stats);
 					System.out.println("MirrorApplication.filter             = " + Arrays.toString(ms.filters));
+					for (Entry<URI, URI> e : ms.mirrors.entrySet())
+						System.out.println(
+								"MirrorApplication.mirror             = " + e.getKey() + " -> " + e.getValue());
 				}
 
 				IProgressMonitor monitor = new IProgressMonitor() {
@@ -183,7 +186,7 @@ public class MirrorApplication implements IApplication {
 				IProvisioningAgent ourAgent;
 				ourAgent = getAgent();
 
-				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats);
+				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.mirrors);
 				ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 				CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository

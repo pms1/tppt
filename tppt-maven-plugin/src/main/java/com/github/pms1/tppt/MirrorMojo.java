@@ -4,12 +4,16 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.xml.bind.JAXB;
 
@@ -116,14 +120,105 @@ public class MirrorMojo extends AbstractMojo {
 
 		@Parameter(required = true)
 		public URI url;
+
+		@Override
+		public String toString() {
+			return "Repository(id=" + id + ",url=" + url + ")";
+		}
 	}
 
 	private static final String cacheRelPath = ".cache/tppt/p2";
+
+	private URI findMirror(Repository r) {
+		for (org.apache.maven.settings.Mirror m : session.getSettings().getMirrors()) {
+			getLog().debug("Trying " + m + " for " + r);
+			String result = matchMirror(m, r);
+			if (result != null && !result.isEmpty()) {
+				if (!result.endsWith("/"))
+					result += "/";
+
+				try {
+					return new URI(m.getUrl());
+				} catch (URISyntaxException e) {
+					getLog().debug("Ignored " + m + " due to not an URI: " + e);
+					continue;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private Map<URI, URI> findMirrors() {
+		Map<URI, URI> x = new LinkedHashMap<>();
+		for (org.apache.maven.settings.Mirror m : session.getSettings().getMirrors()) {
+			if (!Objects.equals(m.getLayout(), "p2")) {
+				getLog().debug("Ignored " + m + " due to wrong layout");
+				continue;
+			}
+			if (!Objects.equals(m.getMirrorOfLayouts(), "p2")) {
+				getLog().debug("Ignored " + m + " due to wrong mirrorOfLayout");
+				continue;
+			}
+
+			URI from;
+			try {
+				from = new URI(m.getMirrorOf());
+			} catch (URISyntaxException e) {
+				getLog().debug("Ignored " + m + " due to not an URI: " + e);
+				continue;
+			}
+
+			if (!from.isAbsolute()) {
+				getLog().debug("Ignored " + m + " due to not an absolute URI: " + from);
+				continue;
+			}
+
+			URI to;
+			try {
+				to = new URI(m.getUrl());
+			} catch (URISyntaxException e) {
+				getLog().debug("Ignored " + m + " due to not an URI: " + e);
+				continue;
+			}
+
+			x.put(from, to);
+		}
+		return x;
+	}
+
+	private String matchMirror(org.apache.maven.settings.Mirror m, Repository r) {
+		if (!Objects.equals(m.getLayout(), "p2")) {
+			getLog().debug("Ignored " + m + " due to wrong layout");
+			return null;
+		}
+		if (!Objects.equals(m.getMirrorOfLayouts(), "p2")) {
+			getLog().debug("Ignored " + m + " due to wrong mirrorOfLayout");
+			return null;
+		}
+
+		if (Objects.equals(m.getMirrorOf(), r.id)) {
+			getLog().debug("Matched " + m + " on id");
+			return m.getUrl();
+		}
+
+		getLog().debug("No match " + m + "");
+		return null;
+	}
+
+	String toString(Repository r) {
+		if (r.id != null && !r.id.isEmpty())
+			return "'" + r.id + "'";
+		else
+			return "at '" + r.url + "'";
+	}
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		try {
 			final Path repoOut = target.toPath().resolve("repository");
+
+			Map<URI, URI> uriMirrors = findMirrors();
 
 			for (Mirror m : mirrors) {
 				MirrorSpec ms = new MirrorSpec();
@@ -134,15 +229,27 @@ public class MirrorMojo extends AbstractMojo {
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
 
 				List<URI> repos = new ArrayList<>();
-				repos.addAll(m.sources);
-				if (!m.sources.isEmpty())
+				if (!m.sources.isEmpty()) {
 					getLog().warn(
 							"Obsolete parameter 'sources' used. Use 'source' instead. 'sources' will be removed in the future.");
+					repos.addAll(m.sources);
+				}
+
+				ms.mirrors = new HashMap<>();
 
 				m.source.forEach(r -> {
-					if (r.url != null)
+					if (r.url != null) {
 						repos.add(r.url);
+
+						URI mirrorUri = findMirror(r);
+						if (mirrorUri != null) {
+							getLog().info("Using mirror '" + mirrorUri + "' for " + toString(r));
+							ms.mirrors.put(r.url, mirrorUri);
+						}
+					}
 				});
+
+				ms.mirrors.putAll(uriMirrors);
 
 				ms.sourceRepositories = repos.toArray(new URI[repos.size()]);
 				ms.targetRepository = repoOut;
