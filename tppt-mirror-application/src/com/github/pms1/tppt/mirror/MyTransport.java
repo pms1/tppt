@@ -73,7 +73,7 @@ public class MyTransport extends Transport {
 
 	private final StatsType stats;
 
-	private final TreeMap<String, String> mirrors = new TreeMap<>();
+	private final TreeMap<URI, URI> mirrors = new TreeMap<>();
 
 	// see p2's OfflineTransport
 	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
@@ -89,7 +89,7 @@ public class MyTransport extends Transport {
 		this.stats = stats;
 		this.proxy = proxy;
 		if (mirrors != null)
-			mirrors.forEach((k, v) -> this.mirrors.put(k.toString(), v.toString()));
+			this.mirrors.putAll(mirrors);
 
 		Pattern nonProxyHosts = null;
 
@@ -151,6 +151,23 @@ public class MyTransport extends Transport {
 		}
 
 		return builder.build();
+	}
+
+	public static void main(String[] args) {
+		URI u1 = URI.create("http://www.foo.bar/a");
+		URI u2 = URI.create("http://www.foo.bar/a/");
+		URI u3 = URI.create("http://www.foo.bar/ab");
+		URI u4 = URI.create("http://www.foo.bar/a/b");
+
+		for (URI x1 : new URI[] { u1, u2, u3, u4 }) {
+			for (URI x2 : new URI[] { u1, u2, u3, u4 }) {
+
+				URI r = x1.relativize(x2);
+
+				System.err.println(x1 + " " + x2 + " " + r + " " + r.isAbsolute());
+			}
+
+		}
 	}
 
 	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
@@ -296,26 +313,38 @@ public class MyTransport extends Transport {
 		return new HttpHost(proxy.host, proxy.port, proxy.protocol);
 	}
 
-	static Entry<String, String> find(TreeMap<String, String> data, String prefix) {
+	private Entry<URI, URI> findMirror(URI prefix) {
 
-		Entry<String, String> solution = null;
+		Entry<URI, URI> solution = null;
 
-		for (Entry<String, String> e : data.entrySet()) {
+		for (Entry<URI, URI> e : mirrors.entrySet()) {
 			if (e.getKey().compareTo(prefix) > 0)
 				break;
 
-			if (prefix.startsWith(e.getKey()))
+			if (Uris.isChild(e.getKey(), prefix))
 				solution = e;
 		}
 
 		return solution;
 	}
 
+	private URI applyLocalMirror(URI uri) {
+		return applyLocalMirror(uri, uri);
+	}
+
+	private URI applyLocalMirror(URI uri, URI instead) {
+		Entry<URI, URI> mirror = findMirror(uri);
+		if (mirror != null)
+			return Uris.reparent(uri, mirror.getKey(), mirror.getValue());
+		else
+			return instead;
+	}
+
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
-		Set<String> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
-			if (toDownload.toString().startsWith(p1.url.toString()))
-				return p.base + toDownload.toString().substring(p1.url.toString().length());
+		Set<URI> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
+			if (Uris.isChild(p1.url, toDownload))
+				return Uris.reparent(toDownload, p1.url, p.base);
 			else
 				return null;
 		}).filter(p1 -> p1 != null)).collect(Collectors.toSet());
@@ -326,21 +355,14 @@ public class MyTransport extends Transport {
 			norm = toDownload;
 			break;
 		case 1:
-			norm = URI.create(collect.iterator().next());
+			norm = collect.iterator().next();
 			break;
 		default:
 			throw new Error("URI '" + toDownload + "' was de-mirrored to different URIs: " + collect);
 		}
 
-		Entry<String, String> replace = find(mirrors, norm.toString());
-		URI toDownload2;
-		if (replace != null)
-			toDownload2 = URI.create(replacePrefix(norm.toString(), replace.getKey(), replace.getValue()));
-		else
-			toDownload2 = toDownload;
-
 		Path p = toPath(norm);
-		IStatus result = mirror(toDownload2, p, monitor);
+		IStatus result = mirror(applyLocalMirror(norm), p, monitor);
 
 		if (result.isOK()) {
 			try (InputStream is = Files.newInputStream(p)) {
@@ -357,12 +379,6 @@ public class MyTransport extends Transport {
 		}
 
 		return result;
-	}
-
-	private String replacePrefix(String base, String from, String to) {
-
-		return to + base.substring(from.length());
-
 	}
 
 	private Path toPath(URI toDownload) {
@@ -391,7 +407,7 @@ public class MyTransport extends Transport {
 
 		Path p = toPath(toDownload);
 
-		mirror(toDownload, p, monitor);
+		mirror(applyLocalMirror(toDownload), p, monitor);
 
 		boolean found = false;
 		for (RepoMirror r : mirrorFiles.values()) {
@@ -456,7 +472,7 @@ public class MyTransport extends Transport {
 		}
 
 		Path p = toPath(toDownload);
-		IStatus status = mirror(toDownload, p, monitor);
+		IStatus status = mirror(applyLocalMirror(toDownload), p, monitor);
 
 		if (status.isOK()) {
 			try {
@@ -509,14 +525,14 @@ public class MyTransport extends Transport {
 	}
 
 	static class RepoMirror {
-		public RepoMirror(String base, String mirrorFile, String stats) {
+		public RepoMirror(URI base, String mirrorFile, String stats) {
 			this.base = base;
 			this.mirrorFile = mirrorFile;
 			this.stats = stats;
 		}
 
 		final String mirrorFile;
-		final String base;
+		final URI base;
 		final String stats;
 
 		Mirror[] mirrors = new Mirror[0];
@@ -533,7 +549,8 @@ public class MyTransport extends Transport {
 		LinkedList<IArtifactRepository> todo = new LinkedList<>(repositories);
 		while (!todo.isEmpty()) {
 			IArtifactRepository repo = todo.removeFirst();
-			String base = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);
+			String baseString = repo.getProperties().get(IRepository.PROP_MIRRORS_BASE_URL);
+			URI base = baseString != null && !baseString.isEmpty() ? URI.create(baseString) : null;
 			String mirror = repo.getProperties().get(IRepository.PROP_MIRRORS_URL);
 			String stats = repo.getProperties().get("p2.statsURI"); // no public
 																	// constant
@@ -547,13 +564,11 @@ public class MyTransport extends Transport {
 				continue;
 
 			// be a bit paranoid and sanitize these values
-			if (base != null && base.isEmpty())
-				base = null;
 			if (stats != null && stats.isEmpty())
 				stats = null;
 
 			if (base == null)
-				base = repo.getLocation().toString();
+				base = repo.getLocation();
 
 			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));
 		}

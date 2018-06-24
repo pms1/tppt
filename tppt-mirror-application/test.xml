@@ -1,8 +1,8 @@
 <mirrorSpecification>
 	<targetRepository>c:/temp/mirror1</targetRepository>
 	<mirrorRepository>C:/Users/Mirko/.m2/repository/.cache/tppt/p2/</mirrorRepository>
-	<sourceRepository>http://download.eclipse.org/releases/oxygen/201712201001/</sourceRepository>
-	<sourceRepository>http://download.eclipse.org/technology/epp/packages/oxygen/</sourceRepository>
+	<sourceRepository>http://downloadX.eclipse.org/releases/oxygen/201712201001/</sourceRepository>
+	<sourceRepository>http://downloadX.eclipse.org/technology/epp/packages/oxygen/</sourceRepository>
 
 	<!-- <iu>org.eclipse.core.runtime.feature.feature.group</iu> -->
 
@@ -38,6 +38,14 @@
 		</item>
 	</filter>
 
+    <mirrors>
+        <entry>
+            <key>http://downloadX.eclipse.org/</key>
+            <value>http://localhost:8090/mirror/</value>
+        </entry>
+    </mirrors>
+
+<!-- 
    <proxy>
       <id>example-proxy</id>
       <active>true</active>
@@ -49,4 +57,6 @@
       <nonProxyHost>www.google.com</nonProxyHost>
       <nonProxyHost>*.eclipse.oXrg</nonProxyHost>
     </proxy>
+     -->
+     
 </mirrorSpecification>
