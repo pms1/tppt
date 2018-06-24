@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -41,6 +42,7 @@ import com.github.pms1.tppt.mirror.MirrorSpec;
 import com.github.pms1.tppt.mirror.MirrorSpec.AlgorithmType;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
+import com.github.pms1.tppt.mirror.jaxb.Proxy;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 
 /**
@@ -251,6 +253,8 @@ public class MirrorMojo extends AbstractMojo {
 
 				ms.mirrors.putAll(uriMirrors);
 
+				ms.proxy = findProxy();
+
 				ms.sourceRepositories = repos.toArray(new URI[repos.size()]);
 				ms.targetRepository = repoOut;
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
@@ -279,6 +283,24 @@ public class MirrorMojo extends AbstractMojo {
 		} catch (Exception e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
 		}
+	}
+
+	private Proxy findProxy() {
+		org.apache.maven.settings.Proxy proxy = session.getSettings().getActiveProxy();
+		if (proxy == null)
+			return null;
+
+		Proxy result = new Proxy();
+		result.host = proxy.getHost();
+		result.nonProxyHosts = null;
+		result.username = proxy.getUsername();
+		result.password = proxy.getPassword();
+		result.port = proxy.getPort();
+		result.protocol = proxy.getProtocol();
+		if (proxy.getNonProxyHosts() != null && !proxy.getNonProxyHosts().isEmpty())
+			result.nonProxyHosts = Arrays.asList(proxy.getNonProxyHosts().split("[|]", -1));
+
+		return result;
 	}
 
 	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {

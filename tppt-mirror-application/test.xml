@@ -38,4 +38,15 @@
 		</item>
 	</filter>
 
+   <proxy>
+      <id>example-proxy</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>localhost</host>
+      <port>8090</port>
+      <username>user</username>
+      <password>pass</password>
+      <nonProxyHost>www.google.com</nonProxyHost>
+      <nonProxyHost>*.eclipse.oXrg</nonProxyHost>
+    </proxy>
 </mirrorSpecification>

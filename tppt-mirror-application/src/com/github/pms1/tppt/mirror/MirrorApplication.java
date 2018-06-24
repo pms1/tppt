@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.MultiStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.internal.p2.artifact.processors.md5.Messages;
@@ -78,7 +79,7 @@ import org.osgi.framework.ServiceReference;
 @SuppressWarnings("restriction")
 public class MirrorApplication implements IApplication {
 
-	private static boolean debug = false;
+	private static boolean debug = Platform.inDebugMode();
 
 	@SuppressWarnings("unchecked")
 	private static final Map<String, String>[] emptyFilters = new Map[] { Collections.emptyMap() };
@@ -123,17 +124,26 @@ public class MirrorApplication implements IApplication {
 				}
 
 				if (debug) {
-					System.out.println("MirrorApplication.mirrorRepository   = " + ms.mirrorRepository);
+					System.out.println("MirrorApplication.mirrorRepository    = " + ms.mirrorRepository);
 					System.out.println(
-							"MirrorApplication.sourceRepositories = " + Arrays.toString(ms.sourceRepositories));
-					System.out.println("MirrorApplication.targetRepository   = " + ms.targetRepository);
-					System.out.println("MirrorApplication.installableUnit    = " + Arrays.toString(ms.ius));
-					System.out.println("MirrorApplication.offline            = " + ms.offline);
-					System.out.println("MirrorApplication.stats              = " + ms.stats);
-					System.out.println("MirrorApplication.filter             = " + Arrays.toString(ms.filters));
-					for (Entry<URI, URI> e : ms.mirrors.entrySet())
-						System.out.println(
-								"MirrorApplication.mirror             = " + e.getKey() + " -> " + e.getValue());
+							"MirrorApplication.sourceRepositories  = " + Arrays.toString(ms.sourceRepositories));
+					System.out.println("MirrorApplication.targetRepository    = " + ms.targetRepository);
+					System.out.println("MirrorApplication.installableUnit     = " + Arrays.toString(ms.ius));
+					System.out.println("MirrorApplication.offline             = " + ms.offline);
+					System.out.println("MirrorApplication.stats               = " + ms.stats);
+					System.out.println("MirrorApplication.filter              = " + Arrays.toString(ms.filters));
+					if (ms.mirrors != null)
+						for (Entry<URI, URI> e : ms.mirrors.entrySet())
+							System.out.println(
+									"MirrorApplication.mirror             = " + e.getKey() + " -> " + e.getValue());
+					if (ms.proxy != null) {
+						System.out.println("MirrorApplication.proxy.protocol      = " + ms.proxy.protocol);
+						System.out.println("MirrorApplication.proxy.host          = " + ms.proxy.host);
+						System.out.println("MirrorApplication.proxy.port          = " + ms.proxy.port);
+						System.out.println("MirrorApplication.proxy.username      = " + ms.proxy.username);
+						System.out.println("MirrorApplication.proxy.password      = " + ms.proxy.password);
+						System.out.println("MirrorApplication.proxy.nonProxyHosts = " + ms.proxy.nonProxyHosts);
+					}
 				}
 
 				IProgressMonitor monitor = new IProgressMonitor() {
@@ -186,7 +196,8 @@ public class MirrorApplication implements IApplication {
 				IProvisioningAgent ourAgent;
 				ourAgent = getAgent();
 
-				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.mirrors);
+				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.mirrors,
+						ms.proxy);
 				ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 				CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository

@@ -12,6 +12,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import com.github.pms1.tppt.mirror.jaxb.Proxy;
+
 @XmlRootElement(name = "mirrorSpecification")
 public class MirrorSpec {
 	static class PathAdapter extends XmlAdapter<String, Path> {
@@ -103,4 +105,7 @@ public class MirrorSpec {
 	@XmlElement(name = "filter")
 	@XmlJavaTypeAdapter(MapAdapter.class)
 	public Map<String, String>[] filters;
+
+	@XmlElement
+	public Proxy proxy;
 }

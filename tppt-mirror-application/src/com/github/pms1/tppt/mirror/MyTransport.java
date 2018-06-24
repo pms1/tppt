@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.JAXB;
@@ -28,12 +29,18 @@ import javax.xml.bind.JAXB;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.utils.DateUtils;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -54,6 +61,7 @@ import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.mirror.jaxb.Mirror;
 import com.github.pms1.tppt.mirror.jaxb.Mirrors;
+import com.github.pms1.tppt.mirror.jaxb.Proxy;
 
 @SuppressWarnings("restriction")
 public class MyTransport extends Transport {
@@ -70,13 +78,52 @@ public class MyTransport extends Transport {
 	// see p2's OfflineTransport
 	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
 
-	public MyTransport(Path root, OfflineType offline, StatsType stats, Map<URI, URI> mirrors) {
+	private final Proxy proxy;
+
+	private final Pattern nonProxyHosts;
+
+	public MyTransport(Path root, OfflineType offline, StatsType stats, Map<URI, URI> mirrors, Proxy proxy) {
 		Objects.requireNonNull(root);
 		this.root = root;
 		this.offline = offline;
 		this.stats = stats;
+		this.proxy = proxy;
 		if (mirrors != null)
 			mirrors.forEach((k, v) -> this.mirrors.put(k.toString(), v.toString()));
+
+		Pattern nonProxyHosts = null;
+
+		if (proxy != null) {
+			if (proxy.host == null || proxy.host.isEmpty())
+				throw new IllegalArgumentException();
+			if (proxy.protocol == null || proxy.protocol.isEmpty())
+				throw new IllegalArgumentException();
+			if (proxy.port == null || proxy.port < 0 || proxy.port > 65535)
+				throw new IllegalArgumentException();
+
+			if ((proxy.username != null) != (proxy.password != null))
+				throw new IllegalArgumentException();
+
+			if (proxy.nonProxyHosts != null && !proxy.nonProxyHosts.isEmpty()) {
+				nonProxyHosts = Pattern.compile(
+						proxy.nonProxyHosts.stream().map(MyTransport::toRegexp).collect(Collectors.joining("|")));
+			}
+		}
+
+		this.nonProxyHosts = nonProxyHosts;
+	}
+
+	private static String toRegexp(String s) {
+		StringBuilder sb = new StringBuilder();
+
+		for (char c : s.toCharArray()) {
+			if (c == '*')
+				sb.append(".*");
+			else
+				sb.append(Pattern.quote(String.valueOf(c)));
+		}
+
+		return sb.toString();
 	}
 
 	@Override
@@ -86,6 +133,25 @@ public class MyTransport extends Transport {
 	}
 
 	private Path last;
+
+	private CloseableHttpClient buildClient(boolean useProxy) {
+
+		CredentialsProvider credsProvider = null;
+
+		if (useProxy)
+			if (proxy.username != null && proxy.password != null) {
+				credsProvider = new BasicCredentialsProvider();
+				credsProvider.setCredentials(new AuthScope(proxy.host, proxy.port),
+						new UsernamePasswordCredentials(proxy.username, proxy.password));
+			}
+
+		HttpClientBuilder builder = HttpClientBuilder.create();
+		if (credsProvider != null) {
+			builder = builder.setDefaultCredentialsProvider(credsProvider);
+		}
+
+		return builder.build();
+	}
 
 	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
 		last = null;
@@ -98,8 +164,10 @@ public class MyTransport extends Transport {
 
 		IStatus result;
 
+		HttpHost proxy = findProxy(uri);
+
 		try {
-			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+			try (CloseableHttpClient httpClient = buildClient(proxy != null)) {
 
 				HttpGet get = new HttpGet(uri);
 
@@ -120,7 +188,13 @@ public class MyTransport extends Transport {
 				if (offline == OfflineType.offline)
 					return OFFLINE_STATUS;
 
-				System.out.println("Mirroring: " + uri + " -> " + path);
+				if (proxy != null)
+					System.out.println("Mirroring: " + uri + " (proxy " + proxy + ") -> " + path);
+				else
+					System.out.println("Mirroring: " + uri + " -> " + path);
+
+				if (proxy != null)
+					get.setConfig(RequestConfig.custom().setProxy(proxy).build());
 
 				try (CloseableHttpResponse response = httpClient.execute(get)) {
 
@@ -210,6 +284,16 @@ public class MyTransport extends Transport {
 		}
 
 		return result;
+	}
+
+	private HttpHost findProxy(URI uri) {
+		if (proxy == null)
+			return null;
+
+		if (nonProxyHosts.matcher(uri.getHost()).matches())
+			return null;
+
+		return new HttpHost(proxy.host, proxy.port, proxy.protocol);
 	}
 
 	static Entry<String, String> find(TreeMap<String, String> data, String prefix) {
