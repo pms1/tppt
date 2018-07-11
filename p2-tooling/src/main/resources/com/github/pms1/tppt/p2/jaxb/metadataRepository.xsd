@@ -107,10 +107,10 @@
 	</xsd:complexType>
 
 	<xsd:complexType name="requires">
-		<xsd:sequence>
+	     <xsd:choice maxOccurs="unbounded">
 			<xsd:element name="required" type="required" maxOccurs="unbounded" minOccurs="0"></xsd:element>
 			<xsd:element name="requiredProperties" type="requiredProperties" maxOccurs="unbounded" minOccurs="0"></xsd:element>
-		</xsd:sequence>
+	     </xsd:choice>
 		<xsd:attribute name="size" type="xsd:int" use="required"></xsd:attribute>
 	</xsd:complexType>
 

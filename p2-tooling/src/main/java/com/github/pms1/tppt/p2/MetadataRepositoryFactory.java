@@ -5,8 +5,8 @@ import javax.xml.bind.JAXBException;
 
 import org.codehaus.plexus.component.annotations.Component;
 
-import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
+import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.github.pms1.tppt.p2.jaxb.metadata.Units;
 import com.google.common.base.Throwables;
@@ -50,7 +50,7 @@ public class MetadataRepositoryFactory extends AbstractRepositoryFactory<Metadat
 
 	private void normalize(Unit u) {
 		if (u.getRequires() != null)
-			u.getRequires().setSize(u.getRequires().getRequired().size());
+			u.getRequires().setSize(u.getRequires().getRequiredOrRequiredProperties().size());
 		if (u.getProperties() != null)
 			u.getProperties().setSize(u.getProperties().getProperty().size());
 		if (u.getProvides() != null)
