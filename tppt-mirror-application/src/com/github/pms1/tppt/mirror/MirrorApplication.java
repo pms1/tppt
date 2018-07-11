@@ -463,13 +463,32 @@ public class MirrorApplication implements IApplication {
 
 	}
 
-	private void extractExpectedMD5(IStatus status, Set<String> expected) {
+	private void addExpected(Map<String, Set<String>> expected, String key, String value) {
+		Set<String> set = expected.get(key);
+		if (set == null) {
+			set = new HashSet<>();
+			expected.put(key, set);
+		}
+		set.add(value);
+	}
+
+	private void extractExpectedMD5(IStatus status, Map<String, Set<String>> expected) {
 		if (status.getCode() == ProvisionException.ARTIFACT_MD5_NOT_MATCH) {
 			Pattern p = Pattern.compile(Messages.Error_unexpected_hash.replaceAll("[{][01][}]", "(.*)"));
 			Matcher m = p.matcher(status.getMessage());
-			if (!m.matches())
-				throw new Error("Failed to parse message about unexpected hash.");
-			expected.add(m.group(2));
+			if (m.matches()) {
+				addExpected(expected, "MD5", m.group(2));
+			} else {
+				p = Pattern.compile(
+						org.eclipse.equinox.internal.p2.artifact.processors.checksum.Messages.Error_unexpected_checksum
+								.replaceAll("[{][012][}]", "(.*)"));
+				m = p.matcher(status.getMessage());
+				if (m.matches()) {
+					addExpected(expected, m.group(1), m.group(3));
+				} else {
+					throw new Error("Failed to parse message about unexpected hash: >" + status.getMessage() + "<");
+				}
+			}
 		}
 
 		for (IStatus c : status.getChildren()) {
@@ -482,22 +501,29 @@ public class MirrorApplication implements IApplication {
 		if (transport.getLast() == null)
 			return false;
 
-		Set<String> allExpected = new HashSet<>();
+		Map<String, Set<String>> allExpected = new HashMap<>();
 		extractExpectedMD5(status, allExpected);
-		String expected;
+
+		String expectedAlgo = null;
+		String expectedSum = null;
+
 		switch (allExpected.size()) {
 		case 0:
 			return false;
 		case 1:
-			expected = allExpected.iterator().next();
+			Entry<String, Set<String>> e = allExpected.entrySet().iterator().next();
+			if (e.getValue().size() == 1) {
+				expectedAlgo = e.getKey();
+				expectedSum = e.getValue().iterator().next();
+			}
 			break;
-		default:
-			throw new Error("Multiple different checksum failures");
 		}
+		if (expectedAlgo == null || expectedSum == null)
+			throw new Error("Multiple different checksum failures: " + allExpected);
 
-		String is = MD5(transport.getLast());
+		String is = MD5(expectedAlgo, transport.getLast());
 
-		if (!expected.equalsIgnoreCase(is))
+		if (!expectedSum.equalsIgnoreCase(is))
 			return false;
 
 		System.err.println("[INFO] Checksum of '" + transport.getLast()
@@ -507,8 +533,8 @@ public class MirrorApplication implements IApplication {
 		return true;
 	}
 
-	public String MD5(Path p) throws IOException, NoSuchAlgorithmException {
-		java.security.MessageDigest md5 = java.security.MessageDigest.getInstance("MD5");
+	public String MD5(String algo, Path p) throws IOException, NoSuchAlgorithmException {
+		java.security.MessageDigest md5 = java.security.MessageDigest.getInstance(algo);
 		try (InputStream is = Files.newInputStream(p)) {
 			byte[] buf = new byte[8192];
 			int read;
