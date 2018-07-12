@@ -217,7 +217,7 @@ public class ObjectComparator<T> {
 				f.setAccessible(true);
 
 			return (o) -> {
-				DecomposedObject result = new DecomposedObject();
+				DecomposedMap result = new DecomposedMap();
 				for (Field f : fields) {
 					try {
 						result.put(OPath.content(f.getName()), f.getGenericType(), f.get(o));
@@ -250,7 +250,7 @@ public class ObjectComparator<T> {
 			// Type et = pt.getActualTypeArguments()[0];
 
 			return (o) -> {
-				DecomposedObject result = new DecomposedObject();
+				DecomposedMap result = new DecomposedMap();
 				int i = 0;
 				for (Object e : (List<?>) o)
 					result.put(OPath.index("" + i++), e);
@@ -483,7 +483,7 @@ public class ObjectComparator<T> {
 
 			@Override
 			public DecomposedObject decompose(List<T> o) {
-				DecomposedObject result = new DecomposedObject();
+				DecomposedMap result = new DecomposedMap();
 
 				for (T e : o) {
 					OPath key = OPath.index(keyRenderer.apply(e));
@@ -522,6 +522,133 @@ public class ObjectComparator<T> {
 			sink.accept(delta);
 	}
 
+	private void compareMap(OPath2 p, DecomposedMap d1, DecomposedMap d2, Consumer<T> sink) {
+		for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
+
+			// OPath child = key != null ? p.child(key) : p;
+
+			Collection<TypedObject> c1 = d1.get(key);
+			LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
+
+			if (c1.size() == 1 && c2.size() == 1) {
+				compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
+						Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
+						Iterables.getOnlyElement(c2), sink);
+				continue;
+			}
+			for (TypedObject v1 : c1) {
+
+				boolean found = false;
+
+				for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
+
+					List<T> temp = new ArrayList<>();
+
+					TypedObject v2 = i2.next();
+					compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+
+					if (temp.isEmpty()) {
+						i2.remove();
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					add(sink, deltaCreator.missing(p.child(key.path, v1.getValue(), null), v1.getValue()));
+				}
+			}
+
+			for (TypedObject v2 : c2) {
+				add(sink, deltaCreator.additional(p.child(key.path, null, v2.getValue()), v2.getValue()));
+			}
+		}
+	}
+
+	private void compareMap2(OPath2 p, DecomposedMultimap d1, DecomposedMultimap d2, Consumer<T> sink) {
+		for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
+
+			// OPath child = key != null ? p.child(key) : p;
+
+			Collection<TypedObject> c1 = d1.get(key);
+			LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
+
+			if (c1.size() == 1 && c2.size() == 1) {
+				compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
+						Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
+						Iterables.getOnlyElement(c2), sink);
+				continue;
+			}
+			for (TypedObject v1 : c1) {
+
+				boolean found = false;
+
+				for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
+
+					List<T> temp = new ArrayList<>();
+
+					TypedObject v2 = i2.next();
+					compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+
+					if (temp.isEmpty()) {
+						i2.remove();
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					add(sink, deltaCreator.missing(p.child(key.path, v1.getValue(), null), v1.getValue()));
+				}
+			}
+
+			for (TypedObject v2 : c2) {
+				add(sink, deltaCreator.additional(p.child(key.path, null, v2.getValue()), v2.getValue()));
+			}
+		}
+	}
+
+	private void compareBag(OPath2 p, DecomposedBag d1, DecomposedBag d2, Consumer<T> sink) {
+
+		// OPath child = key != null ? p.child(key) : p;
+
+		Collection<TypedObject> c1 = d1.get();
+		LinkedList<TypedObject> c2 = new LinkedList<>(d2.get());
+
+		if (false && c1.size() == 1 && c2.size() == 1) {
+			// compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
+			// Iterables.getOnlyElement(c2).getValue()),
+			// Iterables.getOnlyElement(c1), Iterables.getOnlyElement(c2), sink);
+			// continue;
+		}
+		for (TypedObject v1 : c1) {
+
+			boolean found = false;
+
+			for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
+
+				List<T> temp = new ArrayList<>();
+
+				TypedObject v2 = i2.next();
+				compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+
+				if (temp.isEmpty()) {
+					i2.remove();
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				add(sink, deltaCreator.missing(p.child(any.path, v1.getValue(), null), v1.getValue()));
+			}
+		}
+
+		for (TypedObject v2 : c2) {
+			add(sink, deltaCreator.additional(p.child(any.path, null, v2.getValue()), v2.getValue()));
+		}
+	}
+
 	private void compare(OPath2 p, TypedObject m1, TypedObject m2, Consumer<T> sink) {
 		if (m1.getValue() == m2.getValue())
 			return;
@@ -555,47 +682,14 @@ public class ObjectComparator<T> {
 			@SuppressWarnings("unchecked")
 			DecomposedObject d2 = decomposer.decompose(m2.getValue());
 
-			for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
-
-				// OPath child = key != null ? p.child(key) : p;
-
-				Collection<TypedObject> c1 = d1.get(key);
-				LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
-
-				if (key != null && c1.size() == 1 && c2.size() == 1) {
-					compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
-							Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
-							Iterables.getOnlyElement(c2), sink);
-					continue;
-				}
-				for (TypedObject v1 : c1) {
-
-					boolean found = false;
-
-					for (Iterator<TypedObject> i2 = c2.iterator(); i2.hasNext();) {
-
-						List<T> temp = new ArrayList<>();
-
-						TypedObject v2 = i2.next();
-						compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
-
-						if (temp.isEmpty()) {
-							i2.remove();
-							found = true;
-							break;
-						}
-					}
-
-					if (!found) {
-						add(sink, deltaCreator.missing(p.child(key != null ? key.path : any.path, v1.getValue(), null),
-								v1.getValue()));
-					}
-				}
-
-				for (TypedObject v2 : c2) {
-					add(sink, deltaCreator.additional(p.child(key != null ? key.path : any.path, null, v2.getValue()),
-							v2.getValue()));
-				}
+			if (d1 instanceof DecomposedMap && d2 instanceof DecomposedMap) {
+				compareMap(p, (DecomposedMap) d1, (DecomposedMap) d2, sink);
+			} else if (d1 instanceof DecomposedBag && d2 instanceof DecomposedBag) {
+				compareBag(p, (DecomposedBag) d1, (DecomposedBag) d2, sink);
+			} else if (d1 instanceof DecomposedMultimap && d2 instanceof DecomposedMultimap) {
+				compareMap2(p, (DecomposedMultimap) d1, (DecomposedMultimap) d2, sink);
+			} else {
+				throw new Error();
 			}
 
 			return;

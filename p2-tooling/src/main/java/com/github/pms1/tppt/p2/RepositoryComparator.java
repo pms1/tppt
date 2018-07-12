@@ -32,6 +32,9 @@ import org.slf4j.Logger;
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterPrinter;
 import com.github.pms1.ocomp.ComparatorMatchers;
+import com.github.pms1.ocomp.DecomposedBag;
+import com.github.pms1.ocomp.DecomposedMap;
+import com.github.pms1.ocomp.DecomposedMultimap;
 import com.github.pms1.ocomp.DecomposedObject;
 import com.github.pms1.ocomp.Decomposer;
 import com.github.pms1.ocomp.DecomposerMatchers;
@@ -58,6 +61,7 @@ import com.github.pms1.tppt.p2.jaxb.metadata.Provided;
 import com.github.pms1.tppt.p2.jaxb.metadata.ProvidedProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.ProvidedProperty;
 import com.github.pms1.tppt.p2.jaxb.metadata.Required;
+import com.github.pms1.tppt.p2.jaxb.metadata.RequiredProperties;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
@@ -83,7 +87,9 @@ public class RepositoryComparator {
 	static private final TypeToken<?> listRequired = new TypeToken<List<Required>>() {
 
 	};
+	static private final TypeToken<?> listRequiredProperties = new TypeToken<List<RequiredProperties>>() {
 
+	};
 	static private final TypeToken<?> listProvided = new TypeToken<List<Provided>>() {
 
 	};
@@ -103,12 +109,12 @@ public class RepositoryComparator {
 			Type et = pt.getActualTypeArguments()[0];
 
 			return o -> {
-				DecomposedObject r = new DecomposedObject();
+				DecomposedBag r = new DecomposedBag();
 
 				List<?> l = (List<?>) o;
 
 				for (Object r1 : l) {
-					r.put(null, et, r1);
+					r.put(et, r1);
 				}
 
 				return r;
@@ -234,30 +240,14 @@ public class RepositoryComparator {
 		return ObjectComparatorBuilder.newBuilder() //
 				.addDecomposer("//artifacts/artifact", new Decomposer<List<Artifact>>() {
 
-					DecomposedObject dc1(List<Artifact> units, Function<Artifact, String> f) {
-						DecomposedObject r = new DecomposedObject();
+					@Override
+					public DecomposedObject decompose(List<Artifact> artifacts) {
+						DecomposedMultimap r = new DecomposedMultimap();
 
-						for (Artifact u : units) {
-							if (!r.put(OPath.index(f.apply(u)), u))
-								return null;
-						}
+						for (Artifact a : artifacts)
+							r.put(OPath.index(a.getId() + "/" + a.getClassifier()), a);
 
 						return r;
-					}
-
-					@Override
-					public DecomposedObject decompose(List<Artifact> o) {
-						DecomposedObject r;
-
-						r = dc1(o, p -> p.getId());
-						if (r != null)
-							return r;
-
-						r = dc1(o, p -> p.getId() + "/" + p.getVersion());
-						if (r != null)
-							return r;
-
-						throw new Error();
 					}
 
 				}) //
@@ -271,9 +261,37 @@ public class RepositoryComparator {
 		return ObjectComparatorBuilder.newBuilder()
 				.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
 					return printer.print((SearchFilter) a).equals(printer.print((SearchFilter) b));
-				}).addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
+				}) //
+				.addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
+				.addDecomposer(DecomposerMatchers.isAssignable(listRequiredProperties), listToBag)
 				.addDecomposer(DecomposerMatchers.isAssignable(listProvided), listToBag)
-				.addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
+				.addDecomposer("//units/unit[*]/requires/requiredOrRequiredProperties", new Decomposer<List<Object>>() {
+
+					@Override
+					public DecomposedObject decompose(List<Object> o) {
+						DecomposedMap decomposedObject = new DecomposedMap();
+
+						List<Required> required = new ArrayList<>();
+						List<RequiredProperties> requiredProperties = new ArrayList<>();
+
+						for (Object o1 : o) {
+							if (o1 instanceof Required) {
+								required.add((Required) o1);
+							} else if (o1 instanceof RequiredProperties) {
+								requiredProperties.add((RequiredProperties) o1);
+							} else {
+								throw new Error("unhandled: " + o);
+							}
+						}
+
+						decomposedObject.put(OPath.content("required"), listRequired.getType(), required);
+						decomposedObject.put(OPath.content("requiredProperties"), listRequiredProperties.getType(),
+								requiredProperties);
+
+						return decomposedObject;
+					}
+
+				}).addDecomposer("//units/unit[*]/touchpointData/instructions[*]/instruction[manifest]/value",
 						new Decomposer<String>() {
 
 							@Override
@@ -284,7 +302,7 @@ public class RepositoryComparator {
 											new ByteArrayInputStream(value.trim().getBytes(StandardCharsets.UTF_8)),
 											null);
 
-									DecomposedObject decomposedObject = new DecomposedObject();
+									DecomposedMap decomposedObject = new DecomposedMap();
 									for (Map.Entry<String, String> e : ml.entrySet()) {
 										decomposedObject.put(OPath.index(e.getKey()), e.getValue());
 									}
@@ -297,30 +315,14 @@ public class RepositoryComparator {
 						})
 				.addDecomposer("//units/unit", new Decomposer<List<Unit>>() {
 
-					DecomposedObject dc1(List<Unit> units, Function<Unit, String> f) {
-						DecomposedObject r = new DecomposedObject();
-
-						for (Unit u : units) {
-							if (!r.put(OPath.index(f.apply(u)), u))
-								return null;
-						}
-
-						return r;
-					}
-
 					@Override
 					public DecomposedObject decompose(List<Unit> o) {
-						DecomposedObject r;
+						DecomposedMultimap r1 = new DecomposedMultimap();
 
-						r = dc1(o, p -> p.getId());
-						if (r != null)
-							return r;
+						for (Unit u : o)
+							r1.put(OPath.index(u.getId()), u);
 
-						r = dc1(o, p -> p.getId() + "/" + p.getVersion());
-						if (r != null)
-							return r;
-
-						throw new Error();
+						return r1;
 					}
 
 				})
@@ -596,7 +598,7 @@ public class RepositoryComparator {
 								default:
 									throw new Error(change + " " + rel.getPath());
 								}
-							case "/requires/required[*]":
+							case "/requires/requiredOrRequiredProperties/required[*]":
 								switch (change) {
 								case ADDED:
 									return new RequiredAdded(mdf1id, uleft, mdf2id, uright, (Required) m2);
