@@ -257,6 +257,12 @@ public class RepositoryComparator {
 						ObjectComparator.<ArtifactProperty>listToMapDecomposer(p -> p.getName()));
 	}
 
+	static Function<Provided, OPath> providedKey = p -> {
+		Objects.requireNonNull(p.getNamespace());
+		Objects.requireNonNull(p.getName());
+		return OPath.index(p.getNamespace()).append(OPath.index(p.getName()));
+	};
+
 	static ObjectComparatorBuilder<ObjectDelta> createMetadataComparator() {
 		return ObjectComparatorBuilder.newBuilder()
 				.addComparator(ComparatorMatchers.isAssignable(TypeToken.of(SearchFilter.class)), (a, b) -> {
@@ -264,7 +270,8 @@ public class RepositoryComparator {
 				}) //
 				.addDecomposer(DecomposerMatchers.isAssignable(listRequired), listToBag)
 				.addDecomposer(DecomposerMatchers.isAssignable(listRequiredProperties), listToBag)
-				.addDecomposer(DecomposerMatchers.isAssignable(listProvided), listToBag)
+				.addDecomposer("//units/unit[*]/provides/provided",
+						ObjectComparator.listToMultimapDecomposer(false, providedKey))
 				.addDecomposer("//units/unit[*]/requires/requiredOrRequiredProperties", new Decomposer<List<Object>>() {
 
 					@Override
@@ -588,6 +595,26 @@ public class RepositoryComparator {
 							Unit uleft = (Unit) p.subPath(3, 4).getLeft();
 							Unit uright = (Unit) p.subPath(3, 4).getRight();
 
+							if (rel.size() == 3 && rel.subPath(0, 2).getPath().equals("/provides/provided")) {
+								switch (change) {
+								case ADDED:
+									return new ProvidedAdded(mdf1id, uleft, mdf2id, uright, (Provided) m2);
+								case REMOVED:
+									return new ProvidedRemoved(mdf1id, uleft, mdf2id, uright, (Provided) m1);
+								default:
+									throw new Error(change + " " + rel.getPath());
+								}
+							} else if (rel.size() == 4 && rel.subPath(0, 3).getPath()
+									.equals("/requires/requiredOrRequiredProperties/required")) {
+								switch (change) {
+								case ADDED:
+									return new RequiredAdded(mdf1id, uleft, mdf2id, uright, (Required) m2);
+								case REMOVED:
+									return new RequiredRemoved(mdf1id, uleft, mdf2id, uright, (Required) m1);
+								default:
+									throw new Error(change + " " + rel.getPath());
+								}
+							}
 							switch (rel.getPath()) {
 							case "/provides/provided[*]":
 								switch (change) {
@@ -1378,6 +1405,13 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "osgi.identity", bundleId, v2, anyProperties))
 					return true;
 
+				if (new ProvidedMatcher().withNamespace("osgi.fragment"::equals) //
+						.withName(p -> true) //
+						.withVersion(v2::equals) //
+						.test(d.provided)) {
+					return true;
+				}
+
 				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
 						.withName(p -> true) //
 						.withVersion(v2::equals) //
@@ -1402,6 +1436,13 @@ public class RepositoryComparator {
 				// FIXME: should check child nodes
 				if (isEqual(d.provided, "osgi.identity", bundleId, v1, anyProperties))
 					return true;
+
+				if (new ProvidedMatcher().withNamespace("osgi.fragment"::equals) //
+						.withName(p -> true) //
+						.withVersion(v1::equals) //
+						.test(d.provided)) {
+					return true;
+				}
 
 				if (new ProvidedMatcher().withNamespace("java.package"::equals) //
 						.withName(p -> true) //

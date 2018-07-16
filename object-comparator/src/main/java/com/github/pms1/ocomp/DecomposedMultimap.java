@@ -10,6 +10,15 @@ import com.google.common.collect.LinkedListMultimap;
 
 public class DecomposedMultimap implements DecomposedObject {
 	private LinkedListMultimap<OPath, TypedObject> decomposition = LinkedListMultimap.create();
+	public final boolean optimize;
+
+	public DecomposedMultimap(boolean optimize) {
+		this.optimize = optimize;
+	}
+
+	public DecomposedMultimap() {
+		this(true);
+	}
 
 	public void put(OPath key, Object value) {
 		Preconditions.checkNotNull(key);

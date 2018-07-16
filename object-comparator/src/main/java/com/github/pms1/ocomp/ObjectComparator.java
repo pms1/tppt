@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -31,11 +32,11 @@ public class ObjectComparator<T> {
 	public static class OPath2 {
 
 		private final LinkedList<OPath2> parents;
-		private final String pathx;
+		private final OPath pathx;
 		private final Object left;
 		private final Object right;
 
-		public OPath2(OPath2 parent, String path, Object left, Object right) {
+		public OPath2(OPath2 parent, OPath path, Object left, Object right) {
 
 			if (parent == null)
 				this.parents = new LinkedList<>();
@@ -49,18 +50,23 @@ public class ObjectComparator<T> {
 		}
 
 		static OPath2 root(Object left, Object right) {
-			return new OPath2(null, "/", left, right);
+			return new OPath2(null, OPath.ROOT, left, right);
 		}
 
 		OPath2 child(String path, Object left, Object right) {
 			Objects.requireNonNull(path);
+			// return new OPath2(this, path, left, right);
+			throw new Error();
+		}
+
+		OPath2 child(OPath path, Object left, Object right) {
 			return new OPath2(this, path, left, right);
 		}
 
 		public String getPath() {
 			StringBuilder b = new StringBuilder();
 			for (OPath2 o : parents)
-				b.append(o.pathx);
+				b.append(o.pathx.toString());
 			b.append(pathx);
 			return b.toString();
 		}
@@ -145,9 +151,13 @@ public class ObjectComparator<T> {
 			return true;
 		}
 
-		private String path;
+		private List<String> path;
 
-		public OPath(String path) {
+		private OPath(String path) {
+			this.path = Arrays.asList(path);
+		}
+
+		private OPath(List<String> path) {
 			this.path = path;
 		}
 
@@ -159,7 +169,7 @@ public class ObjectComparator<T> {
 
 		@Override
 		public String toString() {
-			return path;
+			return path.stream().collect(Collectors.joining());
 		}
 
 		public static OPath content(String name) {
@@ -175,7 +185,10 @@ public class ObjectComparator<T> {
 		}
 
 		public OPath append(OPath key) {
-			return new OPath(path + key.path);
+			List<String> l = new ArrayList<>(path.size() + key.path.size());
+			l.addAll(path);
+			l.addAll(key.path);
+			return new OPath(l);
 		}
 
 	}
@@ -497,6 +510,22 @@ public class ObjectComparator<T> {
 		};
 	}
 
+	public static <T> Decomposer<List<T>> listToMultimapDecomposer(boolean optimize, Function<T, OPath> keyRenderer) {
+		return new Decomposer<List<T>>() {
+
+			@Override
+			public DecomposedObject decompose(List<T> o) {
+				DecomposedMultimap result = new DecomposedMultimap(optimize);
+
+				for (T e : o)
+					result.put(keyRenderer.apply(e), e);
+
+				return result;
+			}
+
+		};
+	}
+
 	public enum ChangeType {
 		CHANGED, ADDED, REMOVED;
 	}
@@ -531,9 +560,8 @@ public class ObjectComparator<T> {
 			LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
 
 			if (c1.size() == 1 && c2.size() == 1) {
-				compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
-						Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
-						Iterables.getOnlyElement(c2), sink);
+				compare(p.child(key, Iterables.getOnlyElement(c1).getValue(), Iterables.getOnlyElement(c2).getValue()),
+						Iterables.getOnlyElement(c1), Iterables.getOnlyElement(c2), sink);
 				continue;
 			}
 			for (TypedObject v1 : c1) {
@@ -545,7 +573,7 @@ public class ObjectComparator<T> {
 					List<T> temp = new ArrayList<>();
 
 					TypedObject v2 = i2.next();
-					compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+					compare(p.child(key, v1, v2.getValue()), v1, v2, temp::add);
 
 					if (temp.isEmpty()) {
 						i2.remove();
@@ -555,28 +583,27 @@ public class ObjectComparator<T> {
 				}
 
 				if (!found) {
-					add(sink, deltaCreator.missing(p.child(key.path, v1.getValue(), null), v1.getValue()));
+					add(sink, deltaCreator.missing(p.child(key, v1.getValue(), null), v1.getValue()));
 				}
 			}
 
 			for (TypedObject v2 : c2) {
-				add(sink, deltaCreator.additional(p.child(key.path, null, v2.getValue()), v2.getValue()));
+				add(sink, deltaCreator.additional(p.child(key, null, v2.getValue()), v2.getValue()));
 			}
 		}
 	}
 
-	private void compareMap2(OPath2 p, DecomposedMultimap d1, DecomposedMultimap d2, Consumer<T> sink) {
+	private void compareMultimap(OPath2 p, DecomposedMultimap d1, DecomposedMultimap d2, Consumer<T> sink) {
 		for (OPath key : Sets.union(d1.keySet(), d2.keySet())) {
-
-			// OPath child = key != null ? p.child(key) : p;
-
 			Collection<TypedObject> c1 = d1.get(key);
 			LinkedList<TypedObject> c2 = new LinkedList<>(d2.get(key));
 
-			if (c1.size() == 1 && c2.size() == 1) {
-				compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
-						Iterables.getOnlyElement(c2).getValue()), Iterables.getOnlyElement(c1),
-						Iterables.getOnlyElement(c2), sink);
+			if (d1.optimize != d2.optimize)
+				throw new Error();
+
+			if (c1.size() == 1 && c2.size() == 1 && d1.optimize && d2.optimize) {
+				compare(p.child(key, Iterables.getOnlyElement(c1).getValue(), Iterables.getOnlyElement(c2).getValue()),
+						Iterables.getOnlyElement(c1), Iterables.getOnlyElement(c2), sink);
 				continue;
 			}
 			for (TypedObject v1 : c1) {
@@ -588,7 +615,7 @@ public class ObjectComparator<T> {
 					List<T> temp = new ArrayList<>();
 
 					TypedObject v2 = i2.next();
-					compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+					compare(p.child(key, v1.getValue(), v2.getValue()), v1, v2, temp::add);
 
 					if (temp.isEmpty()) {
 						i2.remove();
@@ -598,12 +625,12 @@ public class ObjectComparator<T> {
 				}
 
 				if (!found) {
-					add(sink, deltaCreator.missing(p.child(key.path, v1.getValue(), null), v1.getValue()));
+					add(sink, deltaCreator.missing(p.child(key, v1.getValue(), null), v1.getValue()));
 				}
 			}
 
 			for (TypedObject v2 : c2) {
-				add(sink, deltaCreator.additional(p.child(key.path, null, v2.getValue()), v2.getValue()));
+				add(sink, deltaCreator.additional(p.child(key, null, v2.getValue()), v2.getValue()));
 			}
 		}
 	}
@@ -630,7 +657,7 @@ public class ObjectComparator<T> {
 				List<T> temp = new ArrayList<>();
 
 				TypedObject v2 = i2.next();
-				compare(p.child(any.path, v1, v2.getValue()), v1, v2, temp::add);
+				compare(p.child(any, v1, v2.getValue()), v1, v2, temp::add);
 
 				if (temp.isEmpty()) {
 					i2.remove();
@@ -640,12 +667,12 @@ public class ObjectComparator<T> {
 			}
 
 			if (!found) {
-				add(sink, deltaCreator.missing(p.child(any.path, v1.getValue(), null), v1.getValue()));
+				add(sink, deltaCreator.missing(p.child(any, v1.getValue(), null), v1.getValue()));
 			}
 		}
 
 		for (TypedObject v2 : c2) {
-			add(sink, deltaCreator.additional(p.child(any.path, null, v2.getValue()), v2.getValue()));
+			add(sink, deltaCreator.additional(p.child(any, null, v2.getValue()), v2.getValue()));
 		}
 	}
 
@@ -661,7 +688,6 @@ public class ObjectComparator<T> {
 		Type t1 = m1.getType() != null ? m1.getType() : m1.getValue().getClass();
 
 		// decompose
-
 		@SuppressWarnings("rawtypes")
 		Decomposer decomposer = null;
 
@@ -687,7 +713,7 @@ public class ObjectComparator<T> {
 			} else if (d1 instanceof DecomposedBag && d2 instanceof DecomposedBag) {
 				compareBag(p, (DecomposedBag) d1, (DecomposedBag) d2, sink);
 			} else if (d1 instanceof DecomposedMultimap && d2 instanceof DecomposedMultimap) {
-				compareMap2(p, (DecomposedMultimap) d1, (DecomposedMultimap) d2, sink);
+				compareMultimap(p, (DecomposedMultimap) d1, (DecomposedMultimap) d2, sink);
 			} else {
 				throw new Error();
 			}
@@ -703,6 +729,7 @@ public class ObjectComparator<T> {
 				return;
 			}
 		}
+
 		Comparator comparator = findComparator(m1.getValue().getClass());
 		if (comparator != null) {
 			if (!comparator.compare(p, m1.getValue(), m2.getValue()))
