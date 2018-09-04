@@ -1204,16 +1204,27 @@ public class RepositoryComparator {
 				&& propertiesPredicate.test(p.getProperties());
 	}
 
-	static Predicate<ProvidedProperties> emptyProperties = p -> p == null || p.getProperty().isEmpty();
+	private static Predicate<ProvidedProperties> emptyProperties = p -> p == null || p.getProperty().isEmpty();
 
-	static Predicate<ProvidedProperties> anyProperties = p -> {
-		for (ProvidedProperty mp : p.getProperty()) {
-			System.err.println("-- FIXME " + mp + " " + render(mp));
-		}
+	private static Predicate<ProvidedProperties> osgiIdentityBundleProperties = p -> {
+		if (p == null || p.getProperty().size() != 1)
+			return false;
+
+		ProvidedProperty property = Iterables.getOnlyElement(p.getProperty());
+
+		if (!Objects.equals(property.getName(), "type"))
+			return false;
+
+		if (!Objects.equals(property.getValue(), "osgi.bundle"))
+			return false;
+
+		if (!Objects.equals(property.getType(), null))
+			return false;
+
 		return true;
 	};
 
-	static boolean hasOnlyArtifact(Unit u, String classifier, String id, Version version) {
+	private static boolean hasOnlyArtifact(Unit u, String classifier, String id, Version version) {
 		return u.getArtifacts() != null && u.getArtifacts().getArtifact().size() == 1
 				&& u.getArtifacts().getArtifact().stream().allMatch(p -> p.getClassifier().equals(classifier)
 						&& p.getId().equals(id) && p.getVersion().equals(version));
@@ -1401,8 +1412,7 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "osgi.bundle", bundleId, v2, emptyProperties))
 					return true;
 
-				// FIXME: should check child nodes
-				if (isEqual(d.provided, "osgi.identity", bundleId, v2, anyProperties))
+				if (isEqual(d.provided, "osgi.identity", bundleId, v2, osgiIdentityBundleProperties))
 					return true;
 
 				if (new ProvidedMatcher().withNamespace("osgi.fragment"::equals) //
@@ -1433,8 +1443,7 @@ public class RepositoryComparator {
 				if (isEqual(d.provided, "osgi.bundle", bundleId, v1, emptyProperties))
 					return true;
 
-				// FIXME: should check child nodes
-				if (isEqual(d.provided, "osgi.identity", bundleId, v1, anyProperties))
+				if (isEqual(d.provided, "osgi.identity", bundleId, v1, osgiIdentityBundleProperties))
 					return true;
 
 				if (new ProvidedMatcher().withNamespace("osgi.fragment"::equals) //
