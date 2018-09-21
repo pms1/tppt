@@ -41,6 +41,7 @@ abstract public class AbstractZipComparator implements FileComparator {
 
 				runComparison(file1, file2, dest, s1, s2);
 
+				return;
 			} catch (NoSuchFileException e) {
 			} catch (ZipError e) {
 				throw new UnparseableZipException(file2, e);
@@ -101,12 +102,14 @@ abstract public class AbstractZipComparator implements FileComparator {
 						name = name.substring(1);
 
 					ZipEntry e2 = new ZipEntry(name);
-					e2.setTime(ze.getTime());
 					e2.setComment(ze.getComment());
-					e2.setCreationTime(ze.getCreationTime());
+					if (ze.getCreationTime() != null)
+						e2.setCreationTime(ze.getCreationTime());
 					e2.setExtra(ze.getExtra());
-					e2.setLastAccessTime(ze.getLastAccessTime());
-					e2.setLastModifiedTime(ze.getLastModifiedTime());
+					if (ze.getLastAccessTime() != null)
+						e2.setLastAccessTime(ze.getLastAccessTime());
+					if (ze.getLastModifiedTime() != null)
+						e2.setLastModifiedTime(ze.getLastModifiedTime());
 
 					zos.putNextEntry(e2);
 					IOUtil.copy(zis, zos);
