@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -51,12 +50,6 @@ public class ObjectComparator<T> {
 
 		static OPath2 root(Object left, Object right) {
 			return new OPath2(null, OPath.ROOT, left, right);
-		}
-
-		OPath2 child(String path, Object left, Object right) {
-			Objects.requireNonNull(path);
-			// return new OPath2(this, path, left, right);
-			throw new Error();
 		}
 
 		OPath2 child(OPath path, Object left, Object right) {

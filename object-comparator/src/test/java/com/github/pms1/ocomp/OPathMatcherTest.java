@@ -3,6 +3,7 @@ package com.github.pms1.ocomp;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 
 public class OPathMatcherTest {
@@ -11,9 +12,10 @@ public class OPathMatcherTest {
 	public void t1() {
 		OPathMatcher m = OPathMatcher.create("//foo[*]");
 
-		OPath2 p1 = OPath2.root("lr", "rr").child("/foo", "lf", "rf").child("[foo]", "li", "ri");
+		OPath2 p1 = OPath2.root("lr", "rr").child(OPath.content("foo"), "lf", "rf").child(OPath.index("foo"), "li",
+				"ri");
 		Assertions.assertThat(m.matches(p1)).isEqualTo(true);
-		OPath2 p2 = p1.child("x", "lx", "rx");
+		OPath2 p2 = p1.child(OPath.content("x"), "lx", "rx");
 		Assertions.assertThat(m.matches(p2)).isEqualTo(false);
 
 		m = OPathMatcher.create("//foo[foo]");

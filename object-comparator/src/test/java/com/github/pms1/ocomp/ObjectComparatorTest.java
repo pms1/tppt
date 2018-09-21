@@ -6,6 +6,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
+import com.github.pms1.ocomp.ObjectComparator.OPath;
 import com.github.pms1.ocomp.ObjectComparator.OPath2;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -46,7 +47,7 @@ public class ObjectComparatorTest {
 
 	@Test
 	public void test3() {
-		OPath2 p = OPath2.root("l1", "r1").child("/1", "l2", "r2").child("/2", "l3", "r3");
+		OPath2 p = OPath2.root("l1", "r1").child(OPath.content("1"), "l2", "r2").child(OPath.content("2"), "l3", "r3");
 
 		Assertions.assertThat(p.size()).isEqualTo(3);
 		Assertions.assertThat(p.subPath(0).getPath()).isEqualTo("//1/2");
