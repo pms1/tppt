@@ -37,6 +37,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.apache.maven.settings.Server;
 
 import com.github.pms1.tppt.mirror.MirrorSpec;
 import com.github.pms1.tppt.mirror.MirrorSpec.AlgorithmType;
@@ -215,10 +216,20 @@ public class MirrorMojo extends AbstractMojo {
 			return "at '" + r.url + "'";
 	}
 
+	void findServers() {
+		for (Server s : session.getSettings().getServers()) {
+
+			System.err.println("SERVER " + s.getId() + " " + s.getConfiguration()
+					+ (s.getConfiguration() != null ? s.getConfiguration().getClass() : "<none>"));
+		}
+	}
+
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		try {
 			final Path repoOut = target.toPath().resolve("repository");
+
+			findServers();
 
 			Map<URI, URI> uriMirrors = findMirrors();
 

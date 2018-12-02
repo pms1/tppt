@@ -35,7 +35,6 @@ import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -82,6 +81,8 @@ public class MyTransport extends Transport {
 
 	private final Pattern nonProxyHosts;
 
+	private final CloseableHttpClient client, proxyClient;
+
 	public MyTransport(Path root, OfflineType offline, StatsType stats, Map<URI, URI> mirrors, Proxy proxy) {
 		Objects.requireNonNull(root);
 		this.root = root;
@@ -111,6 +112,9 @@ public class MyTransport extends Transport {
 		}
 
 		this.nonProxyHosts = nonProxyHosts;
+
+		client = proxy == null || nonProxyHosts != null ? buildClient(null) : null;
+		proxyClient = proxy != null ? buildClient(proxy) : null;
 	}
 
 	private static String toRegexp(String s) {
@@ -134,11 +138,11 @@ public class MyTransport extends Transport {
 
 	private Path last;
 
-	private CloseableHttpClient buildClient(boolean useProxy) {
+	private static CloseableHttpClient buildClient(Proxy proxy) {
 
 		CredentialsProvider credsProvider = null;
 
-		if (useProxy)
+		if (proxy != null)
 			if (proxy.username != null && proxy.password != null) {
 				credsProvider = new BasicCredentialsProvider();
 				credsProvider.setCredentials(new AuthScope(proxy.host, proxy.port),
@@ -149,6 +153,8 @@ public class MyTransport extends Transport {
 		if (credsProvider != null) {
 			builder = builder.setDefaultCredentialsProvider(credsProvider);
 		}
+		if (proxy != null)
+			builder.setProxy(new HttpHost(proxy.host, proxy.port));
 
 		return builder.build();
 	}
@@ -181,113 +187,115 @@ public class MyTransport extends Transport {
 
 		IStatus result;
 
-		HttpHost proxy = findProxy(uri);
-
 		try {
-			try (CloseableHttpClient httpClient = buildClient(proxy != null)) {
+			boolean useProxy = useProxy(uri);
 
-				HttpGet get = new HttpGet(uri);
+			CloseableHttpClient httpClient = selectClient(useProxy);
 
-				try {
-					FileTime ft = Files.getLastModifiedTime(path);
+			HttpGet get = new HttpGet(uri);
 
-					get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));
+			try {
+				FileTime ft = Files.getLastModifiedTime(path);
 
-					// #9 should be able to specify somehow if validation is
-					// to be done
+				get.addHeader(HttpHeaders.IF_MODIFIED_SINCE, DateUtils.formatDate(new Date(ft.toMillis())));
 
-					last = path;
-					return Status.OK_STATUS;
-				} catch (NoSuchFileException e) {
+				// #9 should be able to specify somehow if validation is
+				// to be done
 
-				}
+				last = path;
+				return Status.OK_STATUS;
+			} catch (NoSuchFileException e) {
 
-				if (offline == OfflineType.offline)
-					return OFFLINE_STATUS;
+			}
 
-				if (proxy != null)
-					System.out.println("Mirroring: " + uri + " (proxy " + proxy + ") -> " + path);
-				else
-					System.out.println("Mirroring: " + uri + " -> " + path);
+			if (offline == OfflineType.offline)
+				return OFFLINE_STATUS;
 
-				if (proxy != null)
-					get.setConfig(RequestConfig.custom().setProxy(proxy).build());
+			if (useProxy)
+				System.out.println("Mirroring: " + uri + " (proxy " + proxy.host + ":" + proxy.port + ") -> " + path);
+			else
+				System.out.println("Mirroring: " + uri + " -> " + path);
 
-				try (CloseableHttpResponse response = httpClient.execute(get)) {
+			try (CloseableHttpResponse response = httpClient.execute(get)) {
 
-					HttpEntity entity = response.getEntity();
-					switch (response.getStatusLine().getStatusCode()) {
-					case HttpStatus.SC_UNAUTHORIZED:
-						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-								ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, "Authentication failed " + uri,
-								null);
-						break;
-					case HttpStatus.SC_OK:
-						try (OutputStream out = Files.newOutputStream(path)) {
+				HttpEntity entity = response.getEntity();
+				switch (response.getStatusLine().getStatusCode()) {
+				case HttpStatus.SC_UNAUTHORIZED:
+					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+							ProvisionException.REPOSITORY_FAILED_AUTHENTICATION, "Authentication failed " + uri, null);
+					break;
+				case HttpStatus.SC_OK:
+					try (OutputStream out = Files.newOutputStream(path)) {
 
-							InputStream is = entity.getContent();
+						InputStream is = entity.getContent();
 
-							long total = entity.getContentLength();
-							String totalc = convert(total);
-							monitor.beginTask(null,
-									(total < 0 || total > Integer.MAX_VALUE) ? IProgressMonitor.UNKNOWN : (int) total);
+						long total = entity.getContentLength();
+						String totalc = convert(total);
+						monitor.beginTask(null,
+								(total < 0 || total > Integer.MAX_VALUE) ? IProgressMonitor.UNKNOWN : (int) total);
 
-							byte[] buf = new byte[BUFFER_SIZE];
-							long done = 0;
-							long start = System.currentTimeMillis();
-							for (;;) {
-								int r = is.read(buf);
-								if (r == -1)
-									break;
-								out.write(buf, 0, r);
-								done += r;
+						byte[] buf = new byte[BUFFER_SIZE];
+						long done = 0;
+						long start = System.currentTimeMillis();
+						for (;;) {
+							int r = is.read(buf);
+							if (r == -1)
+								break;
+							out.write(buf, 0, r);
+							done += r;
 
-								// monitor handling as seen in
-								// org.eclipse.equinox.internal.p2.transport.ecf.FileReader
-								monitor.worked(r);
+							// monitor handling as seen in
+							// org.eclipse.equinox.internal.p2.transport.ecf.FileReader
+							monitor.worked(r);
 
-								long now = System.currentTimeMillis();
+							long now = System.currentTimeMillis();
 
-								int ms = (int) (now - start);
+							int ms = (int) (now - start);
 
-								int rate;
+							int rate;
 
-								if (ms == 0)
-									rate = 0;
-								else
-									rate = (int) (1000L * total / ms);
+							if (ms == 0)
+								rate = 0;
+							else
+								rate = (int) (1000L * total / ms);
 
-								monitor.subTask("loading " + uri + " (" + convert(done) + "/" + totalc + " "
-										+ convert(rate) + "/s)");
+							monitor.subTask("loading " + uri + " (" + convert(done) + "/" + totalc + " " + convert(rate)
+									+ "/s)");
 
-								if (monitor.isCanceled()) {
-									get.abort();
-									throw new OperationCanceledException();
-								}
+							if (monitor.isCanceled()) {
+								get.abort();
+								throw new OperationCanceledException();
 							}
-
-							monitor.done();
 						}
 
-						Date date = parseLastModified(response);
-						if (date != null)
-							Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));
-
-						last = path;
-						result = Status.OK_STATUS;
-						break;
-					case HttpStatus.SC_NOT_MODIFIED:
-						last = path;
-						result = Status.OK_STATUS;
-						break;
-					case HttpStatus.SC_NOT_FOUND:
-						EntityUtils.consume(entity);
-						result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-								ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri, null);
-						break;
-					default:
-						throw new Error(get + " -> " + response);
+						monitor.done();
 					}
+
+					Date date = parseLastModified(response);
+					if (date != null)
+						Files.setLastModifiedTime(path, FileTime.fromMillis(date.getTime()));
+
+					last = path;
+					result = Status.OK_STATUS;
+					break;
+				case HttpStatus.SC_NOT_MODIFIED:
+					last = path;
+					result = Status.OK_STATUS;
+					break;
+				case HttpStatus.SC_NOT_FOUND:
+					EntityUtils.consume(entity);
+					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+							ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri, null);
+					break;
+
+				case HttpStatus.SC_BAD_GATEWAY:
+					EntityUtils.consume(entity);
+					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+							ProvisionException.REPOSITORY_FAILED_READ,
+							"failed read: " + uri + " -> " + response.getStatusLine(), null);
+					break;
+				default:
+					throw new Error(get + " -> " + response);
 				}
 			}
 		} catch (UnknownHostException e) {
@@ -297,20 +305,21 @@ public class MyTransport extends Transport {
 			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,
 					"Connect failed: " + uri + " " + e, e);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new Error(e);
 		}
 
 		return result;
 	}
 
-	private HttpHost findProxy(URI uri) {
-		if (proxy == null)
-			return null;
+	private boolean useProxy(URI uri) {
+		return proxy != null && !nonProxyHosts.matcher(uri.getHost()).matches();
+	}
 
-		if (nonProxyHosts.matcher(uri.getHost()).matches())
-			return null;
-
-		return new HttpHost(proxy.host, proxy.port, proxy.protocol);
+	private CloseableHttpClient selectClient(boolean proxy) {
+		if (proxy)
+			return proxyClient;
+		else
+			return client;
 	}
 
 	private Entry<URI, URI> findMirror(URI prefix) {
@@ -447,7 +456,9 @@ public class MyTransport extends Transport {
 			if (stats == StatsType.suppress)
 				throw new FileNotFoundException("Accessing statistics was suppressed: " + toDownload);
 
-			try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+			CloseableHttpClient httpClient = selectClient(useProxy(toDownload));
+
+			try {
 
 				HttpHead get = new HttpHead(toDownload);
 
@@ -466,6 +477,13 @@ public class MyTransport extends Transport {
 				}
 			} catch (FileNotFoundException | AuthenticationFailedException e) {
 				throw e;
+
+			} catch (UnknownHostException e) {
+				throw new CoreException(new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+						ProvisionException.REPOSITORY_INVALID_LOCATION, "Unknown host: " + toDownload + " " + e, e));
+			} catch (ConnectException e) {
+				throw new CoreException(new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
+						ProvisionException.REPOSITORY_FAILED_READ, "Connect failed: " + toDownload + " " + e, e));
 			} catch (IOException e) {
 				throw new Error(e);
 			}
