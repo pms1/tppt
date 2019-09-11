@@ -218,7 +218,6 @@ public class MirrorMojo extends AbstractMojo {
 
 	void findServers() {
 		for (Server s : session.getSettings().getServers()) {
-
 			System.err.println("SERVER " + s.getId() + " " + s.getConfiguration()
 					+ (s.getConfiguration() != null ? s.getConfiguration().getClass() : "<none>"));
 		}
@@ -229,7 +228,7 @@ public class MirrorMojo extends AbstractMojo {
 		try {
 			final Path repoOut = target.toPath().resolve("repository");
 
-			findServers();
+			// findServers();
 
 			Map<URI, URI> uriMirrors = findMirrors();
 
