@@ -60,6 +60,7 @@ import org.eclipse.equinox.p2.metadata.IInstallableUnitPatch;
 import org.eclipse.equinox.p2.metadata.IProvidedCapability;
 import org.eclipse.equinox.p2.metadata.IRequirement;
 import org.eclipse.equinox.p2.metadata.IRequirementChange;
+import org.eclipse.equinox.p2.metadata.Version;
 import org.eclipse.equinox.p2.metadata.expression.IMatchExpression;
 import org.eclipse.equinox.p2.planner.IPlanner;
 import org.eclipse.equinox.p2.planner.IProfileChangeRequest;
@@ -216,9 +217,16 @@ public class MirrorApplication implements IApplication {
 
 				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
-					// TODO: allow version to be specified...
-
-					IQuery<IInstallableUnit> q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(iu));
+					int idx = iu.indexOf('/');
+					IQuery<IInstallableUnit> q;
+					if (idx == -1) {
+						String unit = iu;
+						q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(unit));
+					} else {
+						String unit = iu.substring(0, idx);
+						String version = iu.substring(idx + 1);
+						q = QueryUtil.createLatestQuery(QueryUtil.createIUQuery(unit, Version.create(version)));
+					}
 
 					Set<IInstallableUnit> queryResult = sourceMetadataRepo.query(q, monitor).toUnmodifiableSet();
 					if (queryResult.isEmpty())
@@ -404,7 +412,7 @@ public class MirrorApplication implements IApplication {
 						continue;
 
 					if (ad.length != 1)
-						throw new Error();
+						throw new Error("Artifacts for " + a + ": " + Arrays.asList(ad));
 
 					ArtifactDescriptor d = new ArtifactDescriptor(a);
 
