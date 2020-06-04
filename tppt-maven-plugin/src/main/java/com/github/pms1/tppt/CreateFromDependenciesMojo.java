@@ -110,6 +110,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter
 	private ArtifactFilter exclusionTransitives = new ExclusionSetFilter(Collections.emptySet());
 
+	@Parameter
+	private boolean useBaseline;
+
 	public void setExclusionTransitives(String[] exclusionTransitives) {
 		this.exclusionTransitives = new ExclusionSetFilter(exclusionTransitives);
 	}
@@ -222,6 +225,10 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	}
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (useBaseline) {
+			getLog().info("Skipping due to 'useBaseline'");
+			return;
+		}
 
 		final Path repoDependencies = target.toPath().resolve("repository-source");
 		final Path repoDependenciesPlugins = repoDependencies.resolve("plugins");

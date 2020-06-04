@@ -39,7 +39,15 @@ public class CompressMetadataMojo extends AbstractMojo {
 	@Component
 	private P2RepositoryFactory factory;
 
+	@Parameter
+	private boolean useBaseline;
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (useBaseline) {
+			getLog().info("Skipping due to 'useBaseline'");
+			return;
+		}
+
 		if (compressions == null)
 			throw new MojoExecutionException("List of compressions must not be empty.");
 

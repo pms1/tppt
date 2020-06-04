@@ -115,6 +115,9 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	@Component(hint = "xml")
 	private DataCompression raw;
 
+	@Parameter
+	private boolean useBaseline;
+
 	private static Plugin scanPlugin(Path path, Plugin plugin)
 			throws IOException, BundleException, MojoExecutionException {
 		Preconditions.checkArgument(Files.isRegularFile(path), "Not a regular file: " + path);
@@ -169,6 +172,11 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (useBaseline) {
+			getLog().info("Skipping due to 'useBaseline'");
+			return;
+		}
+
 		try {
 			if (project.getName() == null)
 				throw new MojoExecutionException("Not supposed to happen: ${project.name} is null");

@@ -93,6 +93,9 @@ public class MirrorMojo extends AbstractMojo {
 	@Parameter
 	private StatsType stats = StatsType.collect;
 
+	@Parameter
+	private boolean useBaseline = false;
+
 	public static class Mirror {
 		@Parameter
 		public List<String> ius;
@@ -225,6 +228,10 @@ public class MirrorMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (useBaseline) {
+			getLog().info("Skipping due to 'useBaseline'");
+			return;
+		}
 		try {
 			final Path repoOut = target.toPath().resolve("repository");
 

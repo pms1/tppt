@@ -33,7 +33,14 @@ public class SetTimestampMojo extends AbstractMojo {
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
 
+	@Parameter
+	private boolean useBaseline;
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (useBaseline) {
+			getLog().info("Skipping due to 'useBaseline'");
+			return;
+		}
 
 		final Path repoOut = target.toPath().resolve("repository");
 

@@ -49,6 +49,9 @@ public class BaselineMojo extends AbstractMojo {
 	@Component
 	private DeploymentHelper dh;
 
+	@Parameter
+	private boolean useBaseline = false;
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (deploymentTarget == null) {
 			getLog().info("No baslineing as 'deploymentTarget' is not set");
@@ -83,21 +86,34 @@ public class BaselineMojo extends AbstractMojo {
 				}
 			}
 
-			if (previous == null) {
+			if (previous == null)
 				getLog().info("No baseline repository found");
-			} else {
-				getLog().info("Comparing repository to baseline at " + previous);
 
-				CommonP2Repository r1 = repositoryFactory.loadAny(dt.getPath().resolve(previous));
-				CommonP2Repository r2 = repositoryFactory.loadAny(target.toPath().resolve("repository"));
-				boolean eq = repositoryComparator.run(r1, r2);
-
-				if (eq) {
-					getLog().info("Repository is equal to baseline, replacing it");
-
-					dh.replace(r1, r2);
+			if (useBaseline) {
+				if (previous == null) {
+					throw new MojoExecutionException("useBaseline, but no baseline repository");
 				} else {
-					getLog().info("Repository is not equal to baseline");
+					getLog().info("Using baseline from " + previous);
+
+					CommonP2Repository r1 = repositoryFactory.loadAny(dt.getPath().resolve(previous));
+					dh.install(r1, target.toPath().resolve("repository"));
+				}
+			} else {
+				if (previous == null) {
+				} else {
+					getLog().info("Comparing repository to baseline at " + previous);
+
+					CommonP2Repository r1 = repositoryFactory.loadAny(dt.getPath().resolve(previous));
+					CommonP2Repository r2 = repositoryFactory.loadAny(target.toPath().resolve("repository"));
+					boolean eq = repositoryComparator.run(r1, r2);
+
+					if (eq) {
+						getLog().info("Repository is equal to baseline, replacing it");
+
+						dh.replace(r1, r2);
+					} else {
+						getLog().info("Repository is not equal to baseline");
+					}
 				}
 			}
 		} catch (MojoExecutionException e) {
