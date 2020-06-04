@@ -147,6 +147,12 @@
 				<version>3.0.1</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-provider-api</artifactId>
+				<version>3.4.1</version>
+			</dependency>
+
 		</dependencies>
 	</dependencyManagement>
 
@@ -298,16 +304,8 @@
 				</reportSets>
 			</plugin>
 
-			<!-- triggers rate limiter on travis
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-changes-plugin</artifactId>
-				<version>2.12.1</version>
-				<configuration>
-					<runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-				</configuration>
-			</plugin>
-			-->
+			<!-- triggers rate limiter on travis <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-changes-plugin</artifactId> 
+				<version>2.12.1</version> <configuration> <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot> </configuration> </plugin> -->
 			<plugin>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.10.4</version>
@@ -387,6 +385,12 @@
 								</goals>
 							</execution>
 						</executions>
+						<configuration>
+							<gpgArguments>
+								<arg>--pinentry-mode</arg>
+								<arg>loopback</arg>
+							</gpgArguments>
+						</configuration>
 					</plugin>
 				</plugins>
 			</build>
