@@ -2,7 +2,6 @@ package com.github.pms1.tppt;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -29,6 +28,8 @@ import org.apache.maven.scm.manager.ScmManager;
 import org.apache.maven.scm.repository.ScmRepository;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.core.DeploymentRepository;
+import com.github.pms1.tppt.core.DeploymentTarget;
 import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.P2RepositoryFactory.NoRepositoryFoundException;
@@ -49,7 +50,7 @@ public class DeployMojo extends AbstractMojo {
 	private MavenSession session;
 
 	@Parameter(property = "tppt.deploymentTarget", required = true)
-	private URI deploymentTarget;
+	private DeploymentRepository deploymentTarget;
 
 	@Parameter(defaultValue = "${project.basedir}", readonly = true)
 	private File basedir;
@@ -69,12 +70,12 @@ public class DeployMojo extends AbstractMojo {
 	@Component
 	private DeploymentHelper deploymentHelper;
 
-	private void doInstall(Path zip, Path targetRoot) throws IOException {
+	private void doInstall(Path zip, DeploymentTarget dt, Path targetRoot) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(zip, null)) {
 			CommonP2Repository r1 = repositoryFactory.loadAny(fs.getPath("/"));
 
 			try {
-				CommonP2Repository r2 = repositoryFactory.loadAny(targetRoot);
+				CommonP2Repository r2 = repositoryFactory.loadAny(dt.getPath().resolve(targetRoot));
 
 				boolean equal = repositoryComparator.run(r1, r2);
 				if (!equal) {
@@ -84,41 +85,52 @@ public class DeployMojo extends AbstractMojo {
 					getLog().info("Equal to existing repository, skipping deployment");
 				}
 			} catch (NoRepositoryFoundException e) {
-				deploymentHelper.install(r1, targetRoot);
+				deploymentHelper.install(r1, dt.getPath().resolve(targetRoot));
+
+				dt.addRepository(targetRoot);
 			}
 		}
 	}
 
 	@SuppressWarnings("unused")
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
+		// System.err.println("LIFE CYCLE " + deployHelp + " USE-2");
+		// System.err.println("LIFE CYCLE " + deploymentHelper + " USE-3");
 
-		for (MavenProject p : session.getProjects()) {
-			switch (p.getPackaging()) {
-			case "tppt-repository":
-			case "tppt-composite-repository":
-				break;
-			default:
-				continue;
+		try (DeploymentTarget dt = deploymentHelper.createTarget(deploymentTarget)) {
+
+			Path targetPath = dt.getPath();
+
+			for (MavenProject p : session.getProjects()) {
+				switch (p.getPackaging()) {
+				case "tppt-repository":
+				case "tppt-composite-repository":
+					break;
+				default:
+					continue;
+				}
+
+				if (p.getArtifact() == null)
+					throw new MojoExecutionException("The project " + p + " did not create a build artifact");
+				if (p.getArtifact().getFile() == null)
+					throw new MojoExecutionException(
+							"The project " + p + " did not assign a file to the build artifact");
+
+				String targetRoot = deploymentHelper.getPath(p);
+
+				try {
+					getLog().info("Deploying to " + targetRoot);
+					doInstall(p.getArtifact().getFile().toPath(), dt, dt.getPath().getFileSystem().getPath(targetRoot));
+
+					getLog().info("Updating repository index");
+					dt.writeIndex();
+				} catch (IOException e) {
+					throw new MojoExecutionException("Deployment of '" + p.getArtifact().getFile().toPath() + "' to '"
+							+ targetPath + "' failed.", e);
+				}
+
+				p.getProperties().setProperty("tppt.deployment.path", targetRoot.toString());
 			}
-
-			if (p.getArtifact() == null)
-				throw new MojoExecutionException("The project " + p + " did not create a build artifact");
-			if (p.getArtifact().getFile() == null)
-				throw new MojoExecutionException("The project " + p + " did not assign a file to the build artifact");
-
-			Path targetRoot = targetPath.resolve(targetPath.resolve(deployHelp.getPath(p)));
-			getLog().info("Deploying to " + targetRoot);
-
-			try {
-				doInstall(p.getArtifact().getFile().toPath(), targetRoot);
-			} catch (IOException e) {
-				throw new MojoExecutionException(
-						"Deployment of '" + p.getArtifact().getFile().toPath() + "' to '" + targetPath + "' failed.",
-						e);
-			}
-
-			p.getProperties().setProperty("tppt.deployment.path", targetRoot.toString());
 		}
 
 		if (true)

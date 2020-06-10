@@ -40,6 +40,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.lookfirst</groupId>
+			<artifactId>sardine</artifactId>
+			<version>5.9</version>
+		</dependency>
+
 	</dependencies>
 	
 	<build>

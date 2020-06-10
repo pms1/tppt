@@ -3,6 +3,7 @@ package com.github.pms1.tppt;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
@@ -138,7 +139,7 @@ public class CreateCompositeRepository extends AbstractMojo {
 			artifactRepository.setName(project.getName());
 			metadataRepository.setName(project.getName());
 
-			Path localPath = deployHelp.getPath(project, LocalDateTime.now());
+			Path localPath = Paths.get(deployHelp.getPath(project, LocalDateTime.now()));
 
 			for (MavenProject p : session.getProjects()) {
 
@@ -159,7 +160,7 @@ public class CreateCompositeRepository extends AbstractMojo {
 						continue;
 				}
 
-				String rel = relativize(localPath, deployHelp.getPath(p));
+				String rel = relativize(localPath, Paths.get(deployHelp.getPath(p)));
 
 				Child c = new Child();
 				c.setLocation(rel);

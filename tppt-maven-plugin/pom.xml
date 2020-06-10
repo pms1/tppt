@@ -114,6 +114,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.github.lookfirst</groupId>
+			<artifactId>sardine</artifactId>
+			<version>5.9</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>annotations</artifactId>
 			<scope>compile</scope>
@@ -202,7 +208,7 @@ project.properties.setProperty('deploymentTarget',java.nio.file.Paths.get(projec
 					<postBuildHookScript>verify.groovy</postBuildHookScript>
 
 					<properties>
-						<tppt.deploymentTarget>${deploymentTarget}</tppt.deploymentTarget>
+						<tppt.deploymentTarget>default::${deploymentTarget}</tppt.deploymentTarget>
 					</properties>
 				</configuration>
 				<executions>

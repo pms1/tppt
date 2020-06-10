@@ -23,12 +23,21 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.settings.Server;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.Startable;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.StartingException;
+import org.codehaus.plexus.personality.plexus.lifecycle.phase.StoppingException;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.sisu.plexus.Strategies;
 
 import com.github.pms1.tppt.core.InterpolatedString.Visitor;
 import com.github.pms1.tppt.p2.ArtifactId;
@@ -42,15 +51,23 @@ import com.github.pms1.tppt.p2.P2RepositoryFactory.P2IndexType;
 import com.github.pms1.tppt.p2.P2RepositoryVisitor;
 import com.github.pms1.tppt.p2.PathByteSource;
 import com.github.pms1.tppt.p2.RepositoryFacade;
+import com.github.sardine.Sardine;
+import com.github.sardine.SardineFactory;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteSource;
 
-@Component(role = DeploymentHelper.class)
-public class DeploymentHelper {
+@Component(role = DeploymentHelper.class, instantiationStrategy = Strategies.SINGLETON)
+public class DeploymentHelper implements Initializable, Disposable, Startable {
 	@Requirement
 	private P2RepositoryFactory factory;
+
+	@Requirement(hint = "xml")
+	private DataCompression raw;
+
+	@Requirement
+	private MavenSession session;
 
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
@@ -65,7 +82,7 @@ public class DeploymentHelper {
 		}
 	}
 
-	private String getLayout(MavenProject p) {
+	static String getLayout(MavenProject p) {
 		Plugin plugin = p.getPlugin("com.github.pms1.tppt:tppt-maven-plugin");
 
 		Xpp3Dom configuration = (Xpp3Dom) plugin.getConfiguration();
@@ -76,7 +93,7 @@ public class DeploymentHelper {
 			return layout.getValue();
 	}
 
-	public Path getPath(MavenProject p) throws MojoExecutionException {
+	public String getPath(MavenProject p) throws MojoExecutionException {
 		try {
 			return getPath(p, extractP2Timestamp(p.getArtifact().getFile().toPath()));
 		} catch (IOException e1) {
@@ -84,7 +101,7 @@ public class DeploymentHelper {
 		}
 	}
 
-	public Path getPath(MavenProject p, LocalDateTime timestamp) throws MojoExecutionException {
+	public String getPath(MavenProject p, LocalDateTime timestamp) throws MojoExecutionException {
 		Preconditions.checkNotNull(p);
 
 		String layout = getLayout(p);
@@ -95,7 +112,7 @@ public class DeploymentHelper {
 		context.put("version", p.getVersion());
 		context.put("timestamp", timestamp);
 
-		return Paths.get(interpolate(layout1, context));
+		return interpolate(layout1, context);
 	}
 
 	public RepositoryPathPattern getPathPattern(MavenProject p) {
@@ -112,7 +129,7 @@ public class DeploymentHelper {
 		return interpolatePattern(layout1, context);
 	}
 
-	private String interpolate(InterpolatedString layout1, Map<String, Object> context) {
+	static String interpolate(InterpolatedString layout1, Map<String, Object> context) {
 		StringBuilder b = new StringBuilder();
 
 		layout1.accept(new Visitor() {
@@ -293,12 +310,12 @@ public class DeploymentHelper {
 				ByteSource bs2 = new PathByteSource(p2);
 
 				if (!bs1.contentEquals(bs2)) {
-					Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+					Files.copy(p1, p2, StandardCopyOption.REPLACE_EXISTING); // StandardCopyOption.COPY_ATTRIBUTES
 				} else {
 					// System.out.println("UNMODIFIED " + p);
 				}
 			} else if (sourceFiles.contains(p)) {
-				Files.copy(p1, p2, StandardCopyOption.COPY_ATTRIBUTES);
+				Files.copy(p1, p2); // , StandardCopyOption.COPY_ATTRIBUTES
 			} else {
 				Files.delete(p2);
 				toRemove.add(p2.getParent());
@@ -358,5 +375,76 @@ public class DeploymentHelper {
 			}
 		}
 		return regex.toString();
+	}
+
+	public DeploymentTarget createTarget(DeploymentRepository deploymentTarget) throws MojoExecutionException {
+
+		if (deploymentTarget.uri.getScheme() == null || !deploymentTarget.uri.isAbsolute())
+			throw new MojoExecutionException("The deploymentTarget '" + deploymentTarget.uri + "' is not a valid URI.");
+
+		switch (deploymentTarget.uri.getScheme()) {
+		case "file":
+			Path path = Paths.get(deploymentTarget.uri);
+			if (Files.exists(path) && !Files.isDirectory(path))
+				throw new MojoExecutionException("The path '" + path + "' already exists and is not a directory");
+			try {
+				Files.createDirectories(path);
+			} catch (IOException e1) {
+				throw new MojoExecutionException("Failed to create the path '" + path + "'", e1);
+			}
+			return new DeploymentTargetImpl(path, factory, raw);
+		case "http":
+		case "https":
+			Sardine sardine = SardineFactory.begin();
+
+			Server server = session.getSettings().getServer(deploymentTarget.serverId);
+			if (server != null) {
+				if (server.getUsername() != null && server.getPassword() != null)
+					sardine.setCredentials(server.getUsername(), server.getPassword());
+			}
+			sardine.enablePreemptiveAuthentication(deploymentTarget.uri.getHost(), deploymentTarget.uri.getPort(),
+					deploymentTarget.uri.getPort());
+
+			VFileSystem fs = new VFileSystem(sardine, deploymentTarget.uri);
+
+			path = new VPath(fs);
+			return new DeploymentTargetImpl(path, factory, raw) {
+				@Override
+				public void close() {
+					super.close();
+					try {
+						sardine.shutdown();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			};
+		default:
+			throw new MojoExecutionException("The scheme '" + deploymentTarget.uri.getScheme()
+					+ "' of deploymentTarget '" + deploymentTarget + "' is not supported.");
+		}
+	}
+
+	@Override
+	public void start() throws StartingException {
+		// System.err.println("LIFE CYCLE " + this + " START");
+	}
+
+	@Override
+	public void stop() throws StoppingException {
+		// System.err.println("LIFE CYCLE " + this + " STOP");
+	}
+
+	@Override
+	public void dispose() {
+		// System.err.println("LIFE CYCLE " + this + " DISPOSE");
+	}
+
+	@Override
+	public void initialize() throws InitializationException {
+		// System.err.println("LIFE CYCLE " + this + " INIT " + getClass() + " " +
+		// System.identityHashCode(getClass())
+		// + " " + getClass().getClassLoader() +
+		// System.identityHashCode(getClass().getClassLoader()));
 	}
 }

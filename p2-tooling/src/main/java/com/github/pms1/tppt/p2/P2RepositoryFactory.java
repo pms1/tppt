@@ -410,23 +410,26 @@ public class P2RepositoryFactory {
 					availableCompressions.put(kind, Arrays.asList(compressions));
 			}
 
-			if (kinds().contains(P2Kind.artifact))
-				for (DataCompression c : availableCompressions.get(P2Kind.artifact)) {
-					p2index.set(P2RepositoryFactory.P2Kind.artifact.getProperty(), artifact.getFilePrefix(), c);
-					try (OutputStream outputStream = c.openOutputStream(root, artifact.getFilePrefix())) {
-						artifactFactory.write(a.getRepository(), outputStream);
+			if (a != null)
+				if (kinds().contains(P2Kind.artifact))
+					for (DataCompression c : availableCompressions.get(P2Kind.artifact)) {
+						p2index.set(P2RepositoryFactory.P2Kind.artifact.getProperty(), artifact.getFilePrefix(), c);
+						try (OutputStream outputStream = c.openOutputStream(root, artifact.getFilePrefix())) {
+							artifactFactory.write(a.getRepository(), outputStream);
+						}
 					}
-				}
 
-			if (kinds().contains(P2Kind.metadata))
-				for (DataCompression c : availableCompressions.get(P2Kind.metadata)) {
-					p2index.set(P2RepositoryFactory.P2Kind.metadata.getProperty(), metadata.getFilePrefix(), c);
-					try (OutputStream outputStream = c.openOutputStream(root, metadata.getFilePrefix())) {
-						metadataFactory.write(m.getRepository(), outputStream);
+			if (m != null)
+				if (kinds().contains(P2Kind.metadata))
+					for (DataCompression c : availableCompressions.get(P2Kind.metadata)) {
+						p2index.set(P2RepositoryFactory.P2Kind.metadata.getProperty(), metadata.getFilePrefix(), c);
+						try (OutputStream outputStream = c.openOutputStream(root, metadata.getFilePrefix())) {
+							metadataFactory.write(m.getRepository(), outputStream);
+						}
 					}
-				}
 
-			p2index.write(root);
+			if (a != null || m != null)
+				p2index.write(root);
 		}
 
 	}

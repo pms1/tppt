@@ -2,7 +2,6 @@ package com.github.pms1.tppt;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -17,6 +16,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.core.DeploymentRepository;
+import com.github.pms1.tppt.core.DeploymentTarget;
 import com.github.pms1.tppt.core.RepositoryPathMatcher;
 import com.github.pms1.tppt.core.RepositoryPathPattern;
 import com.github.pms1.tppt.p2.CommonP2Repository;
@@ -44,7 +45,7 @@ public class BaselineMojo extends AbstractMojo {
 	private P2RepositoryFactory repositoryFactory;
 
 	@Parameter(property = "tppt.deploymentTarget")
-	private URI deploymentTarget;
+	private DeploymentRepository deploymentTarget;
 
 	@Component
 	private DeploymentHelper dh;
@@ -53,15 +54,17 @@ public class BaselineMojo extends AbstractMojo {
 	private boolean useBaseline = false;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		// System.err.println("LIFE CYCLE " + dh + " USE-1");
+
 		if (deploymentTarget == null) {
 			getLog().info("No baslineing as 'deploymentTarget' is not set");
 			return;
 		}
 
-		try {
-			DeploymentTarget dt = new DeploymentTarget(deploymentTarget);
+		try (DeploymentTarget dt = dh.createTarget(deploymentTarget)) {
 
 			Collection<Path> repositories = dt.findRepositories();
+
 			RepositoryPathPattern pattern = dh.getPathPattern(project);
 
 			Path previous = null;
@@ -82,7 +85,7 @@ public class BaselineMojo extends AbstractMojo {
 						previousTimestamp = timestamp;
 					}
 				} else {
-					throw new MojoExecutionException("mixed repositories with and without 'timestamp'");
+					throw new MojoExecutionException("Mixed repositories with and without 'timestamp'");
 				}
 			}
 

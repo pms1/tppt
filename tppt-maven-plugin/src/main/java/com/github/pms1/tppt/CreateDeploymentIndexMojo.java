@@ -22,6 +22,8 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.scm.manager.ScmManager;
 
 import com.github.pms1.tppt.core.DeploymentHelper;
+import com.github.pms1.tppt.core.DeploymentRepository;
+import com.github.pms1.tppt.core.DeploymentTarget;
 import com.github.pms1.tppt.p2.CommonP2Repository;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 import com.github.pms1.tppt.p2.RepositoryComparator;
@@ -49,7 +51,7 @@ public class CreateDeploymentIndexMojo extends AbstractMojo {
 	private MavenProject project;
 
 	@Parameter(property = "tppt.deploymentTarget", required = true)
-	private URI deploymentTarget;
+	private DeploymentRepository deploymentTarget;
 
 	@Parameter(defaultValue = "${project.basedir}", readonly = true)
 	private File basedir;
@@ -67,9 +69,8 @@ public class CreateDeploymentIndexMojo extends AbstractMojo {
 	private DeploymentHelper deploymentHelper;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		Path targetPath = new DeploymentTarget(deploymentTarget).getPath();
-
-		try {
+		try (DeploymentTarget dt = deploymentHelper.createTarget(deploymentTarget)) {
+			Path targetPath = dt.getPath();
 			Map<URI, CommonP2Repository> repos = new HashMap<>();
 
 			for (MavenProject p : session.getProjects()) {
@@ -93,7 +94,7 @@ public class CreateDeploymentIndexMojo extends AbstractMojo {
 				if (repo == null)
 					throw new MojoExecutionException("No repo found at '" + targetRoot + "'");
 
-				repos.put(deploymentTarget.relativize(targetRoot.toUri()), repo);
+				repos.put(deploymentTarget.uri.relativize(targetRoot.toUri()), repo);
 			}
 
 			Configuration cfg = new Configuration(Configuration.VERSION_2_3_26);

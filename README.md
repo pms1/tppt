@@ -82,3 +82,21 @@ plugins/
 plugins/net.sf.jopt-simple.jopt-simple.source_5.0.1.jar
 plugins/net.sf.jopt-simple.jopt-simple_5.0.1.jar
 ```
+
+## Deploying
+
+The `tppt:deploy` goal can be used to deploy the create p2 repository to an external resource. The following resources are supported:
+
+* Filesystem
+* HTTP(S) server with WebDAV support (version 0.4.0 or above)
+
+The target must be specified in the form `<serverId>::<uri>` either as `deploymentTarget` in the `configuration` section of the `pom.xml` or as a command line property `tppt.deploymentTarget`. For `file` URIs the server id is ignored, for `http` or `https` it is used to lookup authentication credentials in the maven settings.
+
+For HTTP(S) the following restrictions apply:
+
+* Only HTTP basic auth with preemptive authentication is supported
+* Different WebDAV servers behave very different in a lot of details. It was only tested with artifactory and Apache HTTPD with mod_dav. As these 2 already are different in 3 details, it is not expected that other servers will work out of the box.
+
+At the root of the deployment target a P2 composite repository is created that contains a list of all repositories deployed by tppt. This is used to (significantly for HTTP) speed up finding baseline repositories.
+  
+   
