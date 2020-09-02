@@ -1215,7 +1215,8 @@ public class RepositoryComparator {
 		if (!Objects.equals(property.getName(), "type"))
 			return false;
 
-		if (!Objects.equals(property.getValue(), "osgi.bundle"))
+		if (!Objects.equals(property.getValue(), "osgi.bundle")
+				&& !Objects.equals(property.getValue(), "osgi.fragment"))
 			return false;
 
 		if (!Objects.equals(property.getType(), null))
