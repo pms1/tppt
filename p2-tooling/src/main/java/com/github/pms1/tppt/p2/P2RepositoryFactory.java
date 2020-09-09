@@ -402,9 +402,12 @@ public class P2RepositoryFactory {
 		public final void save(DataCompression... compressions) throws IOException {
 			for (P2Kind kind : kinds()) {
 				if (compressions.length != 0 && !availableCompressions.get(kind).isEmpty())
-					throw new IllegalStateException();
+					throw new IllegalStateException(
+							"compressions=" + Arrays.toString(compressions) + " available=" + availableCompressions);
+
 				if (compressions.length == 0 && availableCompressions.get(kind).isEmpty())
-					throw new IllegalStateException();
+					throw new IllegalStateException(
+							"compressions=" + Arrays.toString(compressions) + " available=" + availableCompressions);
 
 				if (compressions.length != 0)
 					availableCompressions.put(kind, Arrays.asList(compressions));

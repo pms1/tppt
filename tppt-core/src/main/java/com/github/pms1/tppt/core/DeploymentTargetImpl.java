@@ -107,6 +107,7 @@ class DeploymentTargetImpl implements DeploymentTarget {
 		loadRepo();
 
 		repo.save(repoCompressions);
+		repoCompressions = new DataCompression[0];
 	}
 
 }
