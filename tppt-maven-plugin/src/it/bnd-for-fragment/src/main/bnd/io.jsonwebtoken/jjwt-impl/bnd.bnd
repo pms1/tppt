@@ -1,0 +1,3 @@
+Fragment-Host: io.jsonwebtoken.jjwt-api
+Export-Package: 
+Import-Package: io.jsonwebtoken.*;version="[0.11,1)",*
