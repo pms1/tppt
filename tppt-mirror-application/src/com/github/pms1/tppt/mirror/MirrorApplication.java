@@ -24,6 +24,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -77,6 +79,8 @@ import org.eclipse.equinox.p2.repository.metadata.IMetadataRepositoryManager;
 import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
 import org.osgi.framework.ServiceReference;
 
+import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
+
 @SuppressWarnings("restriction")
 public class MirrorApplication implements IApplication {
 
@@ -110,8 +114,14 @@ public class MirrorApplication implements IApplication {
 	public Object start(IApplicationContext context) throws IOException, NoSuchAlgorithmException {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 
+		if (false) {
+			Logger l = Logger.getLogger("org.apache");
+			l.setLevel(Level.FINEST);
+			Logger.getLogger("").getHandlers()[0].setLevel(Level.FINEST);
+		}
+
 		if (debug)
-			System.out.println("MirrorApplication.commandLine        = " + Arrays.asList((String[]) args));
+			System.out.println("MirrorApplication.commandLine                    = " + Arrays.asList((String[]) args));
 
 		try {
 			for (String s : Arrays.asList((String[]) args)) {
@@ -125,25 +135,50 @@ public class MirrorApplication implements IApplication {
 				}
 
 				if (debug) {
-					System.out.println("MirrorApplication.mirrorRepository    = " + ms.mirrorRepository);
-					System.out.println(
-							"MirrorApplication.sourceRepositories  = " + Arrays.toString(ms.sourceRepositories));
-					System.out.println("MirrorApplication.targetRepository    = " + ms.targetRepository);
-					System.out.println("MirrorApplication.installableUnit     = " + Arrays.toString(ms.ius));
-					System.out.println("MirrorApplication.offline             = " + ms.offline);
-					System.out.println("MirrorApplication.stats               = " + ms.stats);
-					System.out.println("MirrorApplication.filter              = " + Arrays.toString(ms.filters));
-					if (ms.mirrors != null)
-						for (Entry<URI, URI> e : ms.mirrors.entrySet())
+					System.out.println("MirrorApplication.mirrorRepository               = " + ms.mirrorRepository);
+
+					for (URI uri : ms.sourceRepositories)
+						System.out.println("MirrorApplication.sourceRepository               = " + uri);
+
+					int idx = 0;
+					if (ms.servers != null)
+						for (AuthenticatedUri u : ms.servers) {
+							System.out.println("MirrorApplication.server[" + idx + "].uri                  = " + u.uri);
 							System.out.println(
-									"MirrorApplication.mirror             = " + e.getKey() + " -> " + e.getValue());
+									"MirrorApplication.server[" + idx + "].username             = " + u.username);
+							System.out.println(
+									"MirrorApplication.server[" + idx + "].password             = " + u.password);
+							++idx;
+						}
+					System.out.println("MirrorApplication.targetRepository               = " + ms.targetRepository);
+					System.out.println("MirrorApplication.installableUnit                = " + Arrays.toString(ms.ius));
+					System.out.println("MirrorApplication.offline                        = " + ms.offline);
+					System.out.println("MirrorApplication.stats                          = " + ms.stats);
+					System.out.println(
+							"MirrorApplication.filter                         = " + Arrays.toString(ms.filters));
+					if (ms.mirrors != null) {
+						idx = 0;
+						for (Entry<URI, AuthenticatedUri> e : ms.mirrors.entrySet()) {
+							System.out.println(
+									"MirrorApplication.mirror[" + idx + "].from                 = " + e.getKey());
+							System.out.println(
+									"MirrorApplication.mirror[" + idx + "].to                   = " + e.getValue().uri);
+							System.out.println("MirrorApplication.mirror[" + idx + "].to.username          = "
+									+ e.getValue().username);
+							System.out.println("MirrorApplication.mirror[" + idx + "].to.password          = "
+									+ e.getValue().password);
+
+							idx++;
+						}
+					}
 					if (ms.proxy != null) {
-						System.out.println("MirrorApplication.proxy.protocol      = " + ms.proxy.protocol);
-						System.out.println("MirrorApplication.proxy.host          = " + ms.proxy.host);
-						System.out.println("MirrorApplication.proxy.port          = " + ms.proxy.port);
-						System.out.println("MirrorApplication.proxy.username      = " + ms.proxy.username);
-						System.out.println("MirrorApplication.proxy.password      = " + ms.proxy.password);
-						System.out.println("MirrorApplication.proxy.nonProxyHosts = " + ms.proxy.nonProxyHosts);
+						System.out.println("MirrorApplication.proxy.protocol                 = " + ms.proxy.protocol);
+						System.out.println("MirrorApplication.proxy.host                     = " + ms.proxy.host);
+						System.out.println("MirrorApplication.proxy.port                     = " + ms.proxy.port);
+						System.out.println("MirrorApplication.proxy.username                 = " + ms.proxy.username);
+						System.out.println("MirrorApplication.proxy.password                 = " + ms.proxy.password);
+						System.out.println(
+								"MirrorApplication.proxy.nonProxyHosts            = " + ms.proxy.nonProxyHosts);
 					}
 				}
 
@@ -197,8 +232,8 @@ public class MirrorApplication implements IApplication {
 				IProvisioningAgent ourAgent;
 				ourAgent = getAgent();
 
-				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.mirrors,
-						ms.proxy);
+				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.servers,
+						ms.mirrors, ms.proxy);
 				ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 				CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository

@@ -1,8 +1,15 @@
 <mirrorSpecification>
 	<targetRepository>c:/temp/mirror1</targetRepository>
 	<mirrorRepository>C:/Users/Mirko/.m2/repository/.cache/tppt/p2/</mirrorRepository>
+
 	<sourceRepository>http://downloadX.eclipse.org/releases/oxygen/201712201001/</sourceRepository>
-	<sourceRepository>http://downloadX.eclipse.org/technology/epp/packages/oxygen/</sourceRepository>
+	<sourceRepository>http://download.eclipse.org/technology/epp/packages/oxygen/</sourceRepository>
+
+	<server>
+		<uri>http://downloadX.eclipse.org/releases/oxygen/201712201001/</uri>
+		<username>user</username>
+		<password>pass</password>
+	</server>
 
 	<!-- <iu>org.eclipse.core.runtime.feature.feature.group</iu> -->
 
@@ -38,17 +45,20 @@
 		</item>
 	</filter>
 
+<!-- 
     <mirrors>
         <entry>
-            <key>http://downloadX.eclipse.org/</key>
-            <value>http://localhost:8090/mirror/</value>
+            <key>http://downloadX.eclipse.org/releases/</key>
+            <value>
+            	<uri>http://localhost:8090/mirror/releases/</uri>
+            	<username>t1</username>
+            	<password>t2</password>
+            </value>
         </entry>
     </mirrors>
-
-<!-- 
+ -->
+ 
    <proxy>
-      <id>example-proxy</id>
-      <active>true</active>
       <protocol>http</protocol>
       <host>localhost</host>
       <port>8090</port>
@@ -57,6 +67,5 @@
       <nonProxyHost>www.google.com</nonProxyHost>
       <nonProxyHost>*.eclipse.oXrg</nonProxyHost>
     </proxy>
-     -->
      
 </mirrorSpecification>

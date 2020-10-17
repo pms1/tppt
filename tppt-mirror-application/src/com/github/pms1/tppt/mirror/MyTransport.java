@@ -33,13 +33,15 @@ import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.DateUtils;
-import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -56,6 +58,7 @@ import org.eclipse.equinox.p2.core.ProvisionException;
 import org.eclipse.equinox.p2.repository.IRepository;
 import org.eclipse.equinox.p2.repository.artifact.IArtifactRepository;
 
+import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.mirror.jaxb.Mirror;
@@ -72,7 +75,9 @@ public class MyTransport extends Transport {
 
 	private final StatsType stats;
 
-	private final TreeMap<URI, URI> mirrors = new TreeMap<>();
+	private final TreeMap<URI, AuthenticatedUri> servers = new TreeMap<>();
+
+	private final TreeMap<URI, AuthenticatedUri> mavenMirrors = new TreeMap<>();
 
 	// see p2's OfflineTransport
 	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
@@ -83,14 +88,18 @@ public class MyTransport extends Transport {
 
 	private final CloseableHttpClient client, proxyClient;
 
-	public MyTransport(Path root, OfflineType offline, StatsType stats, Map<URI, URI> mirrors, Proxy proxy) {
+	public MyTransport(Path root, OfflineType offline, StatsType stats, AuthenticatedUri[] servers,
+			Map<URI, AuthenticatedUri> mavenMirrors, Proxy proxy) {
 		Objects.requireNonNull(root);
 		this.root = root;
 		this.offline = offline;
 		this.stats = stats;
 		this.proxy = proxy;
-		if (mirrors != null)
-			this.mirrors.putAll(mirrors);
+		if (servers != null)
+			for (AuthenticatedUri server : servers)
+				this.servers.put(server.uri, server);
+		if (mavenMirrors != null)
+			this.mavenMirrors.putAll(mavenMirrors);
 
 		Pattern nonProxyHosts = null;
 
@@ -130,53 +139,44 @@ public class MyTransport extends Transport {
 		return sb.toString();
 	}
 
+	/**
+	 * Not used by p2.
+	 */
 	@Override
 	public IStatus download(URI toDownload, OutputStream target, long startPos, IProgressMonitor monitor) {
-		// does not seem to be used by p2 at all
 		throw new UnsupportedOperationException();
 	}
 
 	private Path last;
 
-	private static CloseableHttpClient buildClient(Proxy proxy) {
+	private CloseableHttpClient buildClient(Proxy proxy) {
+		HttpClientBuilder builder = HttpClientBuilder.create();
 
-		CredentialsProvider credsProvider = null;
+		builder = builder.setDefaultCredentialsProvider(new CredentialsProvider() {
 
-		if (proxy != null)
-			if (proxy.username != null && proxy.password != null) {
-				credsProvider = new BasicCredentialsProvider();
-				credsProvider.setCredentials(new AuthScope(proxy.host, proxy.port),
-						new UsernamePasswordCredentials(proxy.username, proxy.password));
+			@Override
+			public void setCredentials(AuthScope arg0, Credentials arg1) {
+				throw new UnsupportedOperationException();
 			}
 
-		HttpClientBuilder builder = HttpClientBuilder.create();
-		if (credsProvider != null) {
-			builder = builder.setDefaultCredentialsProvider(credsProvider);
-		}
+			@Override
+			public Credentials getCredentials(AuthScope authScope) {
+				return MyTransport.this.getCredentials(authScope);
+			}
+
+			@Override
+			public void clear() {
+				throw new UnsupportedOperationException();
+			}
+		});
+
 		if (proxy != null)
-			builder.setProxy(new HttpHost(proxy.host, proxy.port));
+			builder = builder.setProxy(new HttpHost(proxy.host, proxy.port));
 
 		return builder.build();
 	}
 
-	public static void main(String[] args) {
-		URI u1 = URI.create("http://www.foo.bar/a");
-		URI u2 = URI.create("http://www.foo.bar/a/");
-		URI u3 = URI.create("http://www.foo.bar/ab");
-		URI u4 = URI.create("http://www.foo.bar/a/b");
-
-		for (URI x1 : new URI[] { u1, u2, u3, u4 }) {
-			for (URI x2 : new URI[] { u1, u2, u3, u4 }) {
-
-				URI r = x1.relativize(x2);
-
-				System.err.println(x1 + " " + x2 + " " + r + " " + r.isAbsolute());
-			}
-
-		}
-	}
-
-	private IStatus mirror(URI uri, Path path, IProgressMonitor monitor) {
+	private IStatus mirror(URI originalUri, AuthenticatedUri uri, Path path, IProgressMonitor monitor) {
 		last = null;
 
 		try {
@@ -188,11 +188,9 @@ public class MyTransport extends Transport {
 		IStatus result;
 
 		try {
-			boolean useProxy = useProxy(uri);
+			boolean useProxy = useProxy(uri.uri);
 
-			CloseableHttpClient httpClient = selectClient(useProxy);
-
-			HttpGet get = new HttpGet(uri);
+			HttpGet get = new HttpGet(uri.uri);
 
 			try {
 				FileTime ft = Files.getLastModifiedTime(path);
@@ -211,12 +209,14 @@ public class MyTransport extends Transport {
 			if (offline == OfflineType.offline)
 				return OFFLINE_STATUS;
 
+			System.out.print("Mirroring: " + originalUri);
+			if (!Objects.equals(originalUri, uri.uri))
+				System.out.print(" from " + uri.uri);
 			if (useProxy)
-				System.out.println("Mirroring: " + uri + " (proxy " + proxy.host + ":" + proxy.port + ") -> " + path);
-			else
-				System.out.println("Mirroring: " + uri + " -> " + path);
+				System.out.print(" proxy " + proxy.host + ":" + proxy.port);
+			System.out.println(" -> " + path);
 
-			try (CloseableHttpResponse response = httpClient.execute(get)) {
+			try (CloseableHttpResponse response = execute(uri, get)) {
 
 				HttpEntity entity = response.getEntity();
 				switch (response.getStatusLine().getStatusCode()) {
@@ -259,8 +259,8 @@ public class MyTransport extends Transport {
 							else
 								rate = (int) (1000L * total / ms);
 
-							monitor.subTask("loading " + uri + " (" + convert(done) + "/" + totalc + " " + convert(rate)
-									+ "/s)");
+							monitor.subTask("loading " + uri.uri + " (" + convert(done) + "/" + totalc + " "
+									+ convert(rate) + "/s)");
 
 							if (monitor.isCanceled()) {
 								get.abort();
@@ -285,14 +285,14 @@ public class MyTransport extends Transport {
 				case HttpStatus.SC_NOT_FOUND:
 					EntityUtils.consume(entity);
 					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-							ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri, null);
+							ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri.uri, null);
 					break;
 
 				case HttpStatus.SC_BAD_GATEWAY:
 					EntityUtils.consume(entity);
 					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
 							ProvisionException.REPOSITORY_FAILED_READ,
-							"failed read: " + uri + " -> " + response.getStatusLine(), null);
+							"failed read: " + uri.uri + " -> " + response.getStatusLine(), null);
 					break;
 				default:
 					throw new Error(get + " -> " + response);
@@ -300,10 +300,10 @@ public class MyTransport extends Transport {
 			}
 		} catch (UnknownHostException e) {
 			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-					ProvisionException.REPOSITORY_INVALID_LOCATION, "Unknown host: " + uri + " " + e, e);
+					ProvisionException.REPOSITORY_INVALID_LOCATION, "Unknown host: " + uri.uri + " " + e, e);
 		} catch (ConnectException e) {
 			return new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID, ProvisionException.REPOSITORY_FAILED_READ,
-					"Connect failed: " + uri + " " + e, e);
+					"Connect failed: " + uri.uri + " " + e, e);
 		} catch (IOException e) {
 			throw new Error(e);
 		}
@@ -315,63 +315,72 @@ public class MyTransport extends Transport {
 		return proxy != null && !nonProxyHosts.matcher(uri.getHost()).matches();
 	}
 
-	private CloseableHttpClient selectClient(boolean proxy) {
-		if (proxy)
-			return proxyClient;
-		else
-			return client;
+	private Entry<URI, AuthenticatedUri> findMavenMirror(URI prefix) {
+		return Uris.findLongestPrefix(mavenMirrors, prefix);
+
 	}
 
-	private Entry<URI, URI> findMirror(URI prefix) {
+	private Entry<URI, AuthenticatedUri> findServer(URI prefix) {
+		return Uris.findLongestPrefix(servers, prefix);
+	}
 
-		Entry<URI, URI> solution = null;
+	private AuthenticatedUri applyLocalMirror(URI uri) {
+		AuthenticatedUri r = new AuthenticatedUri();
 
-		for (Entry<URI, URI> e : mirrors.entrySet()) {
-			if (e.getKey().compareTo(prefix) > 0)
-				break;
-
-			if (Uris.isChild(e.getKey(), prefix))
-				solution = e;
+		Entry<URI, AuthenticatedUri> e = findMavenMirror(uri);
+		if (e != null) {
+			r.uri = Uris.reparent(uri, e.getKey(), e.getValue().uri);
+			r.username = e.getValue().username;
+			r.password = e.getValue().password;
+			return r;
 		}
 
-		return solution;
+		r.uri = uri;
+		e = findServer(uri);
+		if (e != null) {
+			r.username = e.getValue().username;
+			r.password = e.getValue().password;
+		}
+
+		return r;
 	}
 
-	private URI applyLocalMirror(URI uri) {
-		return applyLocalMirror(uri, uri);
-	}
-
-	private URI applyLocalMirror(URI uri, URI instead) {
-		Entry<URI, URI> mirror = findMirror(uri);
-		if (mirror != null)
-			return Uris.reparent(uri, mirror.getKey(), mirror.getValue());
-		else
-			return instead;
-	}
-
-	@Override
-	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
-		Set<URI> collect = mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
+	private URI p2unmirror(URI toDownload) {
+		Set<URI> collect = p2mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
 			if (Uris.isChild(p1.url, toDownload))
 				return Uris.reparent(toDownload, p1.url, p.base);
 			else
 				return null;
 		}).filter(p1 -> p1 != null)).collect(Collectors.toSet());
 
-		URI norm;
 		switch (collect.size()) {
 		case 0:
-			norm = toDownload;
-			break;
+			return toDownload;
 		case 1:
-			norm = collect.iterator().next();
-			break;
+			return collect.iterator().next();
 		default:
-			throw new Error("URI '" + toDownload + "' was de-mirrored to different URIs: " + collect);
+			throw new Error("URI '" + toDownload + "' was un-mirrored to different URIs: " + collect);
 		}
+	}
 
+	/**
+	 * Called by p2 for artifacts and possibly passes an URI from a p2 mirror as
+	 * {@code toDownload}.
+	 */
+	@Override
+	public IStatus download(URI toDownload, OutputStream target, IProgressMonitor monitor) {
+
+		URI norm = p2unmirror(toDownload);
 		Path p = toPath(norm);
-		IStatus result = mirror(applyLocalMirror(norm), p, monitor);
+
+		AuthenticatedUri auri;
+
+		if (findMavenMirror(norm) != null)
+			auri = applyLocalMirror(norm);
+		else
+			auri = applyLocalMirror(toDownload);
+
+		IStatus result = mirror(toDownload, auri, p, monitor);
 
 		if (result.isOK()) {
 			try (InputStream is = Files.newInputStream(p)) {
@@ -410,16 +419,19 @@ public class MyTransport extends Transport {
 		return path;
 	}
 
+	/**
+	 * Not used for artifacts, but only for mirror selection
+	 */
 	@Override
 	public InputStream stream(URI toDownload, IProgressMonitor monitor)
 			throws FileNotFoundException, CoreException, AuthenticationFailedException {
 
 		Path p = toPath(toDownload);
 
-		mirror(applyLocalMirror(toDownload), p, monitor);
+		mirror(toDownload, applyLocalMirror(toDownload), p, monitor);
 
 		boolean found = false;
-		for (RepoMirror r : mirrorFiles.values()) {
+		for (RepoMirror r : p2mirrorFiles.values()) {
 			// p2 creates this by string concatenation so we don't to test for a
 			// real prefix
 			if (toDownload.toString().startsWith(r.mirrorFile)) {
@@ -430,7 +442,7 @@ public class MyTransport extends Transport {
 		}
 
 		if (!found)
-			throw new Error("Not a recogized mirror: " + toDownload + " [mirrorFiles=" + mirrorFiles.values() + "]");
+			throw new Error("Not a recogized mirror: " + toDownload + " [mirrorFiles=" + p2mirrorFiles.values() + "]");
 
 		try {
 			return Files.newInputStream(p);
@@ -439,11 +451,85 @@ public class MyTransport extends Transport {
 		}
 	}
 
+	static boolean match(URI uri, AuthScope authScope) {
+		if (!authScope.getScheme().equalsIgnoreCase("BASIC"))
+			throw new IllegalArgumentException();
+		if (authScope.getHost().equals(AuthScope.ANY_HOST))
+			throw new IllegalArgumentException();
+		if (authScope.getPort() == AuthScope.ANY_PORT)
+			throw new IllegalArgumentException();
+
+		if (!Objects.equals(uri.getHost(), authScope.getHost()))
+			return false;
+
+		int port = uri.getPort();
+		if (port == -1) {
+			switch (uri.getScheme()) {
+			case "http":
+				port = 80;
+				break;
+			case "https":
+				port = 443;
+				break;
+			default:
+				throw new IllegalArgumentException();
+			}
+		}
+		if (port != authScope.getPort())
+			return false;
+
+		return true;
+	}
+
+	private AuthenticatedUri currentUri;
+
+	private Proxy currentProxy;
+
+	private Credentials getCredentials(AuthScope authScope) {
+		if (currentProxy != null) {
+			if (authScope.getHost().equals(currentProxy.host) && authScope.getPort() == currentProxy.port) {
+				if (currentProxy.username == null || currentProxy.password == null)
+					return null;
+				else
+					return new UsernamePasswordCredentials(currentProxy.username, currentProxy.password);
+			}
+		}
+
+		if (currentUri == null || currentUri.username == null || currentUri.password == null)
+			return null;
+
+		if (match(currentUri.uri, authScope)) {
+			return new UsernamePasswordCredentials(currentUri.username, currentUri.password);
+		}
+
+		return null;
+	}
+
+	CloseableHttpResponse execute(AuthenticatedUri uri, HttpUriRequest request)
+			throws ClientProtocolException, IOException {
+
+		currentUri = uri;
+		try {
+			CloseableHttpClient requestClient;
+			if (useProxy(uri.uri)) {
+				currentProxy = proxy;
+				requestClient = proxyClient;
+			} else {
+				currentProxy = null;
+				requestClient = client;
+			}
+			return requestClient.execute(request);
+		} finally {
+			currentUri = null;
+			currentProxy = null;
+		}
+	}
+
 	@Override
 	public long getLastModified(URI toDownload, IProgressMonitor monitor)
 			throws CoreException, FileNotFoundException, AuthenticationFailedException {
 
-		boolean isStats = mirrorFiles.values().stream()
+		boolean isStats = p2mirrorFiles.values().stream()
 				.anyMatch(p -> p.stats != null && toDownload.toString().startsWith(p.stats));
 
 		if (isStats) {
@@ -456,13 +542,13 @@ public class MyTransport extends Transport {
 			if (stats == StatsType.suppress)
 				throw new FileNotFoundException("Accessing statistics was suppressed: " + toDownload);
 
-			CloseableHttpClient httpClient = selectClient(useProxy(toDownload));
+			AuthenticatedUri uri = applyLocalMirror(toDownload);
 
 			try {
 
-				HttpHead get = new HttpHead(toDownload);
+				HttpHead get = new HttpHead(uri.uri);
 
-				try (CloseableHttpResponse response = httpClient.execute(get)) {
+				try (CloseableHttpResponse response = execute(uri, get)) {
 					switch (response.getStatusLine().getStatusCode()) {
 					case HttpStatus.SC_UNAUTHORIZED:
 						throw new AuthenticationFailedException();
@@ -490,7 +576,7 @@ public class MyTransport extends Transport {
 		}
 
 		Path p = toPath(toDownload);
-		IStatus status = mirror(applyLocalMirror(toDownload), p, monitor);
+		IStatus status = mirror(toDownload, applyLocalMirror(toDownload), p, monitor);
 
 		if (status.isOK()) {
 			try {
@@ -561,7 +647,7 @@ public class MyTransport extends Transport {
 		}
 	}
 
-	private Map<URI, RepoMirror> mirrorFiles = new HashMap<>();
+	private Map<URI, RepoMirror> p2mirrorFiles = new HashMap<>();
 
 	public void addRepositories(Collection<IArtifactRepository> repositories) {
 		LinkedList<IArtifactRepository> todo = new LinkedList<>(repositories);
@@ -588,7 +674,7 @@ public class MyTransport extends Transport {
 			if (base == null)
 				base = repo.getLocation();
 
-			mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));
+			p2mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));
 		}
 	}
 

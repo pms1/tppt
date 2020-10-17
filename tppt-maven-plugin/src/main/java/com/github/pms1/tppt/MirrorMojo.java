@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -14,7 +13,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import javax.xml.bind.JAXB;
 
@@ -41,8 +43,10 @@ import org.apache.maven.settings.Server;
 
 import com.github.pms1.tppt.mirror.MirrorSpec;
 import com.github.pms1.tppt.mirror.MirrorSpec.AlgorithmType;
+import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
+import com.github.pms1.tppt.mirror.Uris;
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 
@@ -135,81 +139,174 @@ public class MirrorMojo extends AbstractMojo {
 
 	private static final String cacheRelPath = ".cache/tppt/p2";
 
-	private URI findMirror(Repository r) {
-		for (org.apache.maven.settings.Mirror m : session.getSettings().getMirrors()) {
-			getLog().debug("Trying " + m + " for " + r);
-			String result = matchMirror(m, r);
-			if (result != null && !result.isEmpty()) {
-				if (!result.endsWith("/"))
-					result += "/";
+	private boolean findServers(URI u, Map<Server, Boolean> mirrors, List<AuthenticatedUri> dest) {
+		SortedMap<URI, Server> cand = new TreeMap<>();
 
-				try {
-					return new URI(m.getUrl());
-				} catch (URISyntaxException e) {
-					getLog().debug("Ignored " + m + " due to not an URI: " + e);
+		for (Server m : mirrors.keySet()) {
+
+			URI mirrorOf;
+			try {
+				mirrorOf = URI.create(m.getId());
+				if (!mirrorOf.isAbsolute())
 					continue;
-				}
+			} catch (IllegalArgumentException e) {
+				continue;
 			}
+
+			if (!Uris.isChild(mirrorOf, u))
+				continue;
+
+			Server old = cand.put(mirrorOf, m);
+			if (old != null)
+				throw new RuntimeException("Settings contain multiple servers for URI '" + u + "'");
 		}
 
-		return null;
+		Entry<URI, Server> entry = Uris.findLongestPrefix(cand, u);
+		if (entry == null)
+			return false;
+
+		mirrors.put(entry.getValue(), true);
+
+		AuthenticatedUri r = new AuthenticatedUri();
+		r.uri = URI.create(entry.getValue().getId());
+		add(entry.getValue(), r, " for URI '" + u + "'");
+
+		dest.add(r);
+
+		return true;
 	}
 
-	private Map<URI, URI> findMirrors() {
-		Map<URI, URI> x = new LinkedHashMap<>();
-		for (org.apache.maven.settings.Mirror m : session.getSettings().getMirrors()) {
-			if (!Objects.equals(m.getLayout(), "p2")) {
-				getLog().debug("Ignored " + m + " due to wrong layout");
-				continue;
-			}
-			if (!Objects.equals(m.getMirrorOfLayouts(), "p2")) {
-				getLog().debug("Ignored " + m + " due to wrong mirrorOfLayout");
-				continue;
-			}
+	private boolean findMirrors(URI u, Map<org.apache.maven.settings.Mirror, Boolean> mirrors, MirrorSpec ms) {
+		SortedMap<URI, org.apache.maven.settings.Mirror> cand = new TreeMap<>();
 
-			URI from;
+		for (org.apache.maven.settings.Mirror m : mirrors.keySet()) {
+			if (!Objects.equals(m.getLayout(), "p2") || !Objects.equals(m.getMirrorOfLayouts(), "p2"))
+				continue;
+
+			URI mirrorOf;
 			try {
-				from = new URI(m.getMirrorOf());
-			} catch (URISyntaxException e) {
-				getLog().debug("Ignored " + m + " due to not an URI: " + e);
+				mirrorOf = URI.create(m.getMirrorOf());
+				if (!mirrorOf.isAbsolute())
+					continue;
+			} catch (IllegalArgumentException e) {
 				continue;
 			}
 
-			if (!from.isAbsolute()) {
-				getLog().debug("Ignored " + m + " due to not an absolute URI: " + from);
+			if (!Uris.isChild(mirrorOf, u))
 				continue;
-			}
 
-			URI to;
-			try {
-				to = new URI(m.getUrl());
-			} catch (URISyntaxException e) {
-				getLog().debug("Ignored " + m + " due to not an URI: " + e);
-				continue;
-			}
-
-			x.put(from, to);
+			org.apache.maven.settings.Mirror old = cand.put(mirrorOf, m);
+			if (old != null)
+				throw new RuntimeException("Settings contain multiple mirrors for URI '" + u + "'");
 		}
-		return x;
+
+		Entry<URI, org.apache.maven.settings.Mirror> entry = Uris.findLongestPrefix(cand, u);
+		if (entry == null)
+			return false;
+
+		mirrors.put(entry.getValue(), true);
+		getLog().info("Using mirror '" + entry.getValue().getId() + "' for '" + u + "'");
+
+		AuthenticatedUri r = new AuthenticatedUri();
+		r.uri = URI.create(entry.getValue().getUrl());
+		auth(entry.getValue().getId(), r);
+		ms.mirrors.put(URI.create(entry.getValue().getMirrorOf()), r);
+
+		return true;
 	}
 
-	private String matchMirror(org.apache.maven.settings.Mirror m, Repository r) {
-		if (!Objects.equals(m.getLayout(), "p2")) {
-			getLog().debug("Ignored " + m + " due to wrong layout");
-			return null;
-		}
-		if (!Objects.equals(m.getMirrorOfLayouts(), "p2")) {
-			getLog().debug("Ignored " + m + " due to wrong mirrorOfLayout");
-			return null;
+	private boolean add(Server match, AuthenticatedUri r, String purpose) {
+		if (match == null)
+			return false;
+
+		if (match.getUsername() == null || match.getUsername().isEmpty()) {
+			getLog().warn("Ignoring server '" + match.getId() + "'" + purpose + " due to missing username");
+			return false;
 		}
 
-		if (Objects.equals(m.getMirrorOf(), r.id)) {
-			getLog().debug("Matched " + m + " on id");
-			return m.getUrl();
+		if (match.getPassword() == null || match.getPassword().isEmpty()) {
+			getLog().warn("Ignoring server '" + match.getId() + "'" + purpose + " due to missing password");
+			return false;
 		}
 
-		getLog().debug("No match " + m + "");
-		return null;
+		r.username = match.getUsername();
+		r.password = match.getPassword();
+
+		getLog().info("Using username/password from server '" + match.getId() + "'" + purpose);
+
+		return true;
+	}
+
+	private void auth(String id, AuthenticatedUri r) {
+		Server match = null;
+		for (Server s : session.getSettings().getServers()) {
+			if (Objects.equals(id, s.getId())) {
+				if (match != null)
+					throw new RuntimeException("Settings contain multiple server for id '" + id + "'");
+				match = s;
+			}
+		}
+
+		add(match, r, " for mirror '" + id + "'");
+	}
+
+	private boolean findServers(String id, URI uri, Map<Server, Boolean> mirrors, List<AuthenticatedUri> servers2) {
+
+		Server cand = null;
+
+		for (Server m : mirrors.keySet()) {
+			if (!Objects.equals(m.getId(), id))
+				continue;
+
+			if (cand != null)
+				throw new RuntimeException("Settings contain multiple servers for id '" + id + "'");
+
+			cand = m;
+		}
+
+		if (cand == null)
+			return false;
+
+		getLog().info("Using server '" + cand.getId() + "' for '" + id + "'");
+
+		AuthenticatedUri r = new AuthenticatedUri();
+		r.uri = uri;
+		add(cand, r, "");
+
+		servers2.add(r);
+
+		return true;
+	}
+
+	private boolean findMirrors(String id, URI uri, Map<org.apache.maven.settings.Mirror, Boolean> mirrors,
+			MirrorSpec ms) {
+
+		org.apache.maven.settings.Mirror cand = null;
+
+		for (org.apache.maven.settings.Mirror m : mirrors.keySet()) {
+			if (!Objects.equals(m.getLayout(), "p2") || !Objects.equals(m.getMirrorOfLayouts(), "p2"))
+				continue;
+
+			if (!Objects.equals(m.getId(), id))
+				continue;
+
+			if (cand != null)
+				throw new RuntimeException("Settings contain multiple mirrors for id '" + id + "'");
+
+			cand = m;
+		}
+
+		if (cand == null)
+			return false;
+
+		getLog().info("Using mirror '" + cand.getId() + "' for '" + id + "'");
+
+		AuthenticatedUri r = new AuthenticatedUri();
+		r.uri = URI.create(cand.getUrl());
+		auth(cand.getId(), r);
+		ms.mirrors.put(uri, r);
+
+		return true;
 	}
 
 	String toString(Repository r) {
@@ -217,13 +314,6 @@ public class MirrorMojo extends AbstractMojo {
 			return "'" + r.id + "'";
 		else
 			return "at '" + r.url + "'";
-	}
-
-	void findServers() {
-		for (Server s : session.getSettings().getServers()) {
-			System.err.println("SERVER " + s.getId() + " " + s.getConfiguration()
-					+ (s.getConfiguration() != null ? s.getConfiguration().getClass() : "<none>"));
-		}
 	}
 
 	@Override
@@ -235,44 +325,99 @@ public class MirrorMojo extends AbstractMojo {
 		try {
 			final Path repoOut = target.toPath().resolve("repository");
 
-			// findServers();
-
-			Map<URI, URI> uriMirrors = findMirrors();
-
 			for (Mirror m : mirrors) {
 				MirrorSpec ms = new MirrorSpec();
+
+				Map<Server, Boolean> servers = new HashMap<>();
+				session.getSettings().getServers().forEach(s1 -> servers.put(s1, false));
+				Map<org.apache.maven.settings.Mirror, Boolean> mirrors = new HashMap<>();
+				session.getSettings().getMirrors().forEach(m1 -> mirrors.put(m1, false));
 
 				ms.ius = m.ius.toArray(new String[m.ius.size()]);
 				if (m.excludeIus != null)
 					ms.excludeIus = m.excludeIus.toArray(new String[m.excludeIus.size()]);
 				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
+				ms.mirrors = new LinkedHashMap<>();
 
-				List<URI> repos = new ArrayList<>();
+				List<AuthenticatedUri> servers2 = new ArrayList<>();
+
+				List<URI> sourceRepositories = new ArrayList<>();
 				if (!m.sources.isEmpty()) {
 					getLog().warn(
 							"Obsolete parameter 'sources' used. Use 'source' instead. 'sources' will be removed in the future.");
-					repos.addAll(m.sources);
+					for (URI u : m.sources) {
+						sourceRepositories.add(u);
+						findMirrors(u, mirrors, ms);
+						findServers(u, servers, servers2);
+					}
 				}
-
-				ms.mirrors = new HashMap<>();
 
 				m.source.forEach(r -> {
 					if (r.url != null) {
-						repos.add(r.url);
+						sourceRepositories.add(r.url);
 
-						URI mirrorUri = findMirror(r);
-						if (mirrorUri != null) {
-							getLog().info("Using mirror '" + mirrorUri + "' for " + toString(r));
-							ms.mirrors.put(r.url, mirrorUri);
-						}
+						boolean found = false;
+
+						if (r.id != null && !r.id.isEmpty())
+							found = findMirrors(r.id, r.url, mirrors, ms);
+
+						if (!found)
+							found = findMirrors(r.url, mirrors, ms);
+
+						if (!found)
+							found = findServers(r.id, r.url, servers, servers2);
+
+						if (!found)
+							found = findServers(r.url, servers, servers2);
 					}
 				});
 
-				ms.mirrors.putAll(uriMirrors);
+				mirrors.forEach((m1, added) -> {
+					if (!Objects.equals(m1.getLayout(), "p2") || !Objects.equals(m1.getMirrorOfLayouts(), "p2"))
+						return;
+
+					URI mirrorOf;
+					try {
+						mirrorOf = URI.create(m1.getMirrorOf());
+						if (!mirrorOf.isAbsolute())
+							return;
+					} catch (IllegalArgumentException e) {
+						return;
+					}
+
+					getLog().info("Using mirror '" + m1.getId() + "' for transitive dependencies");
+
+					if (!added) {
+						AuthenticatedUri r = new AuthenticatedUri();
+						r.uri = URI.create(m1.getUrl());
+						auth(m1.getId(), r);
+						ms.mirrors.put(mirrorOf, r);
+					}
+				});
+
+				servers.forEach((m1, added) -> {
+
+					URI uri;
+					try {
+						uri = URI.create(m1.getId());
+						if (!uri.isAbsolute())
+							return;
+					} catch (IllegalArgumentException e) {
+						return;
+					}
+
+					AuthenticatedUri r = new AuthenticatedUri();
+					r.uri = uri;
+					add(m1, r, " for transitive dependencies");
+
+					if (!added)
+						servers2.add(r);
+				});
 
 				ms.proxy = findProxy();
 
-				ms.sourceRepositories = repos.toArray(new URI[repos.size()]);
+				ms.servers = servers2.toArray(new AuthenticatedUri[servers2.size()]);
+				ms.sourceRepositories = sourceRepositories.toArray(new URI[sourceRepositories.size()]);
 				ms.targetRepository = repoOut;
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
@@ -295,7 +440,9 @@ public class MirrorMojo extends AbstractMojo {
 				}
 			}
 
-		} catch (MojoExecutionException e) {
+		} catch (
+
+		MojoExecutionException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);

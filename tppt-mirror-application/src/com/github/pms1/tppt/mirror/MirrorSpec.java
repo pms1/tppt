@@ -30,6 +30,17 @@ public class MirrorSpec {
 
 	}
 
+	public static class AuthenticatedUri {
+		@XmlElement
+		public URI uri;
+
+		@XmlElement
+		public String username;
+
+		@XmlElement
+		public String password;
+	}
+
 	@XmlElement
 	@XmlJavaTypeAdapter(PathAdapter.class)
 	public Path mirrorRepository;
@@ -41,8 +52,11 @@ public class MirrorSpec {
 	@XmlElement(name = "sourceRepository")
 	public URI[] sourceRepositories;
 
+	@XmlElement(name = "server")
+	public AuthenticatedUri[] servers;
+
 	@XmlElement
-	public Map<URI, URI> mirrors;
+	public Map<URI, AuthenticatedUri> mirrors;
 
 	@XmlElement(name = "iu")
 	public String[] ius;
