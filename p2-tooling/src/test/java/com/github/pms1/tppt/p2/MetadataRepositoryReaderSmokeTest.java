@@ -26,7 +26,8 @@ public class MetadataRepositoryReaderSmokeTest {
 				"contentHostRequirementsGenerationMatch.xml", "contentNoProperties.xml", "contentNoTouchpoint.xml",
 				"contentMultiple.xml", "contentAttributeDescription.xml", "contentOrderReferenceNoUriUrl.xml",
 				"contentNoProvides.xml", "contentPropertiesNoSize.xml", "contentMetaRequirements.xml",
-				"contentUpdateMatch.xml", "contentUpdateDescription.xml", "contentInstructionImport.xml" };
+				"contentUpdateMatch.xml", "contentUpdateDescription.xml", "contentInstructionImport.xml",
+				"contentRequiredPropertiesDescription.xml" };
 	}
 
 	public MetadataRepositoryReaderSmokeTest(String contentXml) {
