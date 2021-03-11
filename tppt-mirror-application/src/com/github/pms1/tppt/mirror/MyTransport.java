@@ -428,7 +428,17 @@ public class MyTransport extends Transport {
 
 		Path p = toPath(toDownload);
 
-		mirror(toDownload, applyLocalMirror(toDownload), p, monitor);
+		IStatus status = mirror(toDownload, applyLocalMirror(toDownload), p, monitor);
+		if (!status.isOK()) {
+			switch (status.getCode()) {
+			case ProvisionException.ARTIFACT_NOT_FOUND:
+				throw new FileNotFoundException(status.getMessage());
+			case ProvisionException.REPOSITORY_FAILED_AUTHENTICATION:
+				throw new AuthenticationFailedException();
+			default:
+				throw new CoreException(status);
+			}
+		}
 
 		boolean found = false;
 		for (RepoMirror r : p2mirrorFiles.values()) {
