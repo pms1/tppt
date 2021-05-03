@@ -25,6 +25,8 @@ Import-Package: org.eclipse.equinox.internal.p2.artifact.processors.checksum,
  org.eclipse.equinox.p2.repository.artifact;version="2.3.0",
  org.eclipse.equinox.p2.repository.artifact.spi;version="2.0.0",
  org.eclipse.equinox.p2.repository.metadata;version="2.0.0",
- org.eclipse.equinox.spi.p2.publisher
+ org.eclipse.equinox.spi.p2.publisher,
+ javax.xml.bind,
+ javax.xml.bind.annotation
 Bundle-Activator: com.github.pms1.tppt.mirror.Activator
 Bundle-ActivationPolicy: lazy
