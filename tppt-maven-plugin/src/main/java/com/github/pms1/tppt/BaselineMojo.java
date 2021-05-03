@@ -54,9 +54,7 @@ public class BaselineMojo extends AbstractMojo {
 	private boolean useBaseline = false;
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-		// System.err.println("LIFE CYCLE " + dh + " USE-1");
-
-		if (deploymentTarget == null) {
+		if (deploymentTarget == null || deploymentTarget.uri == null) {
 			getLog().info("No baslineing as 'deploymentTarget' is not set");
 			return;
 		}
