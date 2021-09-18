@@ -285,7 +285,8 @@ public class MyTransport extends Transport {
 				case HttpStatus.SC_NOT_FOUND:
 					EntityUtils.consume(entity);
 					result = new DownloadStatus(IStatus.ERROR, Activator.PLUGIN_ID,
-							ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri.uri, null);
+							ProvisionException.ARTIFACT_NOT_FOUND, "not found: " + uri.uri,
+							new FileNotFoundException());
 					break;
 
 				case HttpStatus.SC_BAD_GATEWAY:
