@@ -45,6 +45,7 @@ import com.github.pms1.tppt.mirror.MirrorSpec;
 import com.github.pms1.tppt.mirror.MirrorSpec.AlgorithmType;
 import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
+import com.github.pms1.tppt.mirror.MirrorSpec.SourceRepository;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.mirror.Uris;
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
@@ -128,6 +129,9 @@ public class MirrorMojo extends AbstractMojo {
 		@Parameter
 		public String id;
 
+		@Parameter
+		public String updatePolicy;
+
 		@Parameter(required = true)
 		public URI url;
 
@@ -149,6 +153,7 @@ public class MirrorMojo extends AbstractMojo {
 				mirrorOf = URI.create(m.getId());
 				if (!mirrorOf.isAbsolute())
 					continue;
+				mirrorOf = Uris.normalizeDirectory(mirrorOf);
 			} catch (IllegalArgumentException e) {
 				continue;
 			}
@@ -168,7 +173,7 @@ public class MirrorMojo extends AbstractMojo {
 		mirrors.put(entry.getValue(), true);
 
 		AuthenticatedUri r = new AuthenticatedUri();
-		r.uri = URI.create(entry.getValue().getId());
+		r.uri = Uris.normalizeDirectory(URI.create(entry.getValue().getId()));
 		add(entry.getValue(), r, " for URI '" + u + "'");
 
 		dest.add(r);
@@ -188,6 +193,7 @@ public class MirrorMojo extends AbstractMojo {
 				mirrorOf = URI.create(m.getMirrorOf());
 				if (!mirrorOf.isAbsolute())
 					continue;
+				mirrorOf = Uris.normalizeDirectory(mirrorOf);
 			} catch (IllegalArgumentException e) {
 				continue;
 			}
@@ -208,9 +214,9 @@ public class MirrorMojo extends AbstractMojo {
 		getLog().info("Using mirror '" + entry.getValue().getId() + "' for '" + u + "'");
 
 		AuthenticatedUri r = new AuthenticatedUri();
-		r.uri = URI.create(entry.getValue().getUrl());
+		r.uri = Uris.normalizeDirectory(URI.create(entry.getValue().getUrl()));
 		auth(entry.getValue().getId(), r);
-		ms.mirrors.put(URI.create(entry.getValue().getMirrorOf()), r);
+		ms.mirrors.put(Uris.normalizeDirectory(URI.create(entry.getValue().getMirrorOf())), r);
 
 		return true;
 	}
@@ -251,6 +257,8 @@ public class MirrorMojo extends AbstractMojo {
 	}
 
 	private boolean findServers(String id, URI uri, Map<Server, Boolean> mirrors, List<AuthenticatedUri> servers2) {
+		if (!Uris.isDirectory(uri))
+			throw new IllegalArgumentException("Require directory URI: uri=" + uri);
 
 		Server cand = null;
 
@@ -278,8 +286,10 @@ public class MirrorMojo extends AbstractMojo {
 		return true;
 	}
 
-	private boolean findMirrors(String id, URI uri, Map<org.apache.maven.settings.Mirror, Boolean> mirrors,
+	private boolean findMirrors(String id, final URI uri, Map<org.apache.maven.settings.Mirror, Boolean> mirrors,
 			MirrorSpec ms) {
+		if (!Uris.isDirectory(uri))
+			throw new IllegalArgumentException("Require directory URI: uri=" + uri);
 
 		org.apache.maven.settings.Mirror cand = null;
 
@@ -302,14 +312,14 @@ public class MirrorMojo extends AbstractMojo {
 		getLog().info("Using mirror '" + cand.getId() + "' for '" + id + "'");
 
 		AuthenticatedUri r = new AuthenticatedUri();
-		r.uri = URI.create(cand.getUrl());
+		r.uri = Uris.normalizeDirectory(URI.create(cand.getUrl()));
 		auth(cand.getId(), r);
 		ms.mirrors.put(uri, r);
 
 		return true;
 	}
 
-	String toString(Repository r) {
+	private String toString(Repository r) {
 		if (r.id != null && !r.id.isEmpty())
 			return "'" + r.id + "'";
 		else
@@ -341,12 +351,15 @@ public class MirrorMojo extends AbstractMojo {
 
 				List<AuthenticatedUri> servers2 = new ArrayList<>();
 
-				List<URI> sourceRepositories = new ArrayList<>();
+				List<SourceRepository> sourceRepositories = new ArrayList<>();
 				if (!m.sources.isEmpty()) {
 					getLog().warn(
 							"Obsolete parameter 'sources' used. Use 'source' instead. 'sources' will be removed in the future.");
 					for (URI u : m.sources) {
-						sourceRepositories.add(u);
+						u = Uris.normalizeDirectory(u);
+						SourceRepository repo = new SourceRepository();
+						repo.uri = u;
+						sourceRepositories.add(repo);
 						findMirrors(u, mirrors, ms);
 						findServers(u, servers, servers2);
 					}
@@ -354,21 +367,25 @@ public class MirrorMojo extends AbstractMojo {
 
 				m.source.forEach(r -> {
 					if (r.url != null) {
-						sourceRepositories.add(r.url);
+						URI u = Uris.normalizeDirectory(r.url);
+						SourceRepository repo = new SourceRepository();
+						repo.uri = u;
+						repo.updatePolicy = r.updatePolicy;
+						sourceRepositories.add(repo);
 
 						boolean found = false;
 
 						if (r.id != null && !r.id.isEmpty())
-							found = findMirrors(r.id, r.url, mirrors, ms);
+							found = findMirrors(r.id, u, mirrors, ms);
 
 						if (!found)
-							found = findMirrors(r.url, mirrors, ms);
+							found = findMirrors(u, mirrors, ms);
 
 						if (!found)
-							found = findServers(r.id, r.url, servers, servers2);
+							found = findServers(r.id, u, servers, servers2);
 
 						if (!found)
-							found = findServers(r.url, servers, servers2);
+							found = findServers(u, servers, servers2);
 					}
 				});
 
@@ -381,6 +398,7 @@ public class MirrorMojo extends AbstractMojo {
 						mirrorOf = URI.create(m1.getMirrorOf());
 						if (!mirrorOf.isAbsolute())
 							return;
+						mirrorOf = Uris.normalizeDirectory(mirrorOf);
 					} catch (IllegalArgumentException e) {
 						return;
 					}
@@ -389,7 +407,7 @@ public class MirrorMojo extends AbstractMojo {
 
 					if (!added) {
 						AuthenticatedUri r = new AuthenticatedUri();
-						r.uri = URI.create(m1.getUrl());
+						r.uri = Uris.normalizeDirectory(URI.create(m1.getUrl()));
 						auth(m1.getId(), r);
 						ms.mirrors.put(mirrorOf, r);
 					}
@@ -402,6 +420,7 @@ public class MirrorMojo extends AbstractMojo {
 						uri = URI.create(m1.getId());
 						if (!uri.isAbsolute())
 							return;
+						uri = Uris.normalizeDirectory(uri);
 					} catch (IllegalArgumentException e) {
 						return;
 					}
@@ -417,12 +436,15 @@ public class MirrorMojo extends AbstractMojo {
 				ms.proxy = findProxy();
 
 				ms.servers = servers2.toArray(new AuthenticatedUri[servers2.size()]);
-				ms.sourceRepositories = sourceRepositories.toArray(new URI[sourceRepositories.size()]);
+				ms.sourceRepositories = sourceRepositories.toArray(new SourceRepository[sourceRepositories.size()]);
 				ms.targetRepository = repoOut;
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
 				ms.filters = m.filters;
 				ms.algorithm = m.algorithm;
+
+				if (getLog().isDebugEnabled())
+					JAXB.marshal(ms, System.err);
 
 				byte[] bytes;
 				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -440,9 +462,7 @@ public class MirrorMojo extends AbstractMojo {
 				}
 			}
 
-		} catch (
-
-		MojoExecutionException e) {
+		} catch (MojoExecutionException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new MojoExecutionException("mojo failed: " + e.getMessage(), e);
@@ -501,8 +521,8 @@ public class MirrorMojo extends AbstractMojo {
 
 	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
-			Artifact platform = resolveDependency(session,
-					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "1.2.0", "zip"));
+			Artifact platform = resolveDependency(session, repositorySystem.createArtifact("org.eclipse.tycho",
+					"tycho-bundles-external", CreateFeaturesMojo.TYCHO_BUNDLES_EXTERNAL_VERSION, "zip"));
 
 			Artifact extra = resolveDependency(session, repositorySystem.createArtifact("com.github.pms1.tppt",
 					"tppt-mirror-application", mojoExecution.getVersion(), "jar"));

@@ -367,10 +367,12 @@ public class CreateFeaturesMojo extends AbstractMojo {
 
 	EquinoxRunner runner;
 
+	public static final String TYCHO_BUNDLES_EXTERNAL_VERSION = "1.7.0";
+
 	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
-			Artifact platform = resolveDependency(session,
-					repositorySystem.createArtifact("org.eclipse.tycho", "tycho-bundles-external", "1.2.0", "zip"));
+			Artifact platform = resolveDependency(session, repositorySystem.createArtifact("org.eclipse.tycho",
+					"tycho-bundles-external", TYCHO_BUNDLES_EXTERNAL_VERSION, "zip"));
 
 			Path p = installer.addRuntimeArtifact(session, platform);
 			runner = runnerFactory.newBuilder().withInstallation(p).build();
