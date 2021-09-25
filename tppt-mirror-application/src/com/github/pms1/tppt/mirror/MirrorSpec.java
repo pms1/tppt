@@ -41,6 +41,14 @@ public class MirrorSpec {
 		public String password;
 	}
 
+	public static class SourceRepository {
+		@XmlElement
+		public URI uri;
+
+		@XmlElement
+		public String updatePolicy;
+	}
+
 	@XmlElement
 	@XmlJavaTypeAdapter(PathAdapter.class)
 	public Path mirrorRepository;
@@ -50,7 +58,7 @@ public class MirrorSpec {
 	public Path targetRepository;
 
 	@XmlElement(name = "sourceRepository")
-	public URI[] sourceRepositories;
+	public SourceRepository[] sourceRepositories;
 
 	@XmlElement(name = "server")
 	public AuthenticatedUri[] servers;

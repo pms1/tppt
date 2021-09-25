@@ -80,6 +80,8 @@ import org.eclipse.equinox.spi.p2.publisher.PublisherHelper;
 import org.osgi.framework.ServiceReference;
 
 import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
+import com.github.pms1.tppt.mirror.MirrorSpec.SourceRepository;
+import com.github.pms1.tppt.mirror.MyTransport.ServerParameters;
 
 @SuppressWarnings("restriction")
 public class MirrorApplication implements IApplication {
@@ -137,11 +139,17 @@ public class MirrorApplication implements IApplication {
 				if (debug) {
 					System.out.println("MirrorApplication.mirrorRepository               = " + ms.mirrorRepository);
 
-					for (URI uri : ms.sourceRepositories)
-						System.out.println("MirrorApplication.sourceRepository               = " + uri);
-
 					int idx = 0;
-					if (ms.servers != null)
+					for (SourceRepository repo : ms.sourceRepositories) {
+						System.out.println(
+								"MirrorApplication.sourceRepository[" + idx + "].uri            = " + repo.uri);
+						System.out.println("MirrorApplication.sourceRepository[" + idx + "].updatePolicy   = "
+								+ repo.updatePolicy);
+						++idx;
+					}
+
+					if (ms.servers != null) {
+						idx = 0;
 						for (AuthenticatedUri u : ms.servers) {
 							System.out.println("MirrorApplication.server[" + idx + "].uri                  = " + u.uri);
 							System.out.println(
@@ -150,6 +158,7 @@ public class MirrorApplication implements IApplication {
 									"MirrorApplication.server[" + idx + "].password             = " + u.password);
 							++idx;
 						}
+					}
 					System.out.println("MirrorApplication.targetRepository               = " + ms.targetRepository);
 					System.out.println("MirrorApplication.installableUnit                = " + Arrays.toString(ms.ius));
 					System.out.println("MirrorApplication.offline                        = " + ms.offline);
@@ -232,8 +241,25 @@ public class MirrorApplication implements IApplication {
 				IProvisioningAgent ourAgent;
 				ourAgent = getAgent();
 
+				TreeMap<URI, ServerParameters> serverParameters = new TreeMap<>();
+				for (SourceRepository repo : ms.sourceRepositories) {
+					UpdatePolicy updatePolicy;
+					if (repo.updatePolicy == null) {
+						updatePolicy = UpdatePolicy.NEVER;
+					} else if (repo.updatePolicy.equals("never")) {
+						updatePolicy = UpdatePolicy.NEVER;
+					} else if (repo.updatePolicy.equals("always")) {
+						updatePolicy = UpdatePolicy.ALWAYS;
+					} else {
+						throw new RuntimeException("Invalid updatePolicy: " + repo.updatePolicy);
+					}
+
+					ServerParameters parameters = new ServerParameters(updatePolicy);
+					serverParameters.put(repo.uri, parameters);
+				}
+
 				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.servers,
-						ms.mirrors, ms.proxy);
+						ms.mirrors, ms.proxy, serverParameters);
 				ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
 				CompositeArtifactRepository sourceArtifactRepo = CompositeArtifactRepository
@@ -241,14 +267,14 @@ public class MirrorApplication implements IApplication {
 				if (ms.sourceRepositories == null)
 					throw new IllegalArgumentException("No <sourceRepository> defined");
 
-				for (URI sr : ms.sourceRepositories)
-					sourceArtifactRepo.addChild(sr);
+				for (SourceRepository sr : ms.sourceRepositories)
+					sourceArtifactRepo.addChild(sr.uri);
 				transport.addRepositories(sourceArtifactRepo.getLoadedChildren());
 
 				CompositeMetadataRepository sourceMetadataRepo = CompositeMetadataRepository
 						.createMemoryComposite(ourAgent);
-				for (URI sr : ms.sourceRepositories)
-					sourceMetadataRepo.addChild(sr);
+				for (SourceRepository sr : ms.sourceRepositories)
+					sourceMetadataRepo.addChild(sr.uri);
 
 				Set<IInstallableUnit> root = new HashSet<>();
 				for (String iu : ms.ius) {
