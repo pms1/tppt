@@ -42,7 +42,7 @@ This project was created when I wanted to use [Jersey](https://jersey.github.io/
 
 ## Usage
 
-To create a P2 repository from a Maven artifact that is already an OSGi bundle is as simple as:
+To create a p2 repository from a Maven artifact that is already an OSGi bundle is as simple as:
 
 ```xml
  	<groupId>com.github.pms1.tppt</groupId>
@@ -90,13 +90,12 @@ The `tppt:deploy` goal can be used to deploy the create p2 repository to an exte
 * Filesystem
 * HTTP(S) server with WebDAV support (version 0.4.0 or above)
 
-The target must be specified in the form `<serverId>::<uri>` either as `deploymentTarget` in the `configuration` section of the `pom.xml` or as a command line property `tppt.deploymentTarget`. For `file` URIs the server id is ignored, for `http` or `https` it is used to lookup authentication credentials in the maven settings.
+The target must be specified in the form `<serverId>::<uri>` either as `deploymentTarget` in the `configuration` section of the `pom.xml` or as a command line property `tppt.deploymentTarget`.
+For `file` URIs the server id is ignored, for `http` or `https` it is used to lookup authentication credentials in the maven settings.
 
 For HTTP(S) the following restrictions apply:
 
 * Only HTTP basic auth with preemptive authentication is supported
 * Different WebDAV servers behave very different in a lot of details. It was only tested with artifactory and Apache HTTPD with mod_dav. As these 2 already are different in 3 details, it is not expected that other servers will work out of the box.
 
-At the root of the deployment target a P2 composite repository is created that contains a list of all repositories deployed by tppt. This is used to (significantly for HTTP) speed up finding baseline repositories.
-  
-   
+At the root of the deployment target a p2 composite repository is created that contains a list of all repositories deployed by tppt. This is used to (significantly for HTTP) speed up finding baseline repositories.
