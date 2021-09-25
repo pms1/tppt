@@ -79,6 +79,17 @@ public class MyTransport extends Transport {
 
 	private final TreeMap<URI, AuthenticatedUri> mavenMirrors = new TreeMap<>();
 
+	private final TreeMap<URI, ServerParameters> serverParameters;
+
+	static class ServerParameters {
+
+		final UpdatePolicy updatePolicy;
+
+		ServerParameters(UpdatePolicy updatePolicy) {
+			this.updatePolicy = updatePolicy;
+		}
+	}
+
 	// see p2's OfflineTransport
 	private static final Status OFFLINE_STATUS = new Status(IStatus.ERROR, Activator.PLUGIN_ID, "offline");
 
@@ -89,12 +100,14 @@ public class MyTransport extends Transport {
 	private final CloseableHttpClient client, proxyClient;
 
 	public MyTransport(Path root, OfflineType offline, StatsType stats, AuthenticatedUri[] servers,
-			Map<URI, AuthenticatedUri> mavenMirrors, Proxy proxy) {
+			Map<URI, AuthenticatedUri> mavenMirrors, Proxy proxy, TreeMap<URI, ServerParameters> serverParameters) {
 		Objects.requireNonNull(root);
 		this.root = root;
 		this.offline = offline;
 		this.stats = stats;
 		this.proxy = proxy;
+		this.serverParameters = serverParameters;
+
 		if (servers != null)
 			for (AuthenticatedUri server : servers)
 				this.servers.put(server.uri, server);
@@ -149,6 +162,8 @@ public class MyTransport extends Transport {
 
 	private Path last;
 
+	private static final ServerParameters defaultServerParameters = new ServerParameters(UpdatePolicy.ALWAYS);
+
 	private CloseableHttpClient buildClient(Proxy proxy) {
 		HttpClientBuilder builder = HttpClientBuilder.create();
 
@@ -187,6 +202,15 @@ public class MyTransport extends Transport {
 
 		IStatus result;
 
+		ServerParameters serverParameters;
+		{
+			Entry<URI, ServerParameters> findLongestPrefix = Uris.findLongestPrefix(this.serverParameters, originalUri);
+			if (findLongestPrefix == null)
+				serverParameters = defaultServerParameters;
+			else
+				serverParameters = findLongestPrefix.getValue();
+		}
+
 		try {
 			boolean useProxy = useProxy(uri.uri);
 
@@ -203,7 +227,6 @@ public class MyTransport extends Transport {
 				last = path;
 				return Status.OK_STATUS;
 			} catch (NoSuchFileException e) {
-
 			}
 
 			if (offline == OfflineType.offline)
@@ -318,7 +341,6 @@ public class MyTransport extends Transport {
 
 	private Entry<URI, AuthenticatedUri> findMavenMirror(URI prefix) {
 		return Uris.findLongestPrefix(mavenMirrors, prefix);
-
 	}
 
 	private Entry<URI, AuthenticatedUri> findServer(URI prefix) {
@@ -347,12 +369,14 @@ public class MyTransport extends Transport {
 	}
 
 	private URI p2unmirror(URI toDownload) {
-		Set<URI> collect = p2mirrorFiles.values().stream().flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
-			if (Uris.isChild(p1.url, toDownload))
-				return Uris.reparent(toDownload, p1.url, p.base);
-			else
-				return null;
-		}).filter(p1 -> p1 != null)).collect(Collectors.toSet());
+		Set<URI> collect = p2mirrorFiles.values().stream() //
+				.flatMap(p -> Arrays.stream(p.mirrors).map(p1 -> {
+					if (Uris.isChild(p1.url, toDownload))
+						return Uris.reparent(toDownload, p1.url, p.base);
+					else
+						return null;
+				}).filter(Objects::nonNull)) //
+				.collect(Collectors.toSet());
 
 		switch (collect.size()) {
 		case 0:
@@ -449,6 +473,8 @@ public class MyTransport extends Transport {
 				found = true;
 
 				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;
+				for (Mirror m : r.mirrors)
+					m.url = Uris.normalizeDirectory(m.url);
 			}
 		}
 
@@ -685,7 +711,7 @@ public class MyTransport extends Transport {
 			if (base == null)
 				base = repo.getLocation();
 
-			p2mirrorFiles.put(repo.getLocation(), new RepoMirror(base, mirror, stats));
+			p2mirrorFiles.put(repo.getLocation(), new RepoMirror(Uris.normalizeDirectory(base), mirror, stats));
 		}
 	}
 
