@@ -130,35 +130,37 @@ public class EquinoxRunner {
 			p.put("osgi.configuration.cascaded", "false");
 			p.put("osgi.install.area", toUri(temp));
 			p.put("osgi.bundles.defaultStartLevel", "4");
-			p.put("osgi.bundles", plugins.stream().map(p1 -> {
+			p.put("osgi.bundles", plugins.stream() //
+					.sorted(Comparator.comparing(p1 -> p1.id)) //
+					.map(p1 -> {
 
-				Integer level;
+						Integer level;
 
-				switch (p1.id) {
-				case "org.eclipse.equinox.common":
-					level = 2;
-					break;
-				case "org.eclipse.core.runtime":
-					level = 4;
-					break;
-				case "org.eclipse.equinox.simpleconfigurator":
-					level = 1;
-					break;
-				case "org.eclipse.update.configurator":
-					level = 3;
-					break;
-				case "org.eclipse.osgi":
-					level = -1;
-					break;
-				case "org.eclipse.equinox.ds":
-					level = 1;
-					break;
-				default:
-					level = null;
-					break;
-				}
-				return "reference:" + toUri(p1.p) + (level != null ? "@" + level + ":start" : "");
-			}).collect(Collectors.joining(",")));
+						switch (p1.id) {
+						case "org.eclipse.equinox.common":
+							level = 2;
+							break;
+						case "org.eclipse.core.runtime":
+							level = 4;
+							break;
+						case "org.eclipse.equinox.simpleconfigurator":
+							level = 1;
+							break;
+						case "org.eclipse.update.configurator":
+							level = 3;
+							break;
+						case "org.eclipse.osgi":
+							level = -1;
+							break;
+						case "org.eclipse.equinox.ds":
+							level = 1;
+							break;
+						default:
+							level = null;
+							break;
+						}
+						return "reference:" + toUri(p1.p) + (level != null ? "@" + level + ":start" : "");
+					}).collect(Collectors.joining(",")));
 			p.put("osgi.framework", toUri(getPlugin(plugins, "org.eclipse.osgi").p));
 			Path configIni = configuration.resolve("config.ini");
 			try (OutputStream out = Files.newOutputStream(configIni)) {
