@@ -473,6 +473,8 @@ public class MyTransport extends Transport {
 				found = true;
 
 				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;
+				if (r.mirrors == null)
+					r.mirrors = new Mirror[0];
 				for (Mirror m : r.mirrors)
 					m.url = Uris.normalizeDirectory(m.url);
 			}
