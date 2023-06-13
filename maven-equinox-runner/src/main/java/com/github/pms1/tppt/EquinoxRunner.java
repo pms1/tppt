@@ -105,13 +105,16 @@ public class EquinoxRunner {
 	}
 
 	private final Set<Plugin> plugins;
+	private final List<String> javaOptions;
 
-	EquinoxRunner(Logger logger, Set<Plugin> plugins) {
+	EquinoxRunner(Logger logger, List<String> javaOptions, Set<Plugin> plugins) {
 		Preconditions.checkNotNull(logger);
 		this.logger = logger;
 		Preconditions.checkNotNull(plugins);
 		Preconditions.checkArgument(!plugins.isEmpty());
 		this.plugins = plugins;
+		Preconditions.checkNotNull(javaOptions);
+		this.javaOptions = javaOptions;
 	}
 
 	public int run(String... args) throws IOException, InterruptedException {
@@ -169,6 +172,7 @@ public class EquinoxRunner {
 
 			List<String> command = new ArrayList<>();
 			command.add(Paths.get(System.getProperty("java.home")).resolve("bin/java").toString());
+			command.addAll(javaOptions);
 			command.add("-jar");
 			command.add(getPlugin(plugins, "org.eclipse.equinox.launcher").p.toString());
 			command.add("-configuration");

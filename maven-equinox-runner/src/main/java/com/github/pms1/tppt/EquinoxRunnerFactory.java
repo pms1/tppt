@@ -3,7 +3,9 @@ package com.github.pms1.tppt;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.codehaus.plexus.component.annotations.Component;
@@ -23,6 +25,7 @@ public class EquinoxRunnerFactory {
 
 		private Set<Path> installations = new HashSet<>();
 		private Set<Plugin> bundles = new HashSet<>();
+		private List<String> javaOptions = new ArrayList<>();
 
 		@Override
 		public EquinoxRunnerBuilder withInstallation(Path path) {
@@ -49,7 +52,7 @@ public class EquinoxRunnerFactory {
 
 			plugins.addAll(bundles);
 
-			return new EquinoxRunner(logger, plugins);
+			return new EquinoxRunner(logger, javaOptions, plugins);
 		}
 
 		@Override
@@ -64,6 +67,15 @@ public class EquinoxRunnerFactory {
 			if (bundle == null)
 				throw new IllegalArgumentException("Not an OSGi bundle: " + path);
 			bundles.add(bundle);
+			return this;
+		}
+
+		@Override
+		public EquinoxRunnerBuilder withJavaProperty(String key, String value) {
+			// we should probably quote them instead of refusing
+			if (key.contains("!") || key.contains("="))
+				throw new IllegalArgumentException();
+			javaOptions.add("-D" + key + "=" + value);
 			return this;
 		}
 

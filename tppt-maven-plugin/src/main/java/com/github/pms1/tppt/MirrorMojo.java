@@ -528,7 +528,19 @@ public class MirrorMojo extends AbstractMojo {
 					"tppt-mirror-application", mojoExecution.getVersion(), "jar"));
 
 			Path p = installer.addRuntimeArtifact(session, platform);
-			runner = runnerFactory.newBuilder().withInstallation(p).withPlugin(extra.getFile().toPath()).build();
+
+			EquinoxRunnerBuilder builder = runnerFactory.newBuilder().withInstallation(p)
+					.withPlugin(extra.getFile().toPath());
+
+			for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+				String key = (String) entry.getKey();
+				if (key.startsWith("eclipse.p2.")) {
+					String value = (String) entry.getValue();
+					builder = builder.withJavaProperty(key, value);
+				}
+			}
+
+			runner = builder.build();
 		}
 		return runner;
 	}
