@@ -6,6 +6,7 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.eclipse.osgi.util.ManifestElement;
@@ -61,6 +62,16 @@ public abstract class AbstractManifestHeaderComparator implements BundleHeaderCo
 				throw new UnparseableManifestException(id, "Duplicate attribute " + key + " " + e);
 		}
 		return result;
+	}
+
+	protected boolean compare(FileId id1, ManifestElement e1, FileId id2, ManifestElement e2) {
+		if (!Objects.equals(e1.getValue(), e2.getValue()))
+			return false;
+		if (!Objects.equals(attributes(id1, e1), attributes(id2, e2)))
+			return false;
+		if (!Objects.equals(directives(id1, e1), directives(id2, e2)))
+			return false;
+		return true;
 	}
 
 	protected abstract boolean compare(FileId file1, FileId file2, ManifestElement[] headers1,

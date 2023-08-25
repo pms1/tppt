@@ -1,6 +1,8 @@
 package com.github.pms1.tppt.p2;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -10,41 +12,63 @@ import org.codehaus.plexus.component.annotations.Component;
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.Version;
 
-import com.github.pms1.tppt.p2.BundleManifestComparator.UnparseableManifestException;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
 @Component(role = BundleHeaderComparator.class, hint = BundleExportPackageBundleHeaderComparator.HINT)
 public class BundleExportPackageBundleHeaderComparator extends AbstractManifestHeaderComparator {
 	public final static String HINT = "Export-Package";
 
+	Multimap<String, ManifestElement> toMultimap(ManifestElement[] headers) {
+		Multimap<String, ManifestElement> result = HashMultimap.create();
+		for (ManifestElement element : headers)
+			result.put(element.getValue(), element);
+		return result;
+	}
+
 	@Override
 	public boolean compare(FileId file1, FileId file2, ManifestElement[] headers1, ManifestElement[] headers2,
 			Consumer<FileDelta> dest) {
 
-		Map<String, ManifestElement> package1 = new HashMap<>();
-		for (ManifestElement e : headers1) {
-			ManifestElement old = package1.put(e.getValue(), e);
-			if (old != null)
-				throw new UnparseableManifestException(file1, "Duplicate Export-Package " + e.getValue());
-		}
-
-		Map<String, ManifestElement> package2 = new HashMap<>();
-		for (ManifestElement e : headers2) {
-			ManifestElement old = package2.put(e.getValue(), e);
-			if (old != null)
-				throw new UnparseableManifestException(file2, "Duplicate Export-Package " + e.getValue());
-		}
+		Multimap<String, ManifestElement> package1 = toMultimap(headers1);
+		Multimap<String, ManifestElement> package2 = toMultimap(headers2);
 
 		for (String p : Sets.union(package1.keySet(), package2.keySet())) {
-			ManifestElement e1 = package1.get(p);
-			ManifestElement e2 = package2.get(p);
-			if (e1 == null) {
+
+			Collection<ManifestElement> entries1 = new ArrayList<>(package1.get(p));
+			Collection<ManifestElement> entries2 = new ArrayList<>(package2.get(p));
+
+			// remove common entries
+			for (Iterator<ManifestElement> i1 = entries1.iterator(); i1.hasNext();) {
+				ManifestElement e1 = i1.next();
+				boolean remove = false;
+				for (Iterator<ManifestElement> i2 = entries2.iterator(); i2.hasNext();) {
+					ManifestElement e2 = i2.next();
+					if (compare(file1, e1, file2, e2)) {
+						i2.remove();
+						remove = true;
+					}
+				}
+				if (remove)
+					i1.remove();
+			}
+
+			if (entries2.size() > entries1.size()) {
 				dest.accept(new ManifestExportPackageAddedDelta(file1, file2, p));
 				continue;
-			} else if (e2 == null) {
+			} else if (entries2.size() < entries1.size()) {
 				dest.accept(new ManifestExportPackageRemovedDelta(file1, file2, p));
 				continue;
+			} else if (entries1.isEmpty()) {
+				continue;
+			} else if (entries1.size() != 1) {
+				return false;
 			}
+
+			ManifestElement e1 = Iterables.getOnlyElement(entries1);
+			ManifestElement e2 = Iterables.getOnlyElement(entries2);
 
 			if (!Objects.equals(directives(file1, e1), directives(file2, e2)))
 				return false;
