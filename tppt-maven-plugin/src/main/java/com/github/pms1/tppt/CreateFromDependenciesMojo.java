@@ -118,7 +118,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	}
 
 	enum RepositoryDependenciesBehaviour {
-		failure, ignore;
+		failure, ignore, include;
 	}
 
 	@Parameter(defaultValue = "failure")
@@ -268,6 +268,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			Set<Artifact> artifacts = new HashSet<>();
 
+			Set<Artifact> repoArtifacts = new HashSet<>();
+
 			n.accept(new DependencyNodeVisitor() {
 				@Override
 				public boolean visit(DependencyNode node) {
@@ -278,6 +280,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 							throw new WrappedMojoExecutionException(
 									new MojoExecutionException("Repository dependency to " + reactorDependency));
 						case ignore:
+							return false;
+						case include:
+							repoArtifacts.add(reactorDependency);
 							return false;
 						default:
 							throw new UnsupportedOperationException();
@@ -348,8 +353,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			}
 
 			int exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", "-source",
-					repoDependencies.toString(), //
+					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
+					"-source", repoDependencies.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-publishArtifacts", //
@@ -357,7 +362,23 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					"-metadataRepositoryName", project.getName(), //
 					"-artifactRepositoryName", project.getName());
 			if (exitCode != 0)
-				throw new MojoExecutionException("fab failed: exitCode=" + exitCode);
+				throw new MojoExecutionException("Running p2 failed: exitCode=" + exitCode);
+
+			for (Artifact r : repoArtifacts) {
+				exitCode = createRunner().run("-application",
+						"org.eclipse.equinox.p2.metadata.repository.mirrorApplication", //
+						"-source", "jar:" + r.getFile().toURI() + "!/", "-destination",
+						repoOut.toUri().toURL().toExternalForm());
+				if (exitCode != 0)
+					throw new MojoExecutionException("Running p2 failed: exitCode=" + exitCode);
+
+				exitCode = createRunner().run("-application",
+						"org.eclipse.equinox.p2.artifact.repository.mirrorApplication", //
+						"-source", "jar:" + r.getFile().toURI() + "!/", "-destination",
+						repoOut.toUri().toURL().toExternalForm());
+				if (exitCode != 0)
+					throw new MojoExecutionException("Running p2 failed: exitCode=" + exitCode);
+			}
 
 			Files.write(repoOut.resolve("p2.index"),
 					"version = 1\rmetadata.repository.factory.order = content.xml,\\!\rartifact.repository.factory.order = artifacts.xml,\\!\r"
