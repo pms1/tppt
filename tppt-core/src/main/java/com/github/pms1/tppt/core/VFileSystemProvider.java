@@ -255,7 +255,7 @@ public class VFileSystemProvider extends FileSystemProvider {
 			public void close() throws IOException {
 				super.close();
 
-				fs.sadine.put(url(vpath, false).toURL().toString(), toByteArray());
+				fs.sadine.put(url(vpath, false).toURL().toString(), toByteArray(), "application/octet-stream");
 			};
 
 		};
