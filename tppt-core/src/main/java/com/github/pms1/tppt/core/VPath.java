@@ -217,7 +217,7 @@ class VPath implements Path {
 	@Override
 	public String toString() {
 		if (absolute)
-			return "[" + fs.root + "," + String.join("/", elements);
+			return "[" + fs.root + "," + String.join("/", elements) + "]";
 		else
 			return String.join("/", elements);
 	}
