@@ -30,6 +30,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
+import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
@@ -68,6 +69,9 @@ public class DeploymentHelper implements Initializable, Disposable, Startable {
 
 	@Requirement
 	private MavenSession session;
+
+	@Requirement
+	private Logger logger;
 
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
 		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
@@ -303,6 +307,7 @@ public class DeploymentHelper implements Initializable, Disposable, Startable {
 			Path p1 = sourcePath.resolve(p);
 			Path p2 = targetPath.resolve(p);
 
+			logger.info("deploying/createDirectories " + p2.getParent());
 			Files.createDirectories(p2.getParent());
 
 			if (sourceFiles.contains(p) && targetFiles.contains(p)) {
@@ -310,13 +315,16 @@ public class DeploymentHelper implements Initializable, Disposable, Startable {
 				ByteSource bs2 = new PathByteSource(p2);
 
 				if (!bs1.contentEquals(bs2)) {
+					logger.info("deploying/replace " + p1 + " -> " + p2);
 					Files.copy(p1, p2, StandardCopyOption.REPLACE_EXISTING); // StandardCopyOption.COPY_ATTRIBUTES
 				} else {
 					// System.out.println("UNMODIFIED " + p);
 				}
 			} else if (sourceFiles.contains(p)) {
+				logger.info("deploying/new " + p1 + " -> " + p2);
 				Files.copy(p1, p2); // , StandardCopyOption.COPY_ATTRIBUTES
 			} else {
+				logger.info("deploying/delete " + p1 + " -> " + p2);
 				Files.delete(p2);
 				toRemove.add(p2.getParent());
 			}
@@ -324,6 +332,7 @@ public class DeploymentHelper implements Initializable, Disposable, Startable {
 
 		for (Path p : toRemove.descendingSet()) {
 			try {
+				logger.info("deploying/delete " + p);
 				Files.delete(p);
 			} catch (DirectoryNotEmptyException e) {
 				// that's ok
