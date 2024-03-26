@@ -24,8 +24,6 @@ import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.JAXB;
-
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
@@ -62,7 +60,6 @@ import com.github.pms1.tppt.mirror.MirrorSpec.AuthenticatedUri;
 import com.github.pms1.tppt.mirror.MirrorSpec.OfflineType;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.mirror.jaxb.Mirror;
-import com.github.pms1.tppt.mirror.jaxb.Mirrors;
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
 
 @SuppressWarnings("restriction")
@@ -471,12 +468,7 @@ public class MyTransport extends Transport {
 			// real prefix
 			if (toDownload.toString().startsWith(r.mirrorFile)) {
 				found = true;
-
-				r.mirrors = JAXB.unmarshal(p.toFile(), Mirrors.class).mirror;
-				if (r.mirrors == null)
-					r.mirrors = new Mirror[0];
-				for (Mirror m : r.mirrors)
-					m.url = Uris.normalizeDirectory(m.url);
+				r.mirrors = MirrorsParser.parse(p);
 			}
 		}
 

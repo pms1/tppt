@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bindings xmlns="http://java.sun.com/xml/ns/jaxb" xmlns:xsi="http://www.w3.org/2000/10/XMLSchema-instance"
-	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0"
-	xmlns:inheritance="http://jaxb2-commons.dev.java.net/basic/inheritance" extensionBindingPrefixes="xjc inheritance">
+<bindings xmlns="https://jakarta.ee/xml/ns/jaxb" xmlns:xsi="http://www.w3.org/2000/10/XMLSchema-instance"
+	xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="3.0"
+	xmlns:inheritance="urn:jaxb.jvnet.org:plugin:inheritance" extensionBindingPrefixes="xjc inheritance">
 
 	<bindings schemaLocation="shared.xsd">
 		<bindings node="//xs:simpleType[@name='versionType']">

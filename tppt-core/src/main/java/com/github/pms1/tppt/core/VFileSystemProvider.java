@@ -403,7 +403,7 @@ public class VFileSystemProvider extends FileSystemProvider {
 			Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
 		}
 
-		return new DFS(FileSystems.newFileSystem(temp, null)) {
+		return new DFS(FileSystems.newFileSystem(temp, (ClassLoader) null)) {
 			@Override
 			public void close() throws IOException {
 				try {

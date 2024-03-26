@@ -6,7 +6,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -28,10 +27,8 @@ import java.util.zip.ZipFile;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
-import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
@@ -93,13 +90,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private File sourceDir;
 
 	@Component
-	private EquinoxRunnerFactory runnerFactory;
-
-	@Component
-	private TychoArtifactUnpacker installer;
-
-	@Component
-	private ResolutionErrorHandler resolutionErrorHandler;
+	private EquinoxRunnerFactory2 appRunnerFactory;
 
 	@Component(hint = "default")
 	private DependencyGraphBuilder dependencyGraphBuilder;
@@ -352,8 +343,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				}
 			}
 
-			int exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
+			int exitCode = createRunner().run("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
 					"-source", repoDependencies.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
@@ -361,19 +351,18 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 					"-append", "true", //
 					"-metadataRepositoryName", project.getName(), //
 					"-artifactRepositoryName", project.getName());
+
 			if (exitCode != 0)
 				throw new MojoExecutionException("Running p2 failed: exitCode=" + exitCode);
 
 			for (Artifact r : repoArtifacts) {
-				exitCode = createRunner().run("-application",
-						"org.eclipse.equinox.p2.metadata.repository.mirrorApplication", //
+				exitCode = createRunner2().run("org.eclipse.equinox.p2.metadata.repository.mirrorApplication", //
 						"-source", "jar:" + r.getFile().toURI() + "!/", "-destination",
 						repoOut.toUri().toURL().toExternalForm());
 				if (exitCode != 0)
 					throw new MojoExecutionException("Running p2 failed: exitCode=" + exitCode);
 
-				exitCode = createRunner().run("-application",
-						"org.eclipse.equinox.p2.artifact.repository.mirrorApplication", //
+				exitCode = createRunner2().run("org.eclipse.equinox.p2.artifact.repository.mirrorApplication", //
 						"-source", "jar:" + r.getFile().toURI() + "!/", "-destination",
 						repoOut.toUri().toURL().toExternalForm());
 				if (exitCode != 0)
@@ -540,47 +529,28 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 		}
 	}
 
-	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {
-		List<ArtifactRepository> repositories = new ArrayList<>();
-		for (MavenProject project : session.getProjects()) {
-			repositories.addAll(project.getPluginArtifactRepositories());
-		}
-		return repositorySystem.getEffectiveRepositories(repositories);
+	private EquinoxAppRunner appRunner;
+
+	EquinoxAppRunner createRunner() throws IOException, MavenExecutionException {
+		if (appRunner == null)
+			appRunner = appRunnerFactory.newBuilderForP2().build();
+		return appRunner;
 	}
 
-	private Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
+	private EquinoxAppRunner appRunner2;
 
-		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-		request.setArtifact(artifact);
-		request.setResolveRoot(true);
-		request.setResolveTransitively(false);
-		request.setLocalRepository(session.getLocalRepository());
-		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setOffline(session.isOffline());
-		request.setProxies(session.getSettings().getProxies());
-		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
-
-		ArtifactResolutionResult result = repositorySystem.resolve(request);
-
-		try {
-			resolutionErrorHandler.throwErrors(request, result);
-		} catch (ArtifactResolutionException e) {
-			throw new MavenExecutionException("Could not resolve artifact for Tycho's OSGi runtime", e);
-		}
-
-		return artifact;
+	EquinoxAppRunner createRunner2() throws IOException, MavenExecutionException {
+		if (appRunner2 == null)
+			appRunner2 = appRunnerFactory.newBuilderForP22()
+					.withBundle("org.eclipse.platform", "org.eclipse.equinox.p2.transport.ecf", "1.4.200", 4, false) //
+					// ECF + dependencies
+					.withBundle("org.eclipse.ecf", "org.eclipse.ecf", "3.11.0", 4, false) //
+					.withBundle("org.eclipse.ecf", "org.eclipse.ecf.identity", "3.10.0", 4, false) //
+					.withBundle("org.eclipse.ecf", "org.eclipse.ecf.filetransfer", "5.1.103", 4, false) //
+					.withBundle("org.eclipse.ecf", "org.eclipse.ecf.provider.filetransfer", "3.3.0", 4, false) //
+					.withBundle("org.eclipse.platform", "org.eclipse.equinox.concurrent", "1.3.0", 4, false) //
+					.build();
+		return appRunner2;
 	}
 
-	EquinoxRunner runner;
-
-	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
-		if (runner == null) {
-			Artifact platform = resolveDependency(session, repositorySystem.createArtifact("org.eclipse.tycho",
-					"tycho-bundles-external", CreateFeaturesMojo.TYCHO_BUNDLES_EXTERNAL_VERSION, "zip"));
-
-			Path p = installer.addRuntimeArtifact(session, platform);
-			runner = runnerFactory.newBuilder().withInstallation(p).build();
-		}
-		return runner;
-	}
 }

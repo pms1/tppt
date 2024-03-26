@@ -1,10 +1,10 @@
 package com.github.pms1.tppt.p2.jaxb;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterParser;
 import com.github.pms1.ldap.SearchFilterPrinter;
+
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 public class SearchFilterAdapter extends XmlAdapter<String, SearchFilter> {
 

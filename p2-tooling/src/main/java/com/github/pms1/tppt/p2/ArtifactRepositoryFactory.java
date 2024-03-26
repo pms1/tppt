@@ -1,15 +1,15 @@
 package com.github.pms1.tppt.p2;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-
 import org.codehaus.plexus.component.annotations.Component;
 
+import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperties;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifacts;
 import com.github.pms1.tppt.p2.jaxb.artifact.Mappings;
-import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperties;
 import com.google.common.base.Throwables;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 @Component(role = ArtifactRepositoryFactory.class)
 public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<ArtifactRepository> {

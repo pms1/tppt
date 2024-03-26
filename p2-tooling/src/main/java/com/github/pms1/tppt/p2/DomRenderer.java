@@ -6,11 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBElement;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.annotation.XmlType;
 import javax.xml.namespace.QName;
 import javax.xml.transform.dom.DOMResult;
 
@@ -26,6 +21,12 @@ import org.w3c.dom.Text;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.annotation.XmlType;
 
 @Component(role = DomRenderer.class)
 public class DomRenderer {

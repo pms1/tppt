@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.4.0-SNAPSHOT</version>
+		<version>0.5.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>tppt-mirror-application</artifactId>
 
@@ -15,7 +15,7 @@
 		<repository>
 			<id>eclipse-neon</id>
 			<layout>p2</layout>
-			<url>http://download.eclipse.org/releases/photon/201806271001/</url>
+			<url>http://download.eclipse.org/releases/2024-03/202403131000/</url>
 		</repository>
 	</repositories>
 

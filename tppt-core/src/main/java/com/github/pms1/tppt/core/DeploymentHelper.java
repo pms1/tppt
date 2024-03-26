@@ -74,7 +74,7 @@ public class DeploymentHelper implements Initializable, Disposable, Startable {
 	private Logger logger;
 
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(root, null)) {
+		try (FileSystem fs = FileSystems.newFileSystem(root, (ClassLoader) null)) {
 
 			CommonP2Repository repo = factory.loadAny(fs.getPath("/"));
 

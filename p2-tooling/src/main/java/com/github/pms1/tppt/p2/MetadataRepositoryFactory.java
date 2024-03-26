@@ -1,8 +1,5 @@
 package com.github.pms1.tppt.p2;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-
 import org.codehaus.plexus.component.annotations.Component;
 
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataProperties;
@@ -10,6 +7,9 @@ import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.Unit;
 import com.github.pms1.tppt.p2.jaxb.metadata.Units;
 import com.google.common.base.Throwables;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 @Component(role = MetadataRepositoryFactory.class)
 public class MetadataRepositoryFactory extends AbstractRepositoryFactory<MetadataRepository> {

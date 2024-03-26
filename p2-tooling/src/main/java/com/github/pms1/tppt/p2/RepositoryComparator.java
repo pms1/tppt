@@ -1018,6 +1018,7 @@ public class RepositoryComparator {
 				case "/properties/property[download.md5]/value":
 				case "/properties/property[download.checksum.md5]/value":
 				case "/properties/property[download.checksum.sha-256]/value":
+				case "/properties/property[download.checksum.sha-512]/value":
 					return true;
 				}
 
@@ -1588,7 +1589,7 @@ public class RepositoryComparator {
 		if (o instanceof List) {
 			@SuppressWarnings("unchecked")
 			List<Object> l = (List<Object>) (List<?>) o;
-			return "[" + l.stream().map(RepositoryComparator::render).collect(Collectors.joining(", ")) + "]";
+			return "[" + l.stream().map(r -> RepositoryComparator.render(r)).collect(Collectors.joining(", ")) + "]";
 		}
 
 		if (o instanceof Child) {

@@ -3,11 +3,13 @@ package com.github.pms1.tppt;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,8 +19,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
-import javax.xml.bind.JAXB;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.maven.MavenExecutionException;
@@ -51,6 +51,8 @@ import com.github.pms1.tppt.mirror.Uris;
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
 import com.github.pms1.tppt.p2.P2RepositoryFactory;
 
+import jakarta.xml.bind.JAXB;
+
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
  * 
@@ -78,7 +80,7 @@ public class MirrorMojo extends AbstractMojo {
 	private ArtifactRepository localRepository;
 
 	@Component
-	private EquinoxRunnerFactory runnerFactory;
+	private EquinoxRunnerFactory2 runnerFactory;
 
 	@Component
 	private TychoArtifactUnpacker installer;
@@ -116,7 +118,7 @@ public class MirrorMojo extends AbstractMojo {
 
 		@SuppressWarnings("unchecked")
 		@Parameter
-		public Map<String, String>[] filters = new Map[0];
+		public Map<String, String>[] filters;
 
 		@Parameter
 		public AlgorithmType algorithm = AlgorithmType.permissiveSlicer;
@@ -346,7 +348,8 @@ public class MirrorMojo extends AbstractMojo {
 				ms.ius = m.ius.toArray(new String[m.ius.size()]);
 				if (m.excludeIus != null)
 					ms.excludeIus = m.excludeIus.toArray(new String[m.excludeIus.size()]);
-				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath);
+				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath)
+						.toUri();
 				ms.mirrors = new LinkedHashMap<>();
 
 				List<AuthenticatedUri> servers2 = new ArrayList<>();
@@ -437,7 +440,7 @@ public class MirrorMojo extends AbstractMojo {
 
 				ms.servers = servers2.toArray(new AuthenticatedUri[servers2.size()]);
 				ms.sourceRepositories = sourceRepositories.toArray(new SourceRepository[sourceRepositories.size()]);
-				ms.targetRepository = repoOut;
+				ms.targetRepository = repoOut.toUri();
 				ms.offline = session.isOffline() ? OfflineType.offline : OfflineType.online;
 				ms.stats = stats;
 				ms.filters = m.filters;
@@ -447,16 +450,18 @@ public class MirrorMojo extends AbstractMojo {
 					JAXB.marshal(ms, System.err);
 
 				byte[] bytes;
-				try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-					JAXB.marshal(ms, baos);
+				try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+					oos.writeObject(ms);
+					oos.flush();
 					baos.flush();
 					bytes = baos.toByteArray();
 				}
 
 				int exitCode;
 				try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
-					exitCode = createRunner().run(bais, "-application", "tppt-mirror-application.id1", "-consoleLog",
-							"-");
+					exitCode = createRunner().run("tppt-mirror-application.id1",
+							Base64.getEncoder().encodeToString(bytes));
 					if (exitCode != 0)
 						throw new MojoExecutionException("mirror failed: exitCode=" + exitCode);
 				}
@@ -517,30 +522,11 @@ public class MirrorMojo extends AbstractMojo {
 		return artifact;
 	}
 
-	EquinoxRunner runner;
+	private EquinoxAppRunner runner;
 
-	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
+	private EquinoxAppRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
-			Artifact platform = resolveDependency(session, repositorySystem.createArtifact("org.eclipse.tycho",
-					"tycho-bundles-external", CreateFeaturesMojo.TYCHO_BUNDLES_EXTERNAL_VERSION, "zip"));
-
-			Artifact extra = resolveDependency(session, repositorySystem.createArtifact("com.github.pms1.tppt",
-					"tppt-mirror-application", mojoExecution.getVersion(), "jar"));
-
-			Path p = installer.addRuntimeArtifact(session, platform);
-
-			EquinoxRunnerBuilder builder = runnerFactory.newBuilder().withInstallation(p)
-					.withPlugin(extra.getFile().toPath());
-
-			for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
-				String key = (String) entry.getKey();
-				if (key.startsWith("eclipse.p2.")) {
-					String value = (String) entry.getValue();
-					builder = builder.withJavaProperty(key, value);
-				}
-			}
-
-			runner = builder.build();
+			runner = runnerFactory.newBuilderForMirror().build();
 		}
 		return runner;
 	}

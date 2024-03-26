@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.4.0-SNAPSHOT</version>
+		<version>0.5.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>p2-tooling</artifactId>
 
@@ -30,11 +30,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.sun.xml.bind</groupId>
-			<artifactId>jaxb-impl</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
 			<scope>test</scope>
@@ -43,18 +38,24 @@
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>minimal-ldap-parser</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>object-comparator</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.eclipse.tycho</groupId>
 			<artifactId>tycho-artifactcomparator</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>jakarta.xml.bind</groupId>
+					<artifactId>jakarta.xml.bind-api</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
 		<dependency>
@@ -82,6 +83,26 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+		</dependency>
+
+
+        <dependency>
+    <groupId>org.eclipse.sisu</groupId>
+    <artifactId>org.eclipse.sisu.plexus</artifactId>
+    <version>0.3.5</version>
+<scope>test</scope>
+        </dependency>
+
+   <dependency>
+				<groupId>com.google.inject</groupId>
+				<artifactId>guice</artifactId>
+				<classifier>no_aop</classifier>
+				<version>4.0</version>
+			</dependency>
+    
 	</dependencies>
 
 	<build>
@@ -92,10 +113,10 @@
 			</plugin>
 
 			<plugin>
-				<groupId>org.jvnet.jaxb2.maven2</groupId>
-				<artifactId>maven-jaxb2-plugin</artifactId>
-				<version>0.13.3</version>
-				<executions>
+        <groupId>org.jvnet.jaxb</groupId>
+        <artifactId>jaxb-maven-plugin</artifactId>
+        <version>4.0.0</version>
+        		<executions>
 					<execution>
 						<id>generate-artifact</id>
 						<goals>
@@ -153,7 +174,7 @@
 					</execution>
 				</executions>
 				<configuration>
-					<specVersion>2.2</specVersion>
+					<specVersion>4.0</specVersion>
 					<strict>true</strict>
 					<!-- plugin does not search recursive -->
 					<schemaDirectory>src/main/resources/com/github/pms1/tppt/p2/jaxb</schemaDirectory>
@@ -162,9 +183,9 @@
 					</args>
 					<plugins>
 						<plugin>
-							<groupId>org.jvnet.jaxb2_commons</groupId>
-							<artifactId>jaxb2-basics</artifactId>
-							<version>0.11.1</version>
+							<groupId>org.jvnet.jaxb</groupId>
+							<artifactId>jaxb-plugins</artifactId>
+							<version>4.0.3</version>
 						</plugin>
 					</plugins>
 				</configuration>

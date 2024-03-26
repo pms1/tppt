@@ -66,9 +66,6 @@ public class CreateCompositeRepository extends AbstractMojo {
 	private ArtifactRepository localRepository;
 
 	@Component
-	private EquinoxRunnerFactory runnerFactory;
-
-	@Component
 	private TychoArtifactUnpacker installer;
 
 	@Component

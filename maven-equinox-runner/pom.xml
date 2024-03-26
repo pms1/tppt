@@ -5,14 +5,16 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.4.0-SNAPSHOT</version>
+		<version>0.5.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>maven-equinox-runner</artifactId>
 
 	<dependencies>
 		<dependency>
-			<groupId>org.eclipse.tycho</groupId>
+			<groupId>org.eclipse.platform</groupId>
 			<artifactId>org.eclipse.osgi</artifactId>
+			<version>3.19.0</version>
+			<scope>provided</scope>
 		</dependency>
 		
 		<dependency>

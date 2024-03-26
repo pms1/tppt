@@ -1,14 +1,16 @@
 package com.github.pms1.tppt.mirror;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -29,8 +31,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import javax.xml.bind.JAXB;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -129,10 +129,13 @@ public class MirrorApplication implements IApplication {
 			for (String s : Arrays.asList((String[]) args)) {
 				MirrorSpec ms;
 				if (s.equals("-")) {
-					ms = JAXB.unmarshal(System.in, MirrorSpec.class);
+					throw new UnsupportedOperationException();
 				} else {
-					try (InputStream is = Files.newInputStream(Paths.get(s))) {
-						ms = JAXB.unmarshal(is, MirrorSpec.class);
+					try (InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(s));
+							ObjectInputStream ois = new ObjectInputStream(is)) {
+						ms = (MirrorSpec) ois.readObject();
+					} catch (ClassNotFoundException e) {
+						throw new RuntimeException(e);
 					}
 				}
 
@@ -258,7 +261,7 @@ public class MirrorApplication implements IApplication {
 					serverParameters.put(repo.uri, parameters);
 				}
 
-				MyTransport transport = new MyTransport(ms.mirrorRepository, ms.offline, ms.stats, ms.servers,
+				MyTransport transport = new MyTransport(Path.of(ms.mirrorRepository), ms.offline, ms.stats, ms.servers,
 						ms.mirrors, ms.proxy, serverParameters);
 				ourAgent.registerService(Transport.SERVICE_NAME, transport);
 
@@ -446,7 +449,6 @@ public class MirrorApplication implements IApplication {
 				// mirror all artifacts that have a non-packed descriptor
 				Mirroring mirroring = new Mirroring(sourceArtifactRepo, destinationArtifactRepo, true);
 				mirroring.setTransport(transport);
-				mirroring.setIncludePacked(false);
 				mirroring.setArtifactKeys(
 						finalIus.stream().flatMap(p -> p.getArtifacts().stream()).toArray(IArtifactKey[]::new));
 
@@ -720,7 +722,7 @@ public class MirrorApplication implements IApplication {
 			addGlobalOptions(filter, go);
 
 			Slicer slicer = new Slicer(repo, filter, so.considerMetaRequirements);
-			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
+			IQueryable<IInstallableUnit> slice = slicer.slice(root, monitor);
 			handleStatus("Slicer", slicer.getStatus());
 			if (slice == null)
 				throw new StatusException("Slicer returned null", slicer.getStatus());
@@ -770,7 +772,7 @@ public class MirrorApplication implements IApplication {
 			PermissiveSlicer slicer = new PermissiveSlicer(repo, filter, po.includeOptionalDependencies,
 					po.everythingGreedy, po.evalFilterTo, po.considerOnlyStrictDependency, po.onlyFilteredRequirements);
 
-			IQueryable<IInstallableUnit> slice = slicer.slice(root.stream().toArray(IInstallableUnit[]::new), monitor);
+			IQueryable<IInstallableUnit> slice = slicer.slice(root, monitor);
 			handleStatus("PermissiveSlicer", slicer.getStatus());
 			if (slice == null)
 				throw new StatusException("PermissiveSlicer returned null", slicer.getStatus());
@@ -1090,10 +1092,10 @@ public class MirrorApplication implements IApplication {
 
 	private final static String featureSuffix = ".feature.group";
 
-	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, Path path,
+	private IArtifactRepository createDestinationArtifactRepository(IArtifactRepositoryManager mgr, URI path,
 			String name) {
 		try {
-			return mgr.loadRepository(path.toUri(), IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
+			return mgr.loadRepository(path, IArtifactRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
 					new NullProgressMonitor());
 		} catch (ProvisionException e) {
 			if (e.getStatus().getCode() != ProvisionException.REPOSITORY_NOT_FOUND)
@@ -1102,18 +1104,18 @@ public class MirrorApplication implements IApplication {
 
 		IArtifactRepository dest;
 		try {
-			dest = mgr.createRepository(path.toUri(), name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
+			dest = mgr.createRepository(path, name, IArtifactRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
 			return dest;
 		} catch (ProvisionException e) {
 			throw new StatusException("Creating artifact repository failed (" + path + " " + name + ")", e.getStatus());
 		}
 	}
 
-	private IMetadataRepository createDestinationMetadataRepository(IMetadataRepositoryManager mgr, Path path,
+	private IMetadataRepository createDestinationMetadataRepository(IMetadataRepositoryManager mgr, URI path,
 			String name) {
 
 		try {
-			return mgr.loadRepository(path.toUri(), IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
+			return mgr.loadRepository(path, IMetadataRepositoryManager.REPOSITORY_HINT_MODIFIABLE,
 					new NullProgressMonitor());
 		} catch (ProvisionException e) {
 			if (e.getStatus().getCode() != ProvisionException.REPOSITORY_NOT_FOUND)
@@ -1122,7 +1124,7 @@ public class MirrorApplication implements IApplication {
 
 		IMetadataRepository dest;
 		try {
-			dest = mgr.createRepository(path.toUri(), name, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
+			dest = mgr.createRepository(path, name, IMetadataRepositoryManager.TYPE_SIMPLE_REPOSITORY, null);
 			return dest;
 		} catch (ProvisionException e) {
 			throw new StatusException("Creating metadata repository failed (" + path + " " + name + ")", e.getStatus());

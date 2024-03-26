@@ -19,9 +19,9 @@ public class NestedZipFileSystemProviderTest {
 	public void t1() throws IOException {
 		Path p = r.getResource("testtest.zip");
 
-		try (FileSystem fs = FileSystems.newFileSystem(p, null)) {
+		try (FileSystem fs = FileSystems.newFileSystem(p, (ClassLoader) null)) {
 			Path p1 = fs.getPath("/test.zip");
-			try (FileSystem fs2 = FileSystems.newFileSystem(p1, null)) {
+			try (FileSystem fs2 = FileSystems.newFileSystem(p1, (ClassLoader) null)) {
 				Path p2 = fs2.getPath("/test.txt");
 
 				Assertions.assertThat(Files.exists(p2)).isEqualTo(true);

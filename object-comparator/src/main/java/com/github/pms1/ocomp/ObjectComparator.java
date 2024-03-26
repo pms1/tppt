@@ -17,11 +17,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 public class ObjectComparator<T> {
 	private final LinkedHashMap<DecomposerMatcher, DecomposerFactory> locationDecomposers;

@@ -71,7 +71,7 @@ public class DeployMojo extends AbstractMojo {
 	private DeploymentHelper deploymentHelper;
 
 	private void doInstall(Path zip, DeploymentTarget dt, Path targetRoot) throws IOException {
-		try (FileSystem fs = FileSystems.newFileSystem(zip, null)) {
+		try (FileSystem fs = FileSystems.newFileSystem(zip, (ClassLoader) null)) {
 			CommonP2Repository r1 = repositoryFactory.loadAny(fs.getPath("/"));
 
 			try {

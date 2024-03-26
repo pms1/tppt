@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>com.github.pms1.tppt</groupId>
 		<artifactId>parent</artifactId>
-		<version>0.4.0-SNAPSHOT</version>
+		<version>0.5.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>tppt-maven-plugin</artifactId>
 
@@ -22,25 +22,25 @@
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>maven-equinox-runner</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>tppt-mirror-application</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>p2-tooling</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.pms1.tppt</groupId>
 			<artifactId>tppt-core</artifactId>
-			<version>0.4.0-SNAPSHOT</version>
+			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 
 		<dependency>
@@ -120,11 +120,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.sun.xml.bind</groupId>
-			<artifactId>jaxb-impl</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>annotations</artifactId>
 			<scope>compile</scope>
@@ -151,7 +146,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-plugin-plugin</artifactId>
-				<version>3.6.0</version>
+				<version>3.11.0</version>
 				<configuration>
 					<extractors>
 						<extractor>java-annotations</extractor>

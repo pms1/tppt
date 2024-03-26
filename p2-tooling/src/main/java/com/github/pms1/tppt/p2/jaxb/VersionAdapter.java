@@ -1,10 +1,10 @@
 package com.github.pms1.tppt.p2.jaxb;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
-
 import org.osgi.framework.Version;
 
 import com.github.pms1.tppt.p2.VersionParser;
+
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 public class VersionAdapter extends XmlAdapter<String, Version> {
 

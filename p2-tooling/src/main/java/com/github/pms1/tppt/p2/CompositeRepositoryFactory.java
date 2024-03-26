@@ -1,12 +1,12 @@
 package com.github.pms1.tppt.p2;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
-import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.google.common.base.Throwables;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 public abstract class CompositeRepositoryFactory extends AbstractRepositoryFactory<CompositeRepository> {
 

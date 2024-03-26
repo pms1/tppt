@@ -18,14 +18,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import javax.xml.bind.JAXB;
-
 import org.apache.maven.MavenExecutionException;
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -64,6 +58,7 @@ import com.google.common.collect.Iterables;
 
 import aQute.bnd.version.MavenVersion;
 import aQute.bnd.version.Version;
+import jakarta.xml.bind.JAXB;
 
 /**
  * A maven mojo for creating a p2 repository from maven dependencies
@@ -95,7 +90,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	private String osgiVersion;
 
 	@Component
-	private EquinoxRunnerFactory runnerFactory;
+	private EquinoxRunnerFactory2 runnerFactory;
 
 	@Component
 	private TychoArtifactUnpacker installer;
@@ -268,8 +263,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 										// since it's the last entry
 			}
 
-			int exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
+			int exitCode = createRunner().run("org.eclipse.equinox.p2.publisher.FeaturesAndBundlesPublisher", //
 					"-source", repoFeatures.toString(), //
 					"-metadataRepository", repoOut.toUri().toURL().toExternalForm(), //
 					"-artifactRepository", repoOut.toUri().toURL().toExternalForm(), //
@@ -314,8 +308,7 @@ public class CreateFeaturesMojo extends AbstractMojo {
 			repo.getUnits().getUnit().add(u);
 			repository.save(raw);
 
-			exitCode = createRunner().run("-application",
-					"org.eclipse.equinox.p2.metadata.repository.mirrorApplication", //
+			exitCode = createRunner().run("org.eclipse.equinox.p2.metadata.repository.mirrorApplication", //
 					"-source", repoCategories.toUri().toURL().toExternalForm(), //
 					"-destination", repoOut.toUri().toURL().toExternalForm());
 			if (exitCode != 0)
@@ -335,47 +328,11 @@ public class CreateFeaturesMojo extends AbstractMojo {
 		return p;
 	}
 
-	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {
-		List<ArtifactRepository> repositories = new ArrayList<>();
-		for (MavenProject project : session.getProjects()) {
-			repositories.addAll(project.getPluginArtifactRepositories());
-		}
-		return repositorySystem.getEffectiveRepositories(repositories);
-	}
+	private EquinoxAppRunner runner;
 
-	private Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
-
-		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-		request.setArtifact(artifact);
-		request.setResolveRoot(true).setResolveTransitively(false);
-		request.setLocalRepository(session.getLocalRepository());
-		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setOffline(session.isOffline());
-		request.setProxies(session.getSettings().getProxies());
-		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
-
-		ArtifactResolutionResult result = repositorySystem.resolve(request);
-
-		try {
-			resolutionErrorHandler.throwErrors(request, result);
-		} catch (ArtifactResolutionException e) {
-			throw new MavenExecutionException("Could not resolve artifact for Tycho's OSGi runtime", e);
-		}
-
-		return artifact;
-	}
-
-	EquinoxRunner runner;
-
-	public static final String TYCHO_BUNDLES_EXTERNAL_VERSION = "1.7.0";
-
-	EquinoxRunner createRunner() throws IOException, MavenExecutionException {
+	private EquinoxAppRunner createRunner() throws IOException, MavenExecutionException {
 		if (runner == null) {
-			Artifact platform = resolveDependency(session, repositorySystem.createArtifact("org.eclipse.tycho",
-					"tycho-bundles-external", TYCHO_BUNDLES_EXTERNAL_VERSION, "zip"));
-
-			Path p = installer.addRuntimeArtifact(session, platform);
-			runner = runnerFactory.newBuilder().withInstallation(p).build();
+			runner = runnerFactory.newBuilderForP22().build();
 		}
 		return runner;
 	}
