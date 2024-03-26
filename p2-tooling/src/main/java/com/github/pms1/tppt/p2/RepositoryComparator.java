@@ -1,5 +1,7 @@
 package com.github.pms1.tppt.p2;
 
+import static java.lang.Boolean.TRUE;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
@@ -794,7 +796,7 @@ public class RepositoryComparator {
 
 	}
 
-	private String render(FileDelta d1) {
+	private static String render(FileDelta d1) {
 		MessageFormat messageFormat = new MessageFormat(d1.getDescription());
 
 		Object[] o1 = d1.getParameters().clone();
@@ -811,6 +813,9 @@ public class RepositoryComparator {
 
 	private static final Predicate<SearchFilter> featureFilter = p -> p != null
 			&& printer.print(p).equals("(org.eclipse.update.install.features=true)");
+
+	private static final Predicate<SearchFilter> sourceFilter = p -> p != null
+			&& printer.print(p).equals("(org.eclipse.update.install.sources=true)");
 
 	class CategoryVersionChange extends Change {
 		private final String id;
@@ -970,8 +975,9 @@ public class RepositoryComparator {
 							.withRange(new VersionRange(VersionRange.LEFT_CLOSED, v2, v2,
 									VersionRange.RIGHT_CLOSED)::equals) //
 							.withFilter(featureFilter) //
-							.test(d.required))
+							.test(d.required)) {
 						return true;
+					}
 				}
 
 				if (new RequiredMatcher() //
@@ -1153,6 +1159,7 @@ public class RepositoryComparator {
 		Predicate<String> name = p -> p == null;
 		Predicate<String> namespace = p -> p == null;
 		Predicate<VersionRange> range = p -> p == null;
+		Predicate<Boolean> optional = p -> p == null;
 
 		@Override
 		public boolean test(Required t) {
@@ -1186,6 +1193,12 @@ public class RepositoryComparator {
 		public RequiredMatcher withFilter(Predicate<SearchFilter> filter) {
 			Preconditions.checkNotNull(range);
 			this.filter = filter;
+			return this;
+		}
+
+		public RequiredMatcher withOptional(Predicate<Boolean> optional) {
+			Preconditions.checkNotNull(optional);
+			this.optional = optional;
 			return this;
 		}
 
@@ -1477,6 +1490,17 @@ public class RepositoryComparator {
 					return true;
 				}
 
+				if (new RequiredMatcher() //
+						.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName((bundleId + ".source")::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v2, v2, VersionRange.RIGHT_CLOSED)::equals) //
+						.withFilter(sourceFilter) //
+						.withOptional(TRUE::equals) //
+						.test(d.required)) {
+					return true;
+				}
+
 				return false;
 			} else if (delta instanceof RequiredRemoved) {
 				RequiredRemoved d = (RequiredRemoved) delta;
@@ -1488,6 +1512,17 @@ public class RepositoryComparator {
 								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
 						.test(d.required)) {
 					removedUnit.add(d.right);
+					return true;
+				}
+
+				if (new RequiredMatcher() //
+						.withNamespace("org.eclipse.equinox.p2.iu"::equals) //
+						.withName((bundleId + ".source")::equals) //
+						.withRange(
+								new VersionRange(VersionRange.LEFT_CLOSED, v1, v1, VersionRange.RIGHT_CLOSED)::equals) //
+						.withFilter(sourceFilter) //
+						.withOptional(TRUE::equals) //
+						.test(d.required)) {
 					return true;
 				}
 
