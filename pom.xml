@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.pms1.tppt</groupId>
@@ -8,7 +9,8 @@
 	<packaging>pom</packaging>
 
 	<name>Target Platform Provisioning Tools</name>
-	<description>An Apache Maven plugin for creating P2 repositories along with features directly from Maven artifacts that are already OSGi bundles.</description>
+	<description>An Apache Maven plugin for creating P2 repositories along with
+		features directly from Maven artifacts that are already OSGi bundles.</description>
 	<url>https://github.com/pms1/tppt/</url>
 
 	<licenses>
@@ -41,14 +43,17 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<tycho.version>4.0.6</tycho.version>
+		<tycho.version>4.0.7</tycho.version>
 		<tycho.osgi.version>3.13.0.v20180226-1711</tycho.osgi.version>
-		<antlr4.version>4.6</antlr4.version>
-		<maven.version>3.3.9</maven.version>
-		<maven.guava.version>18.0</maven.guava.version>
-		<maven.slf4j.version>1.7.5</maven.slf4j.version>
+		<antlr4.version>4.13.1</antlr4.version>
 		<plexus-component-version>2.2.0</plexus-component-version>
-		<groovy.version>2.4.9</groovy.version>
+		<groovy.version>4.0.20</groovy.version>
+
+		<maven.version>3.9.6</maven.version>
+		<maven.guava.version>32.0.1-jre</maven.guava.version>
+		<maven.slf4j.version>1.7.36</maven.slf4j.version>
+		<maven.org.eclipse.sisu.plexus>0.3.5</maven.org.eclipse.sisu.plexus>
+		<maven.guice>4.1.0</maven.guice>
 	</properties>
 
 	<dependencyManagement>
@@ -86,7 +91,7 @@
 			<dependency>
 				<groupId>junit</groupId>
 				<artifactId>junit</artifactId>
-				<version>4.13.1</version>
+				<version>4.13.2</version>
 			</dependency>
 
 			<dependency>
@@ -98,13 +103,13 @@
 			<dependency>
 				<groupId>org.assertj</groupId>
 				<artifactId>assertj-core</artifactId>
-				<version>3.6.2</version>
+				<version>3.25.3</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.codehaus.plexus</groupId>
 				<artifactId>plexus-archiver</artifactId>
-				<version>3.4</version>
+				<version>4.9.2</version>
 			</dependency>
 
 			<dependency>
@@ -140,19 +145,38 @@
 			<dependency>
 				<groupId>com.google.code.findbugs</groupId>
 				<artifactId>annotations</artifactId>
-				<version>3.0.1</version>
+				<version>3.0.1u2</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.apache.maven.wagon</groupId>
 				<artifactId>wagon-provider-api</artifactId>
-				<version>3.4.1</version>
+				<version>3.5.3</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.glassfish.jaxb</groupId>
 				<artifactId>jaxb-runtime</artifactId>
 				<version>4.0.5</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.eclipse.sisu</groupId>
+				<artifactId>org.eclipse.sisu.plexus</artifactId>
+				<version>${maven.org.eclipse.sisu.plexus}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.google.inject</groupId>
+				<artifactId>guice</artifactId>
+				<classifier>no_aop</classifier>
+				<version>${maven.guice}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>com.github.lookfirst</groupId>
+				<artifactId>sardine</artifactId>
+				<version>5.12</version>
 			</dependency>
 
 		</dependencies>
@@ -188,9 +212,21 @@
 					<artifactId>maven-invoker-plugin</artifactId>
 					<version>3.2.1</version>
 					<dependencies>
+						<!-- these three are always included by invoker, so we
+						have to update all of them to upgrade groovy -->
 						<dependency>
-							<groupId>org.codehaus.groovy</groupId>
-							<artifactId>groovy-all</artifactId>
+							<groupId>org.apache.groovy</groupId>
+							<artifactId>groovy</artifactId>
+							<version>${groovy.version}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.apache.groovy</groupId>
+							<artifactId>groovy-xml</artifactId>
+							<version>${groovy.version}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.apache.groovy</groupId>
+							<artifactId>groovy-json</artifactId>
 							<version>${groovy.version}</version>
 						</dependency>
 					</dependencies>
@@ -207,7 +243,12 @@
 					<dependencies>
 						<dependency>
 							<groupId>org.codehaus.groovy</groupId>
-							<artifactId>groovy-all</artifactId>
+							<artifactId>groovy</artifactId>
+							<version>${groovy.version}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.apache.groovy</groupId>
+							<artifactId>groovy-ant</artifactId>
 							<version>${groovy.version}</version>
 						</dependency>
 					</dependencies>
@@ -281,7 +322,8 @@
 
 	<reporting>
 		<plugins>
-			<!-- <plugin> <artifactId>maven-checkstyle-plugin</artifactId> </plugin> -->
+			<!-- <plugin> <artifactId>maven-checkstyle-plugin</artifactId>
+			</plugin> -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
@@ -306,8 +348,12 @@
 				</reportSets>
 			</plugin>
 
-			<!-- triggers rate limiter on travis <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-changes-plugin</artifactId> 
-				<version>2.12.1</version> <configuration> <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot> </configuration> </plugin> -->
+			<!-- triggers rate limiter on travis <plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-changes-plugin</artifactId> 
+				<version>2.12.1</version> <configuration>
+			<runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+			</configuration> </plugin> -->
 			<plugin>
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<version>2.10.4</version>
@@ -317,7 +363,8 @@
 				<artifactId>findbugs-maven-plugin</artifactId>
 				<version>3.0.4</version>
 			</plugin>
-			<!-- <plugin> <artifactId>maven-jxr-plugin</artifactId> </plugin> <plugin> <artifactId>maven-pmd-plugin</artifactId> </plugin> -->
+			<!-- <plugin> <artifactId>maven-jxr-plugin</artifactId> </plugin>
+			<plugin> <artifactId>maven-pmd-plugin</artifactId> </plugin> -->
 			<plugin>
 				<artifactId>maven-surefire-report-plugin</artifactId>
 				<version>2.19.1</version>
@@ -404,7 +451,8 @@
 				</snapshotRepository>
 				<repository>
 					<id>ossrh</id>
-					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+					<url>
+						https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
 				</repository>
 			</distributionManagement>
 

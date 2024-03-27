@@ -1,4 +1,5 @@
 import java.util.zip.ZipFile
+import groovy.xml.XmlSlurper
 
 def l = new File(basedir, 'rcomp/target/repository').list();
 Arrays.sort(l);

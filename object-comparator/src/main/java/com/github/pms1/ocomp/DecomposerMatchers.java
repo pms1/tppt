@@ -13,7 +13,7 @@ public class DecomposerMatchers {
 	}
 
 	public static Function<Type, Boolean> isAssignable(TypeToken<?> typeToken) {
-		return (type) -> typeToken.isAssignableFrom(type);
+		return (type) -> typeToken.isSupertypeOf(type);
 	}
 
 }
