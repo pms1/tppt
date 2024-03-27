@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.linesOf;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +29,7 @@ public class FormatTest {
 
 		Path path = Paths.get(getClass().getResource(resource).toURI());
 
-		List<String> old = Assertions.linesOf(path.toFile());
+		List<String> old = linesOf(path.toFile(), StandardCharsets.UTF_8);
 
 		T repo;
 
@@ -64,7 +65,7 @@ public class FormatTest {
 			}
 		}
 
-		assertThat(linesOf(temp.toFile())).isEqualTo(old);
+		assertThat(linesOf(temp.toFile(), StandardCharsets.UTF_8)).isEqualTo(old);
 	}
 
 	@Test
