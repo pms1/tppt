@@ -210,7 +210,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-invoker-plugin</artifactId>
-					<version>3.2.1</version>
+					<version>3.6.0</version>
 					<dependencies>
 						<!-- these three are always included by invoker, so we
 						have to update all of them to upgrade groovy -->
@@ -234,15 +234,15 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-resources-plugin</artifactId>
-					<version>3.0.2</version>
+					<version>3.3.1</version>
 				</plugin>
 				<plugin>
 					<groupId>org.codehaus.gmavenplus</groupId>
 					<artifactId>gmavenplus-plugin</artifactId>
-					<version>1.5</version>
+					<version>3.0.2</version>
 					<dependencies>
 						<dependency>
-							<groupId>org.codehaus.groovy</groupId>
+							<groupId>org.apache.groovy</groupId>
 							<artifactId>groovy</artifactId>
 							<version>${groovy.version}</version>
 						</dependency>
@@ -292,6 +292,30 @@
 		</pluginManagement>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>3.4.1</version>
+				<executions>
+					<execution>
+						<id>enforce-versions</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireMavenVersion>
+									<version>3.9.4</version>
+								</requireMavenVersion>
+								<requireJavaVersion>
+									<version>17</version>
+								</requireJavaVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.11</version>
@@ -307,7 +331,7 @@
 
 			<plugin>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>3.6</version>
+				<version>3.12.1</version>
 				<dependencies>
 					<dependency>
 						<groupId>net.trajano.wagon</groupId>
@@ -327,7 +351,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>2.9</version>
+				<version>3.5.0</version>
 				<configuration>
 					<dependencyLocationsEnabled>false</dependencyLocationsEnabled>
 				</configuration>
@@ -356,18 +380,18 @@
 			</configuration> </plugin> -->
 			<plugin>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.10.4</version>
+				<version>3.6.3</version>
 			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>findbugs-maven-plugin</artifactId>
-				<version>3.0.4</version>
+				<version>3.0.5</version>
 			</plugin>
 			<!-- <plugin> <artifactId>maven-jxr-plugin</artifactId> </plugin>
 			<plugin> <artifactId>maven-pmd-plugin</artifactId> </plugin> -->
 			<plugin>
 				<artifactId>maven-surefire-report-plugin</artifactId>
-				<version>2.19.1</version>
+				<version>3.2.5</version>
 			</plugin>
 			<plugin>
 				<artifactId>maven-invoker-plugin</artifactId>
@@ -398,7 +422,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-source-plugin</artifactId>
-						<version>2.3</version>
+						<version>3.3.0</version>
 						<executions>
 							<execution>
 								<id>attach-sources</id>
@@ -424,7 +448,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
-						<version>1.6</version>
+						<version>3.2.2</version>
 						<executions>
 							<execution>
 								<id>sign-artifacts</id>

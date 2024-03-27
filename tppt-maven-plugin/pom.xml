@@ -12,6 +12,10 @@
 
 	<packaging>maven-plugin</packaging>
 
+	<prerequisites>
+		<maven>3.9.4</maven>
+	</prerequisites>
+
 	<properties>
 		<!-- these are referenced from
 		src/main/resources/META-INF/plexus/components.xml -->
