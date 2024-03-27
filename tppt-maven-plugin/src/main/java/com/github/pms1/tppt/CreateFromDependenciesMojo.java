@@ -26,9 +26,10 @@ import java.util.zip.ZipFile;
 
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.artifact.resolver.filter.ExclusionSetFilter;
 import org.apache.maven.execution.MavenSession;
@@ -80,11 +81,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Component
 	private RepositorySystem repositorySystem;
 
-	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
-	private List<ArtifactRepository> remoteRepositories;
-
-	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
-	private ArtifactRepository localRepository;
+	@Component
+	private ResolutionErrorHandler resolutionErrorHandler;
 
 	@Parameter(readonly = true, required = true, defaultValue = "${project.basedir}/src/main/bnd")
 	private File sourceDir;
@@ -232,6 +230,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			Map<File, Artifact> reactorRepositories = new HashMap<>();
 
 			for (MavenProject p : session.getProjects()) {
+				if (p == project)
+					continue;
+
 				switch (p.getPackaging()) {
 				case "tppt-repository":
 				case "tppt-composite-repository":
@@ -247,13 +248,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 				reactorRepositories.put(p.getArtifact().getFile(), p.getArtifact());
 			}
 
-			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
-			pbRequest.setLocalRepository(localRepository);
+			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
 			pbRequest.setProject(project);
-			pbRequest.setRemoteRepositories(remoteRepositories);
-			pbRequest.setRepositorySession(session.getRepositorySession());
 			pbRequest.setResolveDependencies(true);
-			pbRequest.setResolveVersionRanges(true);
 
 			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);
 
@@ -264,7 +261,18 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			n.accept(new DependencyNodeVisitor() {
 				@Override
 				public boolean visit(DependencyNode node) {
-					Artifact reactorDependency = reactorRepositories.get(node.getArtifact().getFile());
+					// ourselves
+					if (node.getParent() == null)
+						return true;
+
+					Artifact a;
+					try {
+						a = resolveDependency(node.getArtifact());
+					} catch (MavenExecutionException e) {
+						throw new Error(e);
+					}
+
+					Artifact reactorDependency = reactorRepositories.get(a.getFile());
 					if (reactorDependency != null) {
 						switch (repositoryDependencies) {
 						case failure:
@@ -273,16 +281,15 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 						case ignore:
 							return false;
 						case include:
-							repoArtifacts.add(reactorDependency);
+							repoArtifacts.add(a);
 							return false;
 						default:
 							throw new UnsupportedOperationException();
 						}
 					}
 
-					if (node.getArtifact() != project.getArtifact() && exclusions.include(node.getArtifact())) {
-						artifacts.add(node.getArtifact());
-					}
+					if (exclusions.include(node.getArtifact()))
+						artifacts.add(a);
 
 					return exclusionTransitives.include(node.getArtifact());
 				}
@@ -321,8 +328,8 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 						a.getArtifactId(), a.getVersion(), "jar", "sources");
 				ArtifactResolutionRequest request = new ArtifactResolutionRequest();
 				request.setArtifact(sourcesArtifact);
-				request.setRemoteRepositories(remoteRepositories);
-				request.setLocalRepository(localRepository);
+				request.setLocalRepository(session.getLocalRepository());
+				request.setRemoteRepositories(project.getPluginArtifactRepositories());
 				ArtifactResolutionResult resolution = repositorySystem.resolve(request);
 
 				switch (resolution.getArtifacts().size()) {
@@ -527,6 +534,28 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 
 			return scanPlugin(target);
 		}
+	}
+
+	private Artifact resolveDependency(Artifact artifact) throws MavenExecutionException {
+		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
+		request.setArtifact(artifact);
+		request.setResolveRoot(true);
+		request.setResolveTransitively(false);
+		request.setLocalRepository(session.getLocalRepository());
+		request.setRemoteRepositories(project.getPluginArtifactRepositories());
+		request.setOffline(session.isOffline());
+		request.setProxies(session.getSettings().getProxies());
+		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
+
+		ArtifactResolutionResult result = repositorySystem.resolve(request);
+
+		try {
+			resolutionErrorHandler.throwErrors(request, result);
+		} catch (ArtifactResolutionException e) {
+			throw new MavenExecutionException("Could not resolve artifact: " + artifact, e);
+		}
+
+		return artifact;
 	}
 
 	private EquinoxAppRunner appRunner;

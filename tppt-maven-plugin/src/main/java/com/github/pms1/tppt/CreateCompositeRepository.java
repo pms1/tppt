@@ -12,7 +12,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.maven.MavenExecutionException;
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.artifact.resolver.ArtifactResolutionException;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -86,6 +91,28 @@ public class CreateCompositeRepository extends AbstractMojo {
 	@Component(hint = "xml")
 	private DataCompression raw;
 
+	private Artifact resolveDependency(Artifact artifact) throws MavenExecutionException {
+		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
+		request.setArtifact(artifact);
+		request.setResolveRoot(true);
+		request.setResolveTransitively(false);
+		request.setLocalRepository(session.getLocalRepository());
+		request.setRemoteRepositories(project.getPluginArtifactRepositories());
+		request.setOffline(session.isOffline());
+		request.setProxies(session.getSettings().getProxies());
+		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
+
+		ArtifactResolutionResult result = repositorySystem.resolve(request);
+
+		try {
+			resolutionErrorHandler.throwErrors(request, result);
+		} catch (ArtifactResolutionException e) {
+			throw new MavenExecutionException("Could not resolve artifact for Tycho's OSGi runtime", e);
+		}
+
+		return artifact;
+	}
+
 	public void execute() throws MojoExecutionException, MojoFailureException {
 
 		try {
@@ -96,7 +123,6 @@ public class CreateCompositeRepository extends AbstractMojo {
 			pbRequest.setRemoteRepositories(remoteRepositories);
 			pbRequest.setRepositorySession(session.getRepositorySession());
 			pbRequest.setResolveDependencies(true);
-			pbRequest.setResolveVersionRanges(true);
 
 			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);
 
@@ -109,10 +135,17 @@ public class CreateCompositeRepository extends AbstractMojo {
 					if (node.getParent() == null)
 						return true;
 
-					if (node.getArtifact().getFile() == null)
+					Artifact a;
+					try {
+						a = resolveDependency(node.getArtifact());
+					} catch (MavenExecutionException e) {
+						throw new RuntimeException(e);
+					}
+
+					if (a.getFile() == null)
 						throw new Error();
 
-					dependentFiles.put(node.getArtifact().getFile(), node.getParent().getParent() == null);
+					dependentFiles.put(a.getFile(), node.getParent().getParent() == null);
 
 					return true;
 				}
