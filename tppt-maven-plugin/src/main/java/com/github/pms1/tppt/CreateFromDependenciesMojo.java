@@ -90,7 +90,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	private File sourceDir;
 
 	@Inject
-	private EquinoxRunnerFactory2 appRunnerFactory;
+	private EquinoxRunnerFactory appRunnerFactory;
 
 	@Component(hint = "default")
 	private DependencyGraphBuilder dependencyGraphBuilder;

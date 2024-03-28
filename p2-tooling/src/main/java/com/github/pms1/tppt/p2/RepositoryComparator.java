@@ -81,21 +81,12 @@ public class RepositoryComparator {
 	private final Logger logger = LoggerFactory.getLogger(RepositoryComparator.class);
 
 	@Inject
-	private ArtifactRepositoryFactory artifactRepositoryFactory;
-
-	@Inject
-	private MetadataRepositoryFactory metadataRepositoryFactory;
-
-	@Inject
 	private Map<String, FileComparator> comparators;
 
 	static private final TypeToken<?> listRequired = new TypeToken<List<Required>>() {
 
 	};
 	static private final TypeToken<?> listRequiredProperties = new TypeToken<List<RequiredProperties>>() {
-
-	};
-	static private final TypeToken<?> listProvided = new TypeToken<List<Provided>>() {
 
 	};
 

@@ -3,8 +3,8 @@ package com.github.pms1.ldap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.RecognitionException;
@@ -49,7 +49,7 @@ public class SearchFilterParser {
 			};
 		};
 
-		Lexer lexer = new Rfc4515Lexer(new ANTLRInputStream(searchFilter));
+		Lexer lexer = new Rfc4515Lexer(CharStreams.fromString(searchFilter));
 		lexer.removeErrorListeners();
 		lexer.addErrorListener(errorListener);
 		CommonTokenStream tokens = new CommonTokenStream(lexer);

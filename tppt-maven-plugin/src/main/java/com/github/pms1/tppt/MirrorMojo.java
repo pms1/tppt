@@ -24,11 +24,6 @@ import javax.inject.Inject;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.maven.MavenExecutionException;
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactResolutionException;
-import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
-import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -51,7 +46,6 @@ import com.github.pms1.tppt.mirror.MirrorSpec.SourceRepository;
 import com.github.pms1.tppt.mirror.MirrorSpec.StatsType;
 import com.github.pms1.tppt.mirror.Uris;
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
-import com.github.pms1.tppt.p2.P2RepositoryFactory;
 
 import jakarta.xml.bind.JAXB;
 
@@ -75,20 +69,11 @@ public class MirrorMojo extends AbstractMojo {
 	@Component
 	private RepositorySystem repositorySystem;
 
-	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
-	private List<ArtifactRepository> remoteRepositories;
-
-	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
-	private ArtifactRepository localRepository;
-
 	@Inject
-	private EquinoxRunnerFactory2 runnerFactory;
+	private EquinoxRunnerFactory runnerFactory;
 
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
-
-	@Inject
-	private P2RepositoryFactory p2repositoryFactory;
 
 	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;
@@ -115,7 +100,6 @@ public class MirrorMojo extends AbstractMojo {
 		@Parameter
 		public List<URI> sources = Collections.emptyList();
 
-		@SuppressWarnings("unchecked")
 		@Parameter
 		public Map<String, String>[] filters;
 
@@ -489,36 +473,6 @@ public class MirrorMojo extends AbstractMojo {
 			result.nonProxyHosts = Arrays.asList(proxy.getNonProxyHosts().split("[|]", -1));
 
 		return result;
-	}
-
-	private List<ArtifactRepository> getPluginRepositories(MavenSession session) {
-		List<ArtifactRepository> repositories = new ArrayList<>();
-		for (MavenProject project : session.getProjects()) {
-			repositories.addAll(project.getPluginArtifactRepositories());
-		}
-		return repositorySystem.getEffectiveRepositories(repositories);
-	}
-
-	private Artifact resolveDependency(MavenSession session, Artifact artifact) throws MavenExecutionException {
-
-		ArtifactResolutionRequest request = new ArtifactResolutionRequest();
-		request.setArtifact(artifact);
-		request.setResolveRoot(true).setResolveTransitively(false);
-		request.setLocalRepository(session.getLocalRepository());
-		request.setRemoteRepositories(getPluginRepositories(session));
-		request.setOffline(session.isOffline());
-		request.setProxies(session.getSettings().getProxies());
-		request.setForceUpdate(session.getRequest().isUpdateSnapshots());
-
-		ArtifactResolutionResult result = repositorySystem.resolve(request);
-
-		try {
-			resolutionErrorHandler.throwErrors(request, result);
-		} catch (ArtifactResolutionException e) {
-			throw new MavenExecutionException("Could not resolve artifact for Tycho's OSGi runtime", e);
-		}
-
-		return artifact;
 	}
 
 	private EquinoxAppRunner runner;

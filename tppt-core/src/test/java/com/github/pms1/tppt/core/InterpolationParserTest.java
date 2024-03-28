@@ -10,8 +10,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.github.pms1.tppt.core.InterpolatedString;
-
 public class InterpolationParserTest {
 
 	@Rule

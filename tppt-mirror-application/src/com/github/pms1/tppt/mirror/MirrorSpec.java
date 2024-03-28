@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.github.pms1.tppt.mirror.jaxb.Proxy;
 
+@SuppressWarnings("serial")
 public class MirrorSpec implements Serializable {
 	public static class AuthenticatedUri implements Serializable {
 		public URI uri;

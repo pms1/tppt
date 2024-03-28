@@ -7,14 +7,12 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
 import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
 import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
@@ -64,12 +62,6 @@ public class CreateCompositeRepository extends AbstractMojo {
 	@Component
 	private RepositorySystem repositorySystem;
 
-	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
-	private List<ArtifactRepository> remoteRepositories;
-
-	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
-	private ArtifactRepository localRepository;
-
 	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;
 
@@ -110,15 +102,13 @@ public class CreateCompositeRepository extends AbstractMojo {
 		return artifact;
 	}
 
+	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 
 		try {
 
-			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest();
-			pbRequest.setLocalRepository(localRepository);
+			ProjectBuildingRequest pbRequest = new DefaultProjectBuildingRequest(session.getProjectBuildingRequest());
 			pbRequest.setProject(project);
-			pbRequest.setRemoteRepositories(remoteRepositories);
-			pbRequest.setRepositorySession(session.getRepositorySession());
 			pbRequest.setResolveDependencies(true);
 
 			DependencyNode n = dependencyGraphBuilder.buildDependencyGraph(pbRequest, null);

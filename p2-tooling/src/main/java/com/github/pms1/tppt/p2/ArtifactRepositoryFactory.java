@@ -7,7 +7,6 @@ import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactProperties;
 import com.github.pms1.tppt.p2.jaxb.artifact.ArtifactRepository;
 import com.github.pms1.tppt.p2.jaxb.artifact.Artifacts;
 import com.github.pms1.tppt.p2.jaxb.artifact.Mappings;
-import com.google.common.base.Throwables;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -26,7 +25,7 @@ public class ArtifactRepositoryFactory extends AbstractRepositoryFactory<Artifac
 			try {
 				context = JAXBContext.newInstance(ArtifactRepository.class);
 			} catch (JAXBException t) {
-				throw Throwables.propagate(t);
+				throw new RuntimeException(t);
 			}
 		}
 	}

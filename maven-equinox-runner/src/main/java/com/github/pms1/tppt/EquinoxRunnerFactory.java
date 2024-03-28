@@ -194,13 +194,6 @@ public class EquinoxRunnerFactory {
 
 	public EquinoxAppRunnerBuilder newBuilderForMirror() throws MavenExecutionException {
 		return newBuilderForP22() //
-				/*
-				 * A Maven environment already contains a JAXB implementation which is picked up
-				 * by the non-osgified service loader use of jakarta.xml.bind-api. We cannot
-				 * prevent an embedded application to "see" that and fail, so we need to launch
-				 * an external process.
-				 */
-				.withLauncher("org.eclipse.platform", "org.eclipse.equinox.launcher", "1.6.700")
 				.withBundle(execution.getGroupId(), "tppt-mirror-application", execution.getVersion(), 4, false) //
 				// HTTP client
 				.withBundle("org.apache.httpcomponents", "httpclient-osgi", "4.5.14", 4, false)

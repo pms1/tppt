@@ -116,7 +116,8 @@ public class MirrorApplication implements IApplication {
 	public Object start(IApplicationContext context) throws IOException, NoSuchAlgorithmException {
 		Object args = context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
 
-		if (false) {
+		boolean verboseApacheLog = false;
+		if (verboseApacheLog) {
 			Logger l = Logger.getLogger("org.apache");
 			l.setLevel(Level.FINEST);
 			Logger.getLogger("").getHandlers()[0].setLevel(Level.FINEST);
@@ -859,7 +860,7 @@ public class MirrorApplication implements IApplication {
 		} else {
 			List<IInstallableUnit> filterUnits = new ArrayList<>();
 
-			HashMap filter2 = new HashMap<>(filter);
+			Map<String, String> filter2 = new HashMap<>(filter);
 			addGlobalOptions(filter2, go);
 
 			IInstallableUnit unit = InstallableUnit.contextIU(filter2);
@@ -917,8 +918,6 @@ public class MirrorApplication implements IApplication {
 
 					Collection<IRequirement> allRequirements = allRequirements(iu);
 
-					if (false)
-						System.err.println("IU " + iu);
 					for (IRequirement req : allRequirements) {
 						IRequiredCapability req2 = (IRequiredCapability) req;
 

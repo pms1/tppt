@@ -3,7 +3,6 @@ package com.github.pms1.tppt.p2;
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
-import com.google.common.base.Throwables;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -20,7 +19,7 @@ public abstract class CompositeRepositoryFactory extends AbstractRepositoryFacto
 			try {
 				context = JAXBContext.newInstance(CompositeRepository.class);
 			} catch (JAXBException t) {
-				throw Throwables.propagate(t);
+				throw new RuntimeException(t);
 			}
 		}
 	}

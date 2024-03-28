@@ -22,7 +22,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.apache.maven.MavenExecutionException;
-import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -83,17 +82,11 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	@Component
 	private RepositorySystem repositorySystem;
 
-	@Parameter(readonly = true, required = true, defaultValue = "${project.remoteArtifactRepositories}")
-	private List<ArtifactRepository> remoteRepositories;
-
-	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
-	private ArtifactRepository localRepository;
-
 	@Parameter
 	private String osgiVersion;
 
 	@Inject
-	private EquinoxRunnerFactory2 runnerFactory;
+	private EquinoxRunnerFactory runnerFactory;
 
 	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;

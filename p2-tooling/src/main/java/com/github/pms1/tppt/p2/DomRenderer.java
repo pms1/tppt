@@ -21,7 +21,6 @@ import org.w3c.dom.ProcessingInstruction;
 import org.w3c.dom.Text;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBElement;
@@ -261,7 +260,7 @@ public class DomRenderer {
 
 			return render(((Document) r.getNode()).getDocumentElement(), options);
 		} catch (JAXBException e) {
-			throw Throwables.propagate(e);
+			throw new RuntimeException(e);
 		}
 	}
 
