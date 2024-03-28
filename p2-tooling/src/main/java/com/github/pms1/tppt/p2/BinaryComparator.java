@@ -5,11 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import com.google.common.io.ByteSource;
 
-@Component(hint = BinaryComparator.HINT, role = FileComparator.class)
+@Named(BinaryComparator.HINT)
+@Singleton
 public class BinaryComparator implements FileComparator {
 	public static final String HINT = "binary";
 

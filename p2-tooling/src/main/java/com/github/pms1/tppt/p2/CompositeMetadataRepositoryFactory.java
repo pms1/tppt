@@ -1,13 +1,16 @@
 package com.github.pms1.tppt.p2;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.osgi.framework.Version;
 
 import com.github.pms1.tppt.p2.jaxb.composite.Children;
-import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.composite.CompositeProperties;
+import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 
-@Component(role = CompositeMetadataRepositoryFactory.class)
+@Named("default")
+@Singleton
 public class CompositeMetadataRepositoryFactory extends CompositeRepositoryFactory {
 
 	protected CompositeMetadataRepositoryFactory() {

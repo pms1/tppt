@@ -5,12 +5,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.eclipse.osgi.util.ManifestElement;
 
 import com.google.common.collect.Sets;
 
-@Component(role = BundleHeaderComparator.class, hint = BundleEclipseSourceBundleHeaderComparator.HINT)
+@Singleton
+@Named(BundleEclipseSourceBundleHeaderComparator.HINT)
 public class BundleEclipseSourceBundleHeaderComparator extends AbstractManifestHeaderComparator {
 	public final static String HINT = "Eclipse-SourceBundle";
 

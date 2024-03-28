@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.Version;
 
@@ -17,7 +19,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-@Component(role = BundleHeaderComparator.class, hint = BundleExportPackageBundleHeaderComparator.HINT)
+@Named(BundleExportPackageBundleHeaderComparator.HINT)
+@Singleton
 public class BundleExportPackageBundleHeaderComparator extends AbstractManifestHeaderComparator {
 	public final static String HINT = "Export-Package";
 

@@ -23,13 +23,16 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.pms1.ldap.SearchFilter;
 import com.github.pms1.ldap.SearchFilterPrinter;
@@ -72,19 +75,19 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 
-@Component(role = RepositoryComparator.class)
+@Named("default")
+@Singleton
 public class RepositoryComparator {
-	@Requirement
-	Logger logger;
+	private final Logger logger = LoggerFactory.getLogger(RepositoryComparator.class);
 
-	@Requirement
-	ArtifactRepositoryFactory artifactRepositoryFactory;
+	@Inject
+	private ArtifactRepositoryFactory artifactRepositoryFactory;
 
-	@Requirement
-	MetadataRepositoryFactory metadataRepositoryFactory;
+	@Inject
+	private MetadataRepositoryFactory metadataRepositoryFactory;
 
-	@Requirement
-	Map<String, FileComparator> comparators;
+	@Inject
+	private Map<String, FileComparator> comparators;
 
 	static private final TypeToken<?> listRequired = new TypeToken<List<Required>>() {
 

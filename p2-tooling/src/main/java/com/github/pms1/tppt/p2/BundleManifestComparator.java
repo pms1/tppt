@@ -8,14 +8,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.eclipse.osgi.util.ManifestElement;
 import org.osgi.framework.BundleException;
 
 import com.google.common.collect.Sets;
 
-@Component(role = FileComparator.class, hint = BundleManifestComparator.HINT)
+@Named(BundleManifestComparator.HINT)
+@Singleton
 public class BundleManifestComparator implements FileComparator {
 	public final static String HINT = "bundle-manifest";
 
@@ -31,7 +34,7 @@ public class BundleManifestComparator implements FileComparator {
 
 	}
 
-	@Requirement
+	@Inject
 	private Map<String, BundleHeaderComparator> comparators;
 
 	@Override

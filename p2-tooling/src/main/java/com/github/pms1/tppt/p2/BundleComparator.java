@@ -1,19 +1,24 @@
 package com.github.pms1.tppt.p2;
 
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-@Component(hint = BundleComparator.HINT, role = FileComparator.class)
+@Named(BundleComparator.HINT)
+@Singleton
 public class BundleComparator extends AbstractZipComparator {
 	public static final String HINT = "bundle";
 
-	@Requirement(hint = BundleManifestComparator.HINT)
+	@Inject
+	@Named(BundleManifestComparator.HINT)
 	FileComparator bundleManifestComparator;
 
-	@Requirement(hint = PropertiesComparator.HINT)
+	@Inject
+	@Named(PropertiesComparator.HINT)
 	FileComparator propertiesComparator;
 
-	@Requirement(hint = ClassComparator.HINT)
+	@Inject
+	@Named(ClassComparator.HINT)
 	FileComparator classComparator;
 
 	@Override

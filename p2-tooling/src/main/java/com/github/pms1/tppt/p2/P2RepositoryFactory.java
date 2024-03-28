@@ -23,8 +23,10 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.codehaus.plexus.util.IOUtil;
 
 import com.github.pms1.tppt.p2.jaxb.Repository;
@@ -33,30 +35,28 @@ import com.github.pms1.tppt.p2.jaxb.composite.CompositeRepository;
 import com.github.pms1.tppt.p2.jaxb.metadata.MetadataRepository;
 import com.google.common.base.Preconditions;
 
-@Component(role = P2RepositoryFactory.class)
+@Named("default")
+@Singleton
 public class P2RepositoryFactory {
 
-	@Requirement
+	@Inject
 	private ArtifactRepositoryFactory artifactRepositoryFactory;
 
-	@Requirement
+	@Inject
 	private MetadataRepositoryFactory metadataRepositoryFactory;
 
-	@Requirement
+	@Inject
 	private CompositeArtifactRepositoryFactory compositeArtifactRepositoryFactory;
 
-	@Requirement
+	@Inject
 	private CompositeMetadataRepositoryFactory compositeMetadataRepositoryFactory;
 
-	@Requirement
+	@Inject
 	private Map<String, DataCompression> compressions;
 
-	@Requirement(hint = "xml")
+	@Inject
+	@Named("xml")
 	private DataCompression noCompression;
-
-	void setCompressions(Map<String, DataCompression> compressions) {
-		this.compressions = compressions;
-	}
 
 	public static final String P2INDEX = "p2.index";
 

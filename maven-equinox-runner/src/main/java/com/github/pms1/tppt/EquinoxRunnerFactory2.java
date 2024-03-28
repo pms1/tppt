@@ -24,7 +24,7 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
 
-@Named("default")
+@Named
 @Singleton
 public class EquinoxRunnerFactory2 {
 

@@ -3,12 +3,15 @@ package com.github.pms1.tppt.p2;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.eclipse.osgi.util.ManifestElement;
 
 import com.github.pms1.tppt.p2.BundleManifestComparator.UnparseableManifestException;
 
-@Component(role = BundleHeaderComparator.class, hint = BundleVersionHeaderComparator.HINT)
+@Named(BundleVersionHeaderComparator.HINT)
+@Singleton
 public class BundleVersionHeaderComparator extends AbstractManifestHeaderComparator {
 	// if the constant is used, turns up as "default" in Plexus! The bytecode is
 	// ok, but not the components.xml

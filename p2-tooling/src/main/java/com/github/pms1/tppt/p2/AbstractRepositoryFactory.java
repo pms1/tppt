@@ -6,12 +6,12 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.Arrays;
 
+import javax.inject.Inject;
 import javax.xml.namespace.QName;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.ProcessingInstruction;
@@ -36,8 +36,8 @@ public abstract class AbstractRepositoryFactory<T> {
 	private final JAXBContext jaxbContext;
 	private final String version;
 
-	@Requirement
-	DomRenderer renderer;
+	@Inject
+	private DomRenderer renderer;
 
 	protected AbstractRepositoryFactory(JAXBContext jaxbContext, Class<T> clazz, String prefix, String version,
 			String xsd) {

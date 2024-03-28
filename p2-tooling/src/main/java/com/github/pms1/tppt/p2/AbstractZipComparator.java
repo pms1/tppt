@@ -19,14 +19,17 @@ import java.util.zip.ZipError;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import org.codehaus.plexus.util.IOUtil;
 
 import com.google.common.collect.Sets;
 
 abstract public class AbstractZipComparator implements FileComparator {
 
-	@Requirement(hint = BinaryComparator.HINT)
+	@Inject
+	@Named(BinaryComparator.HINT)
 	private FileComparator binaryComparator;
 
 	@Override

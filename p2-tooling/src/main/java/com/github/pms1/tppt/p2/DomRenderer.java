@@ -6,10 +6,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
 import javax.xml.namespace.QName;
 import javax.xml.transform.dom.DOMResult;
 
-import org.codehaus.plexus.component.annotations.Component;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
@@ -28,7 +29,8 @@ import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.annotation.XmlType;
 
-@Component(role = DomRenderer.class)
+@Singleton
+@Named("default")
 public class DomRenderer {
 
 	static public enum Options {

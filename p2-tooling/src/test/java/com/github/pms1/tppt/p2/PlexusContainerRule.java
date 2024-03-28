@@ -2,8 +2,12 @@ package com.github.pms1.tppt.p2;
 
 import java.util.Map;
 
+import org.codehaus.plexus.ContainerConfiguration;
+import org.codehaus.plexus.DefaultContainerConfiguration;
 import org.codehaus.plexus.DefaultPlexusContainer;
+import org.codehaus.plexus.PlexusConstants;
 import org.codehaus.plexus.PlexusContainer;
+import org.codehaus.plexus.classworlds.ClassWorld;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -51,7 +55,14 @@ public class PlexusContainerRule implements TestRule {
 				if (container != null)
 					throw new IllegalStateException();
 				try {
-					container = new DefaultPlexusContainer();
+
+					ClassWorld classWorld = new ClassWorld("plexus.core",
+							Thread.currentThread().getContextClassLoader());
+
+					ContainerConfiguration cc = new DefaultContainerConfiguration().setClassWorld(classWorld)
+							.setClassPathScanning(PlexusConstants.SCANNING_INDEX).setAutoWiring(true).setName("maven");
+
+					container = new DefaultPlexusContainer(cc);
 					base.evaluate();
 					container.dispose();
 				} finally {

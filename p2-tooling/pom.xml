@@ -16,8 +16,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.codehaus.plexus</groupId>
-			<artifactId>plexus-component-annotations</artifactId>
+			<groupId>org.apache.maven</groupId>
+			<artifactId>maven-core</artifactId>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -60,25 +61,6 @@
 		</dependency>
 
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.assertj</groupId>
-			<artifactId>assertj-core</artifactId>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- 
-		<dependency>
-			<groupId>org.apache.maven</groupId>
-			<artifactId>maven-core</artifactId>
-			<scope>test</scope>
-		</dependency>
--->
-		<dependency>
 			<groupId>com.google.code.findbugs</groupId>
 			<artifactId>annotations</artifactId>
 			<scope>compile</scope>
@@ -89,10 +71,15 @@
 			<artifactId>jaxb-runtime</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<dependency>
-			<groupId>org.eclipse.sisu</groupId>
-			<artifactId>org.eclipse.sisu.plexus</artifactId>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
 			<scope>test</scope>
 		</dependency>
 
@@ -108,8 +95,8 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.codehaus.plexus</groupId>
-				<artifactId>plexus-component-metadata</artifactId>
+				<groupId>org.eclipse.sisu</groupId>
+				<artifactId>sisu-maven-plugin</artifactId>
 			</plugin>
 
 			<plugin>

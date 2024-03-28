@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -103,10 +104,11 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
 
-	@Component
+	@Inject
 	private P2RepositoryFactory p2repositoryFactory;
 
-	@Component(hint = "xml")
+	@Inject
+	@Named("xml")
 	private DataCompression raw;
 
 	@Parameter

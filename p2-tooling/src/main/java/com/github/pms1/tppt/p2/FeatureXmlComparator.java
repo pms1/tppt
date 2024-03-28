@@ -16,7 +16,9 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -32,7 +34,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
-@Component(hint = "feature.xml", role = FileComparator.class)
+@Named("feature.xml")
+@Singleton
 public class FeatureXmlComparator implements FileComparator {
 
 	private DomRenderer domRenderer = new DomRenderer();

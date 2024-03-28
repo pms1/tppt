@@ -8,11 +8,13 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Consumer;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 import com.google.common.collect.Sets;
 
-@Component(role = FileComparator.class, hint = PropertiesComparator.HINT)
+@Named(PropertiesComparator.HINT)
+@Singleton
 public class PropertiesComparator implements FileComparator {
 	public final static String HINT = "properties";
 

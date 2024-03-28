@@ -1,14 +1,17 @@
 package com.github.pms1.tppt.p2;
 
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-@Component(hint = FeatureComparator.HINT, role = FileComparator.class)
+@Named(FeatureComparator.HINT)
+@Singleton
 public class FeatureComparator extends AbstractZipComparator {
 	final static public String HINT = "feature-jar";
 
-	@Requirement(hint = "feature.xml")
-	FileComparator featureXmlComparator;
+	@Inject
+	@Named("feature.xml")
+	private FileComparator featureXmlComparator;
 
 	@Override
 	protected FileComparator getComparator(String p) {

@@ -6,9 +6,11 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-@Component(role = DataCompression.class, hint = "xml")
+@Singleton
+@Named("xml")
 public class DataCompressionRaw implements DataCompression {
 
 	@Override

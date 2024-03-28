@@ -10,9 +10,11 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 
-import org.codehaus.plexus.component.annotations.Component;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-@Component(role = DataCompression.class, hint = "jar")
+@Named("jar")
+@Singleton
 public class DataCompressionJar implements DataCompression {
 
 	@Override

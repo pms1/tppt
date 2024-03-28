@@ -87,7 +87,7 @@ public class MirrorMojo extends AbstractMojo {
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
 
-	@Component
+	@Inject
 	private P2RepositoryFactory p2repositoryFactory;
 
 	@Component
