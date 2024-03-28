@@ -17,8 +17,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.github.pms1.tppt.EquinoxRunner.CopyThread;
-
 class ProcessEquinoxAppRunner implements EquinoxAppRunner {
 
 	private final AppRunnerConfig config;

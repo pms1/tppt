@@ -265,6 +265,12 @@
 				</plugin>
 
 				<plugin>
+					<groupId>org.eclipse.sisu</groupId>
+					<artifactId>sisu-maven-plugin</artifactId>
+					<version>0.3.5</version>
+				</plugin>
+
+				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
 					<version>1.0.0</version>

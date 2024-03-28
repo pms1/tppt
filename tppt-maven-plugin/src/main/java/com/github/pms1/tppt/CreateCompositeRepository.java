@@ -71,9 +71,6 @@ public class CreateCompositeRepository extends AbstractMojo {
 	private ArtifactRepository localRepository;
 
 	@Component
-	private TychoArtifactUnpacker installer;
-
-	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;
 
 	@Component(hint = "default")

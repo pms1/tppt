@@ -24,6 +24,8 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import javax.inject.Inject;
+
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
@@ -87,7 +89,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	@Parameter(readonly = true, required = true, defaultValue = "${project.basedir}/src/main/bnd")
 	private File sourceDir;
 
-	@Component
+	@Inject
 	private EquinoxRunnerFactory2 appRunnerFactory;
 
 	@Component(hint = "default")

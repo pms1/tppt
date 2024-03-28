@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import javax.inject.Inject;
+
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.resolver.ResolutionErrorHandler;
@@ -89,11 +91,8 @@ public class CreateFeaturesMojo extends AbstractMojo {
 	@Parameter
 	private String osgiVersion;
 
-	@Component
+	@Inject
 	private EquinoxRunnerFactory2 runnerFactory;
-
-	@Component
-	private TychoArtifactUnpacker installer;
 
 	@Component
 	private ResolutionErrorHandler resolutionErrorHandler;

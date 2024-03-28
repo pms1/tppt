@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.resolver.ArtifactResolutionException;
@@ -19,25 +23,24 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 
-@Component(role = EquinoxRunnerFactory2.class)
+@Named("default")
+@Singleton
 public class EquinoxRunnerFactory2 {
 
-	@Requirement
+	@Inject
 	private RepositorySystem repositorySystem;
 
-	@Requirement
+	@Inject
 	private ResolutionErrorHandler resolutionErrorHandler;
 
-	@Requirement
+	@Inject
 	private MavenSession session;
 
-	@Requirement
+	@Inject
 	private MavenProject project;
 
-	@Requirement
+	@Inject
 	private MojoExecution execution;
 
 	private Artifact resolveDependency(Artifact artifact) throws MavenExecutionException {

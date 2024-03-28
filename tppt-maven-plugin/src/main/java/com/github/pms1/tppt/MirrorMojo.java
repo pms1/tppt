@@ -20,6 +20,8 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import javax.inject.Inject;
+
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
@@ -79,11 +81,8 @@ public class MirrorMojo extends AbstractMojo {
 	@Parameter(readonly = true, required = true, defaultValue = "${localRepository}")
 	private ArtifactRepository localRepository;
 
-	@Component
+	@Inject
 	private EquinoxRunnerFactory2 runnerFactory;
-
-	@Component
-	private TychoArtifactUnpacker installer;
 
 	@Parameter(property = "session", readonly = true)
 	private MavenSession session;
