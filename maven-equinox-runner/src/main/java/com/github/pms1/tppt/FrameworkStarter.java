@@ -1,7 +1,6 @@
 package com.github.pms1.tppt;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -10,14 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Stream;
 
 import org.eclipse.core.runtime.internal.adaptor.EclipseAppLauncher;
 import org.eclipse.osgi.framework.log.FrameworkLog;
@@ -26,9 +23,7 @@ import org.eclipse.osgi.service.environment.EnvironmentInfo;
 import org.eclipse.osgi.service.runnable.ApplicationLauncher;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
@@ -39,7 +34,7 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 
-public class M2 {
+public class FrameworkStarter {
 
 	static AppRunnerConfig deserialize(byte[] serializedConfig) {
 		try (InputStream is = new ByteArrayInputStream(serializedConfig);
@@ -68,15 +63,13 @@ public class M2 {
 		}
 	}
 
-	public static int run(byte[] serializedConfig, String app, String... args)
+	public static int run(Path tempDir, byte[] serializedConfig, String app, String... args)
 			throws BundleException, InterruptedException, Exception {
 		AppRunnerConfig config = deserialize(serializedConfig);
 
 		ServiceLoader<ConnectFrameworkFactory> loader = ServiceLoader.load(ConnectFrameworkFactory.class,
-				M2.class.getClassLoader());
+				FrameworkStarter.class.getClassLoader());
 		ConnectFrameworkFactory factory = loader.findFirst().orElseThrow(() -> new NoSuchElementException());
-
-		Path tempDir = Files.createTempDirectory("maven-equinox-runner-");
 
 		try {
 			/*
@@ -100,38 +93,14 @@ public class M2 {
 			frameworkConfiguration.put("osgi.install.area", tempDir.toUri().toURL().toString());
 
 			Framework framework = factory.newFramework(frameworkConfiguration, null);
-			framework.init(M2::logFrameworkEvent);
+			framework.init(FrameworkStarter::logFrameworkEvent);
 
-			framework.getBundleContext().addFrameworkListener(M2::logFrameworkEvent);
+			framework.getBundleContext().addFrameworkListener(FrameworkStarter::logFrameworkEvent);
 			framework.start();
 
 			try {
 
 				BundleContext context = framework.getBundleContext();
-				context.addBundleListener(new BundleListener() {
-
-					@Override
-					public void bundleChanged(BundleEvent event) {
-						if (true)
-							return;
-
-						String type;
-						switch (event.getType()) {
-						case BundleEvent.RESOLVED:
-							type = "RESOLVED";
-							break;
-						case BundleEvent.STARTED:
-							type = "STARTED";
-							break;
-						default:
-							type = Integer.toString(event.getType());
-						}
-
-						System.err.println("BE " + type + " " + event + " " + event.getSource() + " "
-								+ event.getBundle() + " " + event.getOrigin());
-
-					}
-				});
 
 				List<Bundle> autoStart = new ArrayList<>();
 				for (AppBundle b1 : config.bundles()) {
@@ -212,11 +181,11 @@ public class M2 {
 				}
 			}
 		} finally {
-			try (Stream<Path> s = Files.walk(tempDir)) {
-				s.sorted(Comparator.reverseOrder()) //
-						.map(Path::toFile) //
-						.forEach(File::delete);
-			}
+//			try (Stream<Path> s = Files.walk(tempDir)) {
+//				s.sorted(Comparator.reverseOrder()) //
+//						.map(Path::toFile) //
+//						.forEach(File::delete);
+//			}
 		}
 	}
 

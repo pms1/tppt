@@ -11,7 +11,14 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
+
+import org.slf4j.LoggerFactory;
 
 class EmbeddedEquinoxAppRunner implements EquinoxAppRunner {
 
@@ -57,15 +64,20 @@ class EmbeddedEquinoxAppRunner implements EquinoxAppRunner {
 
 		URL[] urls = new URL[] { resourceJar, frameworkUrl };
 
-		System.err.println("FCL " + Arrays.toString(urls));
+		Path tempDir;
+		try {
+			tempDir = Files.createTempDirectory("maven-equinox-runnner-");
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
 
 		try (FrameworkClassLoader cl = new FrameworkClassLoader(urls)) {
-			Class<?> m2 = cl.loadClass(M2.class.getName());
+			Class<?> m2 = cl.loadClass(FrameworkStarter.class.getName());
 
-			Method run = m2.getMethod("run", byte[].class, String.class, String[].class);
+			Method run = m2.getMethod("run", Path.class, byte[].class, String.class, String[].class);
 
 			try {
-				return (int) run.invoke(null, serializedConfig, app, args);
+				return (int) run.invoke(null, tempDir, serializedConfig, app, args);
 			} catch (InvocationTargetException e) {
 				try {
 					throw e.getCause();
@@ -75,11 +87,44 @@ class EmbeddedEquinoxAppRunner implements EquinoxAppRunner {
 					throw e;
 				}
 			}
-
 		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			throw new RuntimeException("Failed to close class loader: " + e, e);
 		} catch (ReflectiveOperationException e) {
 			throw new RuntimeException(e);
+		} finally {
+			deleteTempDirectory(tempDir);
+		}
+	}
+
+	static void deleteTempDirectory(Path tempDir) {
+		try (Stream<Path> s = Files.walk(tempDir)) {
+			boolean[] didGc = new boolean[] { false };
+			s.sorted(Comparator.reverseOrder()) //
+					.forEach(p -> {
+						try {
+							try {
+								Files.deleteIfExists(p);
+							} catch (FileSystemException e) {
+								if (!didGc[0]) {
+									System.gc();
+									didGc[0] = true;
+									Files.deleteIfExists(p);
+								}
+							}
+
+						} catch (DirectoryNotEmptyException e) {
+							if (!didGc[0])
+								LoggerFactory.getLogger(EmbeddedEquinoxAppRunner.class)
+										.warn("Failed to delete: " + p + ": " + e, e);
+						} catch (IOException e) {
+							LoggerFactory.getLogger(EmbeddedEquinoxAppRunner.class)
+									.warn("Failed to delete: " + p + ": " + e, e);
+						}
+
+					});
+		} catch (IOException e) {
+			LoggerFactory.getLogger(EmbeddedEquinoxAppRunner.class)
+					.warn("Failed to cleanup temporary directory: " + tempDir + ": " + e, e);
 		}
 	}
 

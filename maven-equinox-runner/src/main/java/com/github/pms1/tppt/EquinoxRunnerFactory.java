@@ -26,7 +26,7 @@ import org.apache.maven.repository.RepositorySystem;
 
 @Named
 @Singleton
-public class EquinoxRunnerFactory2 {
+public class EquinoxRunnerFactory {
 
 	@Inject
 	private RepositorySystem repositorySystem;
@@ -146,16 +146,10 @@ public class EquinoxRunnerFactory2 {
 				if (framework == null)
 					throw new IllegalSelectorException();
 
-				if (true)
-					return new EmbeddedEquinoxAppRunner(config);
+				if (launcher != null)
+					throw new UnsupportedOperationException("Not supported at the moment as not fully tested");
 
-				if (launcher == null) {
-					if (javaProperties != null)
-						throw new IllegalStateException();
-					return new EmbeddedEquinoxAppRunner(config);
-				} else {
-					return new ProcessEquinoxAppRunner(config, launcher, javaProperties);
-				}
+				return new EmbeddedEquinoxAppRunner(config);
 			}
 
 			@Override
