@@ -204,6 +204,7 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 	// Specification-Version: 5.2.3.Final
 	// Implementation-Url: http://hibernate.org
 
+	@SuppressWarnings("serial")
 	private static class WrappedMojoExecutionException extends RuntimeException {
 		WrappedMojoExecutionException(MojoExecutionException cause) {
 			super(cause);

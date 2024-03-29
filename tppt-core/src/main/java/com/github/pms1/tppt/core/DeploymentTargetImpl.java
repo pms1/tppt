@@ -1,6 +1,7 @@
 package com.github.pms1.tppt.core;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +42,8 @@ class DeploymentTargetImpl implements DeploymentTarget {
 		if (!Objects.equals(a, m))
 			throw new Error();
 
-		return a.stream().map(root.getFileSystem()::getPath).collect(Collectors.toSet());
+		FileSystem fs = root.getFileSystem();
+		return a.stream().map(fs::getPath).collect(Collectors.toSet());
 	}
 
 	@Override

@@ -199,6 +199,8 @@ public class MyTransport extends Transport {
 
 		IStatus result;
 
+		// not used right now
+		@SuppressWarnings("unused")
 		ServerParameters serverParameters;
 		{
 			Entry<URI, ServerParameters> findLongestPrefix = Uris.findLongestPrefix(this.serverParameters, originalUri);

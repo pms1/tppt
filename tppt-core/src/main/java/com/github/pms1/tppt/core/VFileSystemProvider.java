@@ -192,7 +192,8 @@ public class VFileSystemProvider extends FileSystemProvider {
 	}
 
 	private static URI url(VPath vpath, boolean dir) throws MalformedURLException {
-		URI uri = vpath.getFileSystem().root;
+		VFileSystem fs = vpath.getFileSystem();
+		URI uri = fs.root;
 
 		for (Iterator<String> i = vpath.elements.iterator(); i.hasNext();) {
 			String s = i.next();
@@ -399,7 +400,7 @@ public class VFileSystemProvider extends FileSystemProvider {
 
 		Path temp = Files.createTempFile(null, null);
 		temp.toFile().deleteOnExit();
-		try (InputStream is = newInputStream(path)) {
+		try (InputStream is = newInputStream(vpath)) {
 			Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
 		}
 

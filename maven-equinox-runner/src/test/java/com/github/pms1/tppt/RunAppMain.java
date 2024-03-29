@@ -8,6 +8,7 @@ import java.util.Map;
 
 public class RunAppMain {
 
+	@SuppressWarnings("unused")
 	public static void main(String[] args) throws Exception {
 
 		Path root = Path.of("W:/fis/ide/fa-23-12/eclipse/plugins/");

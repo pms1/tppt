@@ -812,6 +812,7 @@ public class RepositoryComparator {
 			&& printer.print(p).equals("(org.eclipse.update.install.sources=true)");
 
 	class CategoryVersionChange extends Change {
+		@SuppressWarnings("unused")
 		private final String id;
 		private final Unit left;
 		private final Unit right;

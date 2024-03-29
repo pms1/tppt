@@ -635,12 +635,6 @@ public class ObjectComparator<T> {
 		Collection<TypedObject> c1 = d1.get();
 		LinkedList<TypedObject> c2 = new LinkedList<>(d2.get());
 
-		if (false && c1.size() == 1 && c2.size() == 1) {
-			// compare(p.child(key.path, Iterables.getOnlyElement(c1).getValue(),
-			// Iterables.getOnlyElement(c2).getValue()),
-			// Iterables.getOnlyElement(c1), Iterables.getOnlyElement(c2), sink);
-			// continue;
-		}
 		for (TypedObject v1 : c1) {
 
 			boolean found = false;

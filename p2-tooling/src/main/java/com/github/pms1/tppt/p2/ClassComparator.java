@@ -13,7 +13,6 @@ import org.eclipse.tycho.artifactcomparator.ArtifactDelta;
 import org.eclipse.tycho.artifactcomparator.ComparatorInputStream;
 import org.eclipse.tycho.zipcomparator.internal.ClassfileComparator;
 import org.eclipse.tycho.zipcomparator.internal.ContentsComparator;
-import org.eclipse.tycho.zipcomparator.internal.SimpleArtifactDelta;
 
 @Named(ClassComparator.HINT)
 @Singleton
@@ -32,13 +31,6 @@ public class ClassComparator implements FileComparator {
 				ArtifactDelta delta = cc.getDelta(is1, is2, null);
 				if (delta != null)
 					dest.accept(new FileDelta(file1, file2, "Code changed"));
-
-				if (false)
-					if (delta instanceof SimpleArtifactDelta) {
-						SimpleArtifactDelta sad = (SimpleArtifactDelta) delta;
-						System.err.println("--baseline--\n" + sad.getBaseline() + "\n");
-						System.err.println("--reactor--\n" + sad.getReactor() + "\n");
-					}
 			}
 		}
 	}

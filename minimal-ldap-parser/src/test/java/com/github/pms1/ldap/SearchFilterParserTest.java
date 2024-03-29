@@ -1,15 +1,11 @@
 package com.github.pms1.ldap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class SearchFilterParserTest {
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
-
 	SearchFilterParser parser = new SearchFilterParser();
 	SearchFilterParser parserLenient = new SearchFilterParser().lenient();
 
@@ -23,8 +19,9 @@ public class SearchFilterParserTest {
 
 	@Test
 	public void andStrictSpace() {
-		thrown.expect(RuntimeException.class);
-		parser.parse("(& (a=5))");
+		assertThatExceptionOfType(SearchFilterParseException.class).isThrownBy(() -> {
+			parser.parse("(& (a=5))");
+		});
 	}
 
 	@Test
@@ -59,8 +56,9 @@ public class SearchFilterParserTest {
 
 	@Test
 	public void dotStrict() {
-		thrown.expect(RuntimeException.class);
-		parser.parse("(a.b=5)");
+		assertThatExceptionOfType(SearchFilterParseException.class).isThrownBy(() -> {
+			parser.parse("(a.b=5)");
+		});
 	}
 
 	@Test
@@ -121,8 +119,9 @@ public class SearchFilterParserTest {
 
 	@Test
 	public void strictSpaceEnd() {
-		thrown.expect(RuntimeException.class);
-		parser.parse("(&(a=b) )");
+		assertThatExceptionOfType(SearchFilterParseException.class).isThrownBy(() -> {
+			parser.parse("(&(a=b) )");
+		});
 	}
 
 	@Test
@@ -133,7 +132,8 @@ public class SearchFilterParserTest {
 
 	@Test
 	public void failMissingClosingParen() {
-		thrown.expect(RuntimeException.class);
-		parser.parse("(&(a=5)(b=Foo)");
+		assertThatExceptionOfType(SearchFilterParseException.class).isThrownBy(() -> {
+			parser.parse("(&(a=5)(b=Foo)");
+		});
 	}
 }

@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -304,13 +303,6 @@ public class MirrorMojo extends AbstractMojo {
 		return true;
 	}
 
-	private String toString(Repository r) {
-		if (r.id != null && !r.id.isEmpty())
-			return "'" + r.id + "'";
-		else
-			return "at '" + r.url + "'";
-	}
-
 	@Override
 	public void execute() throws MojoExecutionException, MojoFailureException {
 		if (useBaseline) {
@@ -331,8 +323,9 @@ public class MirrorMojo extends AbstractMojo {
 				ms.ius = m.ius.toArray(new String[m.ius.size()]);
 				if (m.excludeIus != null)
 					ms.excludeIus = m.excludeIus.toArray(new String[m.excludeIus.size()]);
-				ms.mirrorRepository = Paths.get(session.getLocalRepository().getBasedir()).resolve(cacheRelPath)
-						.toUri();
+
+				ms.mirrorRepository = session.getRepositorySession().getLocalRepository().getBasedir().toPath()
+						.resolve(cacheRelPath).toUri();
 				ms.mirrors = new LinkedHashMap<>();
 
 				List<AuthenticatedUri> servers2 = new ArrayList<>();
