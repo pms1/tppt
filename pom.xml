@@ -78,6 +78,12 @@
 
 			<dependency>
 				<groupId>org.slf4j</groupId>
+				<artifactId>jcl-over-slf4j</artifactId>
+				<version>${maven.slf4j.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-simple</artifactId>
 				<version>${maven.slf4j.version}</version>
 			</dependency>
@@ -143,9 +149,9 @@
 			</dependency>
 
 			<dependency>
-				<groupId>com.google.code.findbugs</groupId>
-				<artifactId>annotations</artifactId>
-				<version>3.0.1u2</version>
+			    <groupId>com.github.spotbugs</groupId>
+			    <artifactId>spotbugs-annotations</artifactId>
+			    <version>4.8.3</version>
 			</dependency>
 
 			<dependency>
@@ -179,6 +185,42 @@
 				<version>5.12</version>
 			</dependency>
 
+			<dependency>
+				<groupId>jakarta.xml.bind</groupId>
+				<artifactId>jakarta.xml.bind-api</artifactId>
+				<version>4.0.2</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-utils</artifactId>
+				<version>3.5.1</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>3.14.0</version>
+			</dependency>
+
+			<dependency>
+				<groupId>commons-codec</groupId>
+				<artifactId>commons-codec</artifactId>
+				<version>1.16.1</version>
+			</dependency>
+
+			<dependency>
+				<groupId>biz.aQute.bnd</groupId>
+				<artifactId>biz.aQute.bndlib</artifactId>
+				<version>7.0.0</version>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.osgi</groupId>
+				<artifactId>org.osgi.util.function</artifactId>
+				<version>1.2.0</version>
+			</dependency>
+			
 		</dependencies>
 	</dependencyManagement>
 
@@ -315,7 +357,8 @@
 								<requireJavaVersion>
 									<version>17</version>
 								</requireJavaVersion>
-							</rules>
+  								<dependencyConvergence/>
+  							</rules>
 						</configuration>
 					</execution>
 				</executions>
