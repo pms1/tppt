@@ -23,13 +23,15 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;
-import org.codehaus.plexus.component.annotations.Component;
-import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Disposable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -38,7 +40,6 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.Startable;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.StartingException;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.StoppingException;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.eclipse.sisu.plexus.Strategies;
 
 import com.github.pms1.tppt.core.InterpolatedString.Visitor;
 import com.github.pms1.tppt.p2.ArtifactId;
@@ -59,18 +60,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteSource;
 
-@Component(role = DeploymentHelper.class, instantiationStrategy = Strategies.SINGLETON)
+@Singleton
+@Named
 public class DeploymentHelper implements Initializable, Disposable, Startable {
-	@Requirement
+	@Inject
 	private P2RepositoryFactory factory;
 
-	@Requirement(hint = "xml")
+	@Inject
+	@Named("xml")
 	private DataCompression raw;
 
-	@Requirement
+	@Inject
 	private MavenSession session;
 
-	@Requirement
+	@Inject
 	private Logger logger;
 
 	private LocalDateTime extractP2Timestamp(Path root) throws IOException {
