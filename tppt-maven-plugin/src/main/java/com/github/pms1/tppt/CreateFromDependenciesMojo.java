@@ -17,11 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -497,6 +499,9 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			return a.getArtifactId();
 	}
 
+	private static Predicate<String> multiReleaseJarManifest = Pattern
+			.compile("META-INF/versions/[0-9]+/OSGI-INF/MANIFEST.MF").asPredicate();
+
 	private Plugin createPlugin(Artifact a, Plugin plugin, String buildQualifer, Path receipe, Path target)
 			throws Exception {
 		try (Builder builder = new Builder()) {
@@ -534,6 +539,19 @@ public class CreateFromDependenciesMojo extends AbstractMojo {
 			builder.setJar(classesDirJar);
 
 			Jar j = builder.build();
+
+			List<String> toDelete = new ArrayList<>();
+
+			j.getDirectories().forEach((k, v) -> {
+				if (v != null)
+					v.keySet().stream().filter(multiReleaseJarManifest).forEach(toDelete::add);
+			});
+
+			toDelete.forEach(file -> {
+				j.remove(file);
+				getLog().info(a + ": Ignoring multiRelease JAR manifest:" + file);
+			});
+
 			j.write(target.toFile());
 
 			return scanPlugin(target);
