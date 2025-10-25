@@ -12,6 +12,12 @@
 			<artifactId>docker-client</artifactId>
 			<version>8.3.1</version>
 			<classifier>shaded</classifier>
+			<exclusions>
+				<exclusion>
+					<groupId>com.github.jnr</groupId>
+					<artifactId>jffi</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 
